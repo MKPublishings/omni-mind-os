@@ -2,6 +2,15 @@
  * For more details on how to configure Wrangler, refer to:
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
+     "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "b319c371b99946118c7dc36ec023e5a3",
+      
+      // Optional: preview_id used when running `wrangler dev` for local dev
+      "preview_id": "<ID_OF_PREVIEW_KV_NAMESPACE_FOR_LOCAL_DEVELOPMENT>"
+    }
+  ]
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "omni-mind-os",
