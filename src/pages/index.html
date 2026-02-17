@@ -26,9 +26,22 @@
       <button onclick="window.location.href='/docs.html'">Documentation</button>
     </div>
   </section>
-
-  <footer id="footer">
-    Omni Mind/OS — v0.1 • A Cognitive Operating System
-  </footer>
 </body>
 </html>
+<header id="top-nav">
+  <div class="logo">Omni Mind/OS</div>
+  <nav>
+    <a href="/chat.html">Chat</a>
+    <a href="/docs.html">Docs</a>
+    <a href="/modes.html">Modes</a>
+    <a href="/about.html">About</a>
+  </nav>
+</header>
+<footer id="footer">
+  Omni Mind/OS — v0.1 • A Cognitive Operating System
+</footer>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle("light");
+}
+</script>

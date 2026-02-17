@@ -1,0 +1,17 @@
+name = "omni-mind-os"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+[vars]
+MODEL = "llama-3.1-8b-instruct"   # or any Cloudflare-supported model
+
+[observability]
+enabled = true
+[[kv_namespaces]]
+binding = "OMNI_KV"
+id = "omni_kv"
+[[durable_objects.bindings]]
+name = "OMNI_SESSION"
+class_name = "OmniSession"
+[site]
+bucket = "./public"

@@ -6,7 +6,9 @@ export interface Env {
 	/**
 	 * Binding for the Workers AI API.
 	 */
-	AI: Ai;
+	AI: {
+		chat: (messages: ChatMessage[], options?: any) => AsyncIterable<string>;
+	};
 
 	/**
 	 * Binding for static assets.
