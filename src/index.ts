@@ -1,7 +1,7 @@
-import { omniBrainLoop } from "./omni/runtime/loop";
+import { omniBrainLoop } from "./api/omni/runtime/loop";
 import { OmniLogger } from "./logging/logger";
 import { OmniSafety } from "./stability/safety";
-import type { OmniMessage } from "./omni/mindos-core";
+import type { OmniMessage } from "./api/omni/mindos-core";
 
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
