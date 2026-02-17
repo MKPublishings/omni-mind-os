@@ -1,4 +1,4 @@
-import type { OmniMessage } from "../../mindos-core";
+import type { OmniMessage } from "../../omni/mindos-core";
 import { selectModel } from "../../../llm/router";
 import { executeTool } from "../../../tools/execute";
 import { OmniSafety } from "../../../stability/safety";
