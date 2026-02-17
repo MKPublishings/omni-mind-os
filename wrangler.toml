@@ -20,3 +20,13 @@ preview_id = "memory_kv_preview"
 # Optional: Observability
 [observability]
 enabled = true
+
+# If you're deploying via Cloudflare Pages with Functions:
+# Uncomment this block:
+#
+# [build]
+# command = "npm run build"
+# functions = "functions"
+# 
+# [site]
+# bucket = "./public/"
