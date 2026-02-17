@@ -1,0 +1,88 @@
+/* ------------------------------
+   BUTTONS
+------------------------------ */
+.btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--panel-light);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.btn.danger {
+  background: #ff4c4c;
+  color: #fff;
+}
+
+/* ------------------------------
+   CARDS
+------------------------------ */
+.feature-card,
+.mode-card,
+.status-card,
+.tool-log {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 20px;
+  border-radius: 12px;
+  transition: 0.2s;
+}
+
+.feature-card:hover,
+.mode-card:hover {
+  background: var(--panel-light);
+}
+
+/* ------------------------------
+   GRID LAYOUTS
+------------------------------ */
+.feature-card,
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-grid,
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+/* ------------------------------
+   FORMS
+------------------------------ */
+input, select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 8px;
+  color: var(--text);
+  width: 100%;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 14px 0;
+}

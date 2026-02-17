@@ -2,79 +2,103 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Omni Chat</title>
-  <link rel="stylesheet" href="/styles/chat.css" />
+  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
 </head>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM loaded, wiring chat…");
-
-    const input = document.getElementById("user-input");
-    const sendBtn = document.getElementById("send-btn");
-
-    console.log("input:", input);
-    console.log("sendBtn:", sendBtn);
-
-    if (!input || !sendBtn) {
-        console.error("❌ ERROR: Missing #user-input or #send-btn in HTML");
-        return;
-    }
-
-    sendBtn.addEventListener("click", () => {
-        console.log("Send button clicked");
-        sendMessage();
-    });
-
-    input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-            console.log("Enter pressed");
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-});
-</script>
-
-<script src="chat.js"></script>
 <body>
   <div id="layout">
-
     <aside id="sidebar">
       <h1 class="logo">Omni Mind/OS</h1>
 
-      <button class="side-btn" onclick="window.location.href='/'">Home</button>
-      <button class="side-btn" onclick="window.location.href='/docs.html'">Docs</button>
-      <button class="side-btn" onclick="window.location.href='/modes.html'">Modes</button>
-      <button class="side-btn" onclick="window.location.href='/settings.html'">Settings</button>
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
 
-      <div class="mode-section">
-        <h3>Modes</h3>
-        <button class="mode-btn" data-mode="Architect">Architect</button>
-        <button class="mode-btn" data-mode="Lore">Lore</button>
-        <button class="mode-btn" data-mode="Visual">Visual</button>
-        <button class="mode-btn" data-mode="Analyst">Analyst</button>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
       </div>
     </aside>
 
-    <main id="chat-area">
-      <div id="mode-indicator">Mode: Architect</div>
-      <div id="chat-container"></div>
-
-    <div id="input-area">
-      <input id="user-input" type="text" placeholder="Ask Omni anything..." />
-      <button id="send-btn">Send</button>
-      </div>
+    <main id="main">
+      <!-- page-specific content goes here -->
     </main>
-
   </div>
 
+  <!-- page-specific scripts go here -->
 </body>
 </html>
-  <select id="model">
-    <option value="omni">Omni</option>
-    <option value="gpt-4o-mini">GPT‑4o Mini</option>
-    <option value="gpt-4o">GPT‑4o</option>
-    <option value="deepseek">DeepSeek</option>
-  </select>
-</div>
-<script src="/scripts/chat.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – Chat</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/chat.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link active">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="chat-main">
+      <header class="chat-header">
+        <div>
+          <h2>Omni Chat</h2>
+          <p class="chat-subtitle">Ask, architect, and iterate across modes.</p>
+        </div>
+        <div class="chat-controls">
+          <div class="model-selector">
+            <label for="model">Model</label>
+            <select id="model">
+              <option value="omni">Omni</option>
+              <option value="gpt-4o-mini">GPT‑4o Mini</option>
+              <option value="gpt-4o">GPT‑4o</option>
+              <option value="deepseek">DeepSeek</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <section id="chat-area">
+        <div id="mode-indicator">Mode: Architect</div>
+        <div id="chat-container"></div>
+
+        <div id="input-area">
+          <input
+            id="user-input"
+            type="text"
+            placeholder="Ask Omni anything..."
+            autocomplete="off"
+          />
+          <button id="send-btn">Send</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/scripts/chat.js"></script>
+</body>
+</html>

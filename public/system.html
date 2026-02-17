@@ -1,20 +1,109 @@
-<section class="page">
-  <h1>System Overview</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
 
-  <div class="card">
-    <h2>Architecture</h2>
-    <p>Omni uses a modular cognitive pipeline...</p>
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main">
+      <!-- page-specific content goes here -->
+    </main>
   </div>
 
-  <div class="card">
-    <h2>Runtime</h2>
-    <p>Brain loop, reflection, emotional checkpoint...</p>
+  <!-- page-specific scripts go here -->
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – System</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+        <a href="/system.html" class="nav-link active">System</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="system-main">
+      <header class="page-header">
+        <h2>System Architecture</h2>
+        <p class="subtitle">Infrastructure, routing, and operational status.</p>
+      </header>
+
+      <section class="system-section">
+        <h3>Architecture Overview</h3>
+        <p>
+          Omni Mind/OS runs on a Cloudflare‑native stack:
+        </p>
+        <ul>
+          <li>Cloudflare Pages — static hosting + global CDN</li>
+          <li>Cloudflare Workers — AI routing & streaming</li>
+          <li>KV / D1 — memory & persistent storage</li>
+          <li>Edge‑first inference</li>
+        </ul>
+      </section>
+
+      <section class="system-section">
+        <h3>Worker Status</h3>
+        <div class="status-card">
+          <p><strong>Endpoint:</strong> <code>/api/omni</code></p>
+          <p><strong>Region:</strong> Global Edge</p>
+          <p><strong>Latency:</strong> <span id="latency">–</span> ms</p>
+          <button id="ping-worker" class="btn">Ping Worker</button>
+        </div>
+      </section>
+
+      <section class="system-section">
+        <h3>Environment</h3>
+        <ul>
+          <li>Frontend: v0.2</li>
+          <li>Worker Runtime: Stable</li>
+          <li>Memory Engine: Active</li>
+          <li>Streaming: Enabled</li>
+        </ul>
+      </section>
+    </main>
   </div>
 
-  <div class="card">
-    <h2>Tools</h2>
-    <p>Omni can call internal tools for reasoning...</p>
-  </div>
-
-  <button class="btn" onclick="window.location.href='/chat.html'">Back to Chat</button>
-</section>
+  <script src="/scripts/system.js"></script>
+</body>
+</html>

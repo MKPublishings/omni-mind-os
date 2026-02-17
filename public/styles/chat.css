@@ -1,76 +1,32 @@
-/* ============================================================
-   OMNI MIND/OS — CHAT UI THEME (FINAL VERSION)
-   ============================================================ */
-
-:root {
-  --bg: #0d0f12;
-  --panel: rgba(255, 255, 255, 0.06);
-  --glass: rgba(255, 255, 255, 0.12);
-  --border: rgba(255, 255, 255, 0.15);
-  --text: #e8e8e8;
-  --accent: #7f5cff;
-  --accent-soft: rgba(127, 92, 255, 0.4);
-  --radius: 14px;
-  --transition: 0.25s ease;
-}
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: "Inter", sans-serif;
+/* ------------------------------
+   CHAT LAYOUT
+------------------------------ */
+.chat-main {
   display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Layout ---------------------------------------------------- */
-
-#layout {
-  display: flex;
-  width: 100%;
+  flex-direction: column;
   height: 100%;
 }
 
-/* Sidebar --------------------------------------------------- */
-
-#sidebar {
-  width: 240px;
-  background: var(--panel);
-  backdrop-filter: blur(18px);
-  border-right: 1px solid var(--border);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.logo {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-/* Chat Area ------------------------------------------------- */
-
 #chat-area {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #0d0f12 0%, #111318 100%);
+  height: 100%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 #mode-indicator {
-  padding: 14px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
-  background: var(--panel);
-  backdrop-filter: blur(12px);
-  font-size: 0.9rem;
-  opacity: 0.8;
+  color: var(--accent);
+  font-weight: 600;
 }
 
-/* Chat Container ------------------------------------------- */
-
+/* ------------------------------
+   CHAT CONTAINER
+------------------------------ */
 #chat-container {
   flex: 1;
   padding: 20px;
@@ -80,74 +36,44 @@ body {
   gap: 14px;
 }
 
-/* Message Bubbles ------------------------------------------ */
-
-.msg {
+/* ------------------------------
+   MESSAGE BUBBLES
+------------------------------ */
+.message {
+  padding: 12px 16px;
+  border-radius: 12px;
   max-width: 70%;
-  padding: 14px;
-  border-radius: var(--radius);
   line-height: 1.5;
-  font-size: 0.95rem;
-  white-space: pre-wrap;
 }
 
-.user-msg {
-  align-self: flex-end;
+.message.user {
   background: var(--accent);
-  color: white;
+  color: #fff;
+  align-self: flex-end;
 }
 
-.omni-msg {
-  align-self: flex-start;
-  background: var(--glass);
+.message.bot {
+  background: var(--panel-light);
   border: 1px solid var(--border);
+  align-self: flex-start;
 }
 
-/* Input Area ------------------------------------------------ */
+.message.typing {
+  opacity: 0.6;
+  font-style: italic;
+}
 
+/* ------------------------------
+   INPUT AREA
+------------------------------ */
 #input-area {
   display: flex;
-  padding: 16px;
   gap: 10px;
+  padding: 16px;
   border-top: 1px solid var(--border);
   background: var(--panel);
-  backdrop-filter: blur(12px);
 }
 
-#chat-input {
+#user-input {
   flex: 1;
-  padding: 12px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--glass);
-  color: var(--text);
-  font-size: 1rem;
-}
-
-#send-btn {
-  padding: 12px 20px;
-  border-radius: var(--radius);
-  border: none;
-  background: var(--accent);
-  color: white;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-#send-btn:hover {
-  background: #6b4aff;
-}
-
-/* Responsive ------------------------------------------------ */
-
-@media (max-width: 700px) {
-  #sidebar {
-    width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-  }
-
-  #chat-area {
-    height: calc(100vh - 120px);
-  }
 }

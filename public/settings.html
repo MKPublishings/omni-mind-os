@@ -1,18 +1,113 @@
-<section class="page">
-  <h1>Settings</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
 
-  <div class="card">
-    <label>Temperature</label>
-    <input type="range" min="0" max="2" step="0.1" />
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main">
+      <!-- page-specific content goes here -->
+    </main>
   </div>
 
-  <div class="card">
-    <label>Memory</label>
-    <select>
-      <option>Enabled</option>
-      <option>Disabled</option>
-    </select>
+  <!-- page-specific scripts go here -->
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – Settings</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link active">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="settings-main">
+      <header class="page-header">
+        <h2>Settings</h2>
+        <p class="subtitle">Customize your Omni environment.</p>
+      </header>
+
+      <section class="settings-section">
+        <h3>Appearance</h3>
+
+        <div class="setting-item">
+          <label>Theme</label>
+          <select id="theme-select">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="mythic">Mythic Purple</option>
+            <option value="neon">Neon Noir</option>
+          </select>
+        </div>
+
+        <div class="setting-item">
+          <label>Animations</label>
+          <input type="checkbox" id="toggle-animations" />
+        </div>
+
+        <div class="setting-item">
+          <label>Sound Effects</label>
+          <input type="checkbox" id="toggle-sound" />
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>Chat</h3>
+
+        <div class="setting-item">
+          <label>Clear Chat History</label>
+          <button id="clear-history" class="btn danger">Clear</button>
+        </div>
+
+        <div class="setting-item">
+          <label>API Endpoint</label>
+          <input id="api-endpoint" type="text" value="/api/omni" />
+        </div>
+      </section>
+    </main>
   </div>
 
-  <button class="btn" onclick="window.location.href='/chat.html'">Back to Chat</button>
-</section>
+  <script src="/scripts/settings.js"></script>
+</body>
+</html>

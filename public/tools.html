@@ -1,15 +1,95 @@
-<section class="page">
-  <h1>Tool Registry</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
 
-  <div class="card">
-    <h2>time</h2>
-    <p>Returns the current timestamp.</p>
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main">
+      <!-- page-specific content goes here -->
+    </main>
   </div>
 
-  <div class="card">
-    <h2>echo</h2>
-    <p>Returns the same text back.</p>
+  <!-- page-specific scripts go here -->
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – Tools</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+        <a href="/tools.html" class="nav-link active">Tools</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="tools-main">
+      <header class="page-header">
+        <h2>Tools Dashboard</h2>
+        <p class="subtitle">Active modules, diagnostics, and execution logs.</p>
+      </header>
+
+      <section class="tools-section">
+        <h3>Active Tools</h3>
+        <div class="tool-grid" id="tool-list">
+          <!-- JS will populate tools here -->
+        </div>
+      </section>
+
+      <section class="tools-section">
+        <h3>Last Tool Call</h3>
+        <div class="tool-log" id="last-tool-log">
+          <p>No tool calls yet.</p>
+        </div>
+      </section>
+
+      <section class="tools-section">
+        <h3>Diagnostics</h3>
+        <button id="refresh-tools" class="btn">Refresh Tools</button>
+      </section>
+    </main>
   </div>
 
-  <button class="btn" onclick="window.location.href='/chat.html'">Back to Chat</button>
-</section>
+  <script src="/scripts/tools.js"></script>
+</body>
+</html>

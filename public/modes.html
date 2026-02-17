@@ -1,29 +1,95 @@
-<section class="page">
-  <h1>Cognitive Modes</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
 
-  <div class="mode-grid">
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
 
-    <div class="mode-card">
-      <h2>Architect</h2>
-      <p>System design, structure, clarity.</p>
-    </div>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
 
-    <div class="mode-card">
-      <h2>Lore</h2>
-      <p>Mythic resonance, narrative, symbolism.</p>
-    </div>
-
-    <div class="mode-card">
-      <h2>Visual</h2>
-      <p>Cinematic imagery, atmosphere, aesthetics.</p>
-    </div>
-
-    <div class="mode-card">
-      <h2>Analyst</h2>
-      <p>Breakdowns, logic, explanation.</p>
-    </div>
-
+    <main id="main">
+      <!-- page-specific content goes here -->
+    </main>
   </div>
 
-  <button class="btn" onclick="window.location.href='/chat.html'">Back to Chat</button>
-</section>
+  <!-- page-specific scripts go here -->
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – Modes</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link active">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="modes-main">
+      <header class="page-header">
+        <h2>Modes</h2>
+        <p class="subtitle">Switch cognitive lenses instantly.</p>
+      </header>
+
+      <section class="mode-grid">
+        <div class="mode-card">
+          <h3>Architect</h3>
+          <p>System design, structure, logic, and scaffolding.</p>
+        </div>
+
+        <div class="mode-card">
+          <h3>Lore</h3>
+          <p>Worldbuilding, narrative memory, and character arcs.</p>
+        </div>
+
+        <div class="mode-card">
+          <h3>Visual</h3>
+          <p>Cinematic scenes, composition, and symbolic imagery.</p>
+        </div>
+
+        <div class="mode-card">
+          <h3>Analyst</h3>
+          <p>Data clarity, reasoning, and structured breakdowns.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

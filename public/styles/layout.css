@@ -1,0 +1,85 @@
+/* ------------------------------
+   LAYOUT WRAPPER
+------------------------------ */
+#layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+/* ------------------------------
+   SIDEBAR
+------------------------------ */
+#sidebar {
+  width: 240px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.logo {
+  font-size: 22px;
+  color: var(--accent);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-link {
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  transition: 0.2s;
+}
+
+.nav-link:hover {
+  background: var(--panel-light);
+  color: var(--text);
+}
+
+.nav-link.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ------------------------------
+   SIDEBAR FOOTER
+------------------------------ */
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.8;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  background: #4cff4c;
+  border-radius: 50%;
+}
+
+/* ------------------------------
+   MAIN CONTENT AREA
+------------------------------ */
+#main {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.page-header {
+  margin-bottom: 30px;
+}
+
+.subtitle {
+  color: var(--text-dim);
+  margin-top: 6px;
+}

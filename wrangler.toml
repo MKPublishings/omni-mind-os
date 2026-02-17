@@ -3,18 +3,15 @@ main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
 [vars]
-MODEL = "llama-3.1-8b-instruct"   # or any Cloudflare-supported model
+MODEL = "llama-3.1-8b-instruct"
+
+[[kv_namespaces]]
+binding = "MEMORY"
+id = "your_memory_kv_id"
+
+[[kv_namespaces]]
+binding = "TOOLS"
+id = "your_tools_kv_id"
 
 [observability]
 enabled = true
-[[kv_namespaces]]
-binding = "OMNI_KV"
-id = "omni_kv"
-[[durable_objects.bindings]]
-name = "OMNI_SESSION"
-class_name = "OmniSession"
-[site]
-bucket = "./public"
-routes = [
-  { pattern = "mkptri.org/api/*", zone_name = "mkptri.org" }
-]

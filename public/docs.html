@@ -1,25 +1,115 @@
-<section class="page">
-  <h1>Omni Mind/OS Documentation</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
 
-  <div class="card">
-    <h2>What is Omni?</h2>
-    <p>Omni Mind/OS is a cognitive operating system...</p>
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main">
+      <!-- page-specific content goes here -->
+    </main>
   </div>
 
-  <div class="card">
-    <h2>Mental Pathing</h2>
-    <p>Omni uses a structured reasoning pipeline...</p>
-  </div>
+  <!-- page-specific scripts go here -->
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – Docs</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+</head>
+<body>
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
 
-  <div class="card">
-    <h2>Cognitive Modes</h2>
-    <ul>
-      <li><strong>Architect</strong> — structural, technical</li>
-      <li><strong>Lore</strong> — mythic, narrative</li>
-      <li><strong>Visual</strong> — cinematic, sensory</li>
-      <li><strong>Analyst</strong> — clarity, logic</li>
-    </ul>
-  </div>
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link active">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
 
-  <button class="btn" onclick="window.location.href='/chat.html'">Back to Chat</button>
-</section>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <header class="page-header">
+        <h2>Documentation</h2>
+        <p class="subtitle">Architecture, modes, memory, and API usage.</p>
+      </header>
+
+      <div class="docs-layout">
+        <aside class="docs-toc">
+          <h3>Contents</h3>
+          <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#modes">Modes</a></li>
+            <li><a href="#memory">Memory</a></li>
+            <li><a href="#api">API</a></li>
+          </ul>
+        </aside>
+
+        <section class="docs-content">
+          <h3 id="overview">Overview</h3>
+          <p>
+            Omni Mind/OS is a multi‑mode intelligence shell designed to unify
+            reasoning, memory, and creative workflows into a single cinematic interface.
+          </p>
+
+          <h3 id="architecture">Architecture</h3>
+          <p>
+            The system runs on Cloudflare Pages + Workers, with a streaming API
+            endpoint at <code>/api/omni</code>. The frontend is modular and theme‑driven.
+          </p>
+
+          <h3 id="modes">Modes</h3>
+          <p>
+            Each mode represents a cognitive lens: Architect, Lore, Visual, Analyst.
+          </p>
+
+          <h3 id="memory">Memory</h3>
+          <p>
+            Omni stores persistent facts, preferences, and codex entries to maintain continuity.
+          </p>
+
+          <h3 id="api">API</h3>
+          <p>
+            The API accepts JSON POST requests with <code>{ message, mode, model }</code>.
+          </p>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

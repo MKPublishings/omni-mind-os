@@ -1,0 +1,54 @@
+/* ------------------------------
+   DARK THEME (DEFAULT)
+------------------------------ */
+:root {
+  --bg: #0d0b14;
+  --panel: rgba(255,255,255,0.06);
+  --panel-light: rgba(255,255,255,0.12);
+  --accent: #a56bff;
+  --accent-glow: #caa3ff;
+  --text: #e8e4ff;
+  --text-dim: #9a94b8;
+  --border: rgba(255,255,255,0.08);
+}
+
+/* ------------------------------
+   LIGHT THEME
+------------------------------ */
+:root.light {
+  --bg: #f7f7ff;
+  --panel: #ffffff;
+  --panel-light: #f0f0ff;
+  --accent: #7b3fff;
+  --text: #1a1a2e;
+  --text-dim: #555;
+  --border: #ddd;
+}
+
+/* ------------------------------
+   MYTHIC PURPLE THEME
+------------------------------ */
+:root.mythic {
+  --bg: #12091f;
+  --panel: rgba(255,255,255,0.08);
+  --panel-light: rgba(255,255,255,0.16);
+  --accent: #b56bff;
+  --accent-glow: #e0c1ff;
+  --text: #f3eaff;
+  --text-dim: #bba8d6;
+  --border: rgba(255,255,255,0.12);
+}
+
+/* ------------------------------
+   NEON NOIR THEME
+------------------------------ */
+:root.neon {
+  --bg: #050505;
+  --panel: rgba(255,255,255,0.05);
+  --panel-light: rgba(255,255,255,0.15);
+  --accent: #00eaff;
+  --accent-glow: #7af9ff;
+  --text: #eaffff;
+  --text-dim: #8bbfc4;
+  --border: rgba(255,255,255,0.12);
+}
