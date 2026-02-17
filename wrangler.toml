@@ -8,14 +8,14 @@ binding = "AI"
 
 # KV Namespaces
 [[kv_namespaces]]
-binding = "MEMORY"
-id = "memory_kv_id"
-preview_id = "memory_kv_preview"
+binding = "MIND"
+id = "ddf695e484604a5a974ba5d4165f7102"
+preview_id = "mind_kv_preview"
 
 [[kv_namespaces]]
-binding = "TOOLS"
-id = "tools_kv_id"
-preview_id = "tools_kv_preview"
+binding = "MEMORY"
+id = "355f713328174c48aff53fad8d81d73e"
+preview_id = "memory_kv_preview"
 
 # Optional: Observability
 [observability]
