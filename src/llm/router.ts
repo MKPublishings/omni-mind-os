@@ -1,4 +1,4 @@
-import { omniBrainLoop } from "../api/omni/brain-loop";
+import { omniBrainLoop } from "../api/omni/runtime/loop";
 import type { OmniContext } from "../api/omni/mindos-core";
 
 export async function omniRouter(env: any, ctx: OmniContext) {

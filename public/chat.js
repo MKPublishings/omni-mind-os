@@ -117,3 +117,13 @@ appendMessage(
   "assistant",
   "Omni Mind/OS online. Cognitive scaffolding initialized. How shall we begin?"
 );
+let currentModel = "omni";
+
+document.getElementById("model").addEventListener("change", (e) => {
+  currentModel = e.target.value;
+});
+const payload = {
+  mode: currentMode,
+  model: currentModel,
+  messages: chatHistory
+};

@@ -59,3 +59,8 @@ export default {
     }
   }
 };
+const ctx = {
+  mode: body.mode || "Architect",
+  model: body.model || "omni",
+  messages: body.messages || []
+};
