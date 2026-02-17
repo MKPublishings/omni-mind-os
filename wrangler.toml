@@ -15,3 +15,6 @@ name = "OMNI_SESSION"
 class_name = "OmniSession"
 [site]
 bucket = "./public"
+routes = [
+  { pattern = "mkptri.org/api/*", zone_name = "mkptri.org" }
+]

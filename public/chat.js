@@ -60,13 +60,10 @@ async function streamOmniResponse() {
   chatContainer.appendChild(bubble);
 
   try {
-    const response = await fetch("/api/omni", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: OmniState.mode,
-        messages: OmniState.messages
-      })
+  fetch("/api/omni", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload)
     });
 
     const reader = response.body.getReader();
