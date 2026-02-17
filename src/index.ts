@@ -79,7 +79,7 @@ Otherwise, respond normally.
     // -----------------------------
     // STREAMING RESPONSE
     -----------------------------
-    const ai = env.AI;
+    const ai = new OmniAI();
 
     const stream = await ai.run(model, {
       messages: [
