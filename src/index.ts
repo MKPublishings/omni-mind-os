@@ -1,12 +1,11 @@
 import { OmniLogger } from "./logging/logger";
 import { OmniSafety } from "./stability/safety";
 import { OmniKV } from "./memory/kv";
-import { omniBrainLoop } from "./omni/runtime/loop";
+import { omniBrainLoop } from "./api/omni/runtime/loop";
 
 export interface Env {
   AI: any;
-  MEMORY: KVNamespace;
-  MIND: KVNamespace;
+  KV: any;
 }
 
 export default {
@@ -38,30 +37,13 @@ export default {
         };
 
         logger.log("incoming_request", ctx);
-
-        // STREAMING RESPONSE
-        const stream = new ReadableStream({
-          async start(controller) {
-            const result = await omniBrainLoop(env, ctx);
-
-            if (result?.response) {
-              const safe = OmniSafety.safeGuardResponse(result.response);
-
-              for (let i = 0; i < safe.length; i++) {
-                controller.enqueue(safe[i]);
-                await new Promise(r => setTimeout(r, 8));
-              }
-            }
-
-            controller.close();
-          }
-        });
-
-        return new Response(stream, {
-          headers: { "Content-Type": "text/plain; charset=utf-8" }
+        const response = await omniBrainLoop(env, ctx);
+        logger.log("response_generated", { ...ctx, response });
+        return new Response(JSON.stringify({ response }), {
+          headers: { "Content-Type": "application/json" }
         });
       }
-
+      
       // -----------------------------
       // Default route
       // -----------------------------

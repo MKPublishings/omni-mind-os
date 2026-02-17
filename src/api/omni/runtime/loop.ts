@@ -22,18 +22,12 @@ export async function omniBrainLoop(env: any, ctx: OmniBrainContext): Promise<st
 
   // 3. Call the model
   const response = await model.generate(env, safeMessages);
-
-  // 4. If the model requested a tool, execute it
-  if (response.tool) {
-    const tool = executeTool(response.tool.name);
-    if (!tool) {
-      return `⚠️ Tool "${response.tool.name}" not found.`;
-    }
-
-    const toolResult = await tool.run(response.tool.input);
-    return String(toolResult ?? "");
+  // 4. If the response contains tool calls, execute them and return results
+  if (response.text && response.text.includes("[tool]")) {
+    const toolResults = await executeTool(env, response.text);
+    return `Tool results:\n${toolResults}`;
   }
-
-  // 5. Normal text response
-  return response.text ?? "";
+  
+  // 5. Otherwise, return the model's text response
+  return response.text;
 }
