@@ -4,7 +4,7 @@
 // ============================================================
 
 const chatContainer = document.getElementById("chat-container");
-const inputField = document.getElementById("chat-input");
+const inputField = document.getElementById("user-input");
 const sendButton = document.getElementById("send-btn");
 const modeIndicator = document.getElementById("mode-indicator");
 
