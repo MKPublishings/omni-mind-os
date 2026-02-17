@@ -1,69 +1,46 @@
 import { executeTool } from "../../tools/execute";
-import { buildOmniPrompt } from "../mindos-core";
-import { emotionalCheckpoint } from "../emotion/checkpoint";
-import { reflectAndPatch } from "../reflection/patch";
-import { selectMode } from "../modes/ai/selector";
-import type { OmniContext } from "../mindos-core";
+import type { OmniMessage } from "../mindos-core";
+import { selectModel } from "../../llm/router";
+import { OmniSafety } from "../../stability/safety";
 
-export async function omniBrainLoop(env: any, ctx: OmniContext) {
-  // ------------------------------------------------------------
-  // 1. Adaptive Mode Selection
-  // ------------------------------------------------------------
-  const lastUserMessage = ctx.messages[ctx.messages.length - 1]?.content || "";
-  ctx.mode = selectMode(lastUserMessage, ctx.mode);
+export async function omniBrainLoop(env: any, ctx: {
+  mode: string;
+  messages: OmniMessage[];
+}): Promise<string> {
 
   // ------------------------------------------------------------
-  // 2. Build Omni Prompt
+  // 1. Select model based on mode
   // ------------------------------------------------------------
-  const prompt = buildOmniPrompt(ctx);
+  const model = selectModel(ctx.mode);
 
   // ------------------------------------------------------------
-  // 3. Run LLM
+  // 2. Prepare messages (sanitized)
   // ------------------------------------------------------------
-  let rawOutput = "";
-  try {
-    const result = await env.AI.run(env.MODEL, {
-      prompt,
-      max_tokens: 400,
-      temperature: 0.7
-    });
-
-    rawOutput = result.response || "";
-  } catch (err: any) {
-    return "Omni encountered an internal reasoning error.";
-  }
+  const safeMessages = ctx.messages.map(m => ({
+    role: m.role,
+    content: OmniSafety.sanitizeInput(m.content)
+  }));
 
   // ------------------------------------------------------------
-  // 4. Emotional Checkpoint
+  // 3. Call the model
   // ------------------------------------------------------------
-  let stabilized = emotionalCheckpoint(rawOutput);
+  const response = await model.generate(env, safeMessages);
 
   // ------------------------------------------------------------
-  // 5. Self-Reflection Layer
+  // 4. Tool execution (if model requested one)
   // ------------------------------------------------------------
-  let refined = reflectAndPatch(stabilized);
-
-  // ------------------------------------------------------------
-  // 6. Tool Detection + Execution
-  // ------------------------------------------------------------
-  const toolMatch = refined.match(/<tool:(.*?)>([\s\S]*?)<\/tool>/);
-
-  if (toolMatch) {
-    const toolName = toolMatch[1].trim();
-    const toolInput = toolMatch[2].trim();
-
-    const result = await executeTool(toolName, toolInput);
-
-    if (!result.success) {
-      return `Tool Error (${toolName}): ${result.error}`;
+  if (response.tool) {
+    const tool = executeTool(response.tool.name);
+    if (!tool) {
+      return `⚠️ Tool "${response.tool.name}" not found.`;
     }
 
-    return `Tool Result (${
-toolName}): ${JSON.stringify(result.output)}`;
+    const toolResult = await tool.run(response.tool.input);
+    return String(toolResult);
   }
 
-    // ------------------------------------------------------------
-    // 7. Final Output
-    // ------------------------------------------------------------
-  return refined.trim();
+  // ------------------------------------------------------------
+  // 5. Normal text response
+  // ------------------------------------------------------------
+  return response.text ?? "";
 }

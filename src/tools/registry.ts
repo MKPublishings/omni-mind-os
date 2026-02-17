@@ -15,5 +15,5 @@ export const OmniTools = {
 };
 
 export function getTool(name: string) {
-  return OmniTools[name];
+  return OmniTools[name as keyof typeof OmniTools] || null;
 }
