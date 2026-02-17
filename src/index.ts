@@ -63,14 +63,18 @@ export default {
       }
 
       // -----------------------------
-      // Default route
+      // /api/kv — simple KV endpoint
       // -----------------------------
-      return new Response("Omni Worker Active");
+      if (url.pathname === "/api/kv" && request.method === "POST") {
+        const { key, value } = await request.json();
+        await kv.put(key, value);
+        return new Response("OK");
+      }
 
-    } catch (err: any) {
-      const logger = new OmniLogger(env);
-      logger.error("fatal_error", err);
-      return new Response("Omni crashed but recovered", { status: 500 });
+      return new Response("Not found", { status: 404 });
+    } catch (err) {
+      logger.error("request_error", { error: err.message });
+      return new Response("Internal Server Error", { status: 500 });
     }
   }
 };
