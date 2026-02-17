@@ -2,6 +2,7 @@ export interface Env {
   MODEL: string;
   MEMORY: KVNamespace;
   TOOLS: KVNamespace;
+  AI: any; // Cloudflare AI binding
 }
 
 export default {
@@ -9,7 +10,7 @@ export default {
     const url = new URL(request.url);
 
     // -----------------------------
-    // ROUTING
+    // ROUTES
     // -----------------------------
     if (url.pathname === "/api/omni" && request.method === "POST") {
       return handleOmni(request, env);
@@ -27,6 +28,64 @@ export default {
     return new Response("Omni Worker Active", { status: 200 });
   }
 };
+
+
+
+// ======================================================
+//  MEMORY API
+// ======================================================
+
+async function handleMemoryGet(env: Env) {
+  const list = await env.MEMORY.list();
+  const items = [];
+
+  for (const key of list.keys) {
+    const value = await env.MEMORY.get(key.name);
+    items.push({ key: key.name, value });
+  }
+
+  return Response.json({ items });
+}
+
+async function handleMemoryClear(env: Env) {
+  const list = await env.MEMORY.list();
+
+  for (const key of list.keys) {
+    await env.MEMORY.delete(key.name);
+  }
+
+  return Response.json({ cleared: true });
+}
+
+
+
+// ======================================================
+//  TOOLS API
+// ======================================================
+
+async function handleToolsGet(env: Env) {
+  const list = await env.TOOLS.list();
+  const tools = [];
+
+  for (const key of list.keys) {
+    const value = await env.TOOLS.get(key.name, { type: "json" });
+    tools.push({ name: key.name, ...value });
+  }
+
+  const last_call = await env.TOOLS.get("last_call", { type: "json" });
+
+  return Response.json({
+    tools,
+    last_call: last_call || null
+  });
+}
+
+
+
+// ======================================================
+//  OMNI STREAMING ENGINE
+// ======================================================
+
 async function handleOmni(request: Request, env: Env): Promise<Response> {
   try {
     const { message, mode = "Architect", model = env.MODEL } = await request.json();
@@ -55,7 +114,7 @@ async function handleOmni(request: Request, env: Env): Promise<Response> {
     // SYSTEM PROMPT
     // -----------------------------
     const systemPrompt = `
-You are **Omni Mind/OS**, a multi‑mode cognitive engine.
+You are Omni Mind/OS, a multi‑mode cognitive engine.
 
 Current Mode: **${mode}**
 
@@ -78,8 +137,8 @@ Otherwise, respond normally.
 
     // -----------------------------
     // STREAMING RESPONSE
-    -----------------------------
-    const ai = new OmniAI();
+    // -----------------------------
+    const ai = env.AI;
 
     const stream = await ai.run(model, {
       messages: [
@@ -91,7 +150,7 @@ Otherwise, respond normally.
 
     // -----------------------------
     // STREAM TRANSFORMER
-    -----------------------------
+    // -----------------------------
     const transformer = new TransformStream({
       async transform(chunk, controller) {
         const text = new TextDecoder().decode(chunk);
@@ -117,7 +176,7 @@ Otherwise, respond normally.
           } catch (err) {
             console.error("Memory parse error:", err);
           }
-          return; // Don't stream memory JSON to user
+          return; // Do not stream memory JSON to user
         }
 
         controller.enqueue(chunk);

@@ -54,3 +54,47 @@ code {
   font-family: "JetBrains Mono", monospace;
   font-size: 14px;
 }
+/* Smooth global transitions */
+* {
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+/* Soft hover lift */
+.hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+}
+
+/* Fade-in for all pages */
+body {
+  opacity: 0;
+  animation: fadeIn 0.6s ease forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+body {
+  cursor: none;
+}
+
+.cursor-aura {
+  position: fixed;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  transform: translate(-50%, -50%);
+  transition: transform 0.05s linear;
+}

@@ -86,3 +86,14 @@ input, select {
   align-items: center;
   margin: 14px 0;
 }
+.glass {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+}
+.btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 0 12px var(--accent-glow);
+}

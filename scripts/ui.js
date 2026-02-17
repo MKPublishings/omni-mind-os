@@ -22,3 +22,15 @@ document.querySelectorAll(".nav-link").forEach((link) => {
     link.classList.add("active");
   }
 });
+document.body.classList.add("fade-ready");
+setTimeout(() => {
+  document.body.classList.add("fade-in");
+}, 10);
+
+const aura = document.createElement("div");
+aura.className = "cursor-aura";
+document.body.appendChild(aura);
+
+document.addEventListener("mousemove", (e) => {
+  aura.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+});

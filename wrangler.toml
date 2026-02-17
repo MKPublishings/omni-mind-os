@@ -2,16 +2,10 @@ name = "omni-mind-os"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
-[vars]
-MODEL = "llama-3.1-8b-instruct"
-
 [[kv_namespaces]]
 binding = "MEMORY"
-id = "your_memory_kv_id"
+id = "xxxx"
 
 [[kv_namespaces]]
 binding = "TOOLS"
-id = "your_tools_kv_id"
-
-[observability]
-enabled = true
+id = "xxxx"
