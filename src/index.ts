@@ -1,7 +1,7 @@
-import { OmniModel } from "./llm/router";
 import { OmniLogger } from "./logging/logger";
 import { OmniSafety } from "./stability/safety";
 import { OmniKV } from "./memory/kv";
+import { omniBrainLoop } from "./omni/runtime/loop";
 
 export interface Env {
   AI: any;
@@ -42,7 +42,7 @@ export default {
         // STREAMING RESPONSE
         const stream = new ReadableStream({
           async start(controller) {
-            const result = await omniRouter(env, ctx);
+            const result = await omniBrainLoop(env, ctx);
 
             if (result?.response) {
               const safe = OmniSafety.safeGuardResponse(result.response);
@@ -63,18 +63,14 @@ export default {
       }
 
       // -----------------------------
-      // /api/kv — simple KV endpoint
+      // Default route
       // -----------------------------
-      if (url.pathname === "/api/kv" && request.method === "POST") {
-        const { key, value } = await request.json();
-        await kv.put(key, value);
-        return new Response("OK");
-      }
+      return new Response("Omni Worker Active");
 
-      return new Response("Not found", { status: 404 });
-    } catch (err) {
-      logger.error("request_error", { error: err.message });
-      return new Response("Internal Server Error", { status: 500 });
+    } catch (err: any) {
+      const logger = new OmniLogger(env);
+      logger.error("fatal_error", err);
+      return new Response("Omni crashed but recovered", { status: 500 });
     }
   }
 };
