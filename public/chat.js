@@ -166,3 +166,4 @@ document.getElementById("user-input").addEventListener("keydown", (e) => {
         sendMessage();
     }
 });
+if (url.pathname === "/api/omni") return handleOmni(request, env)
