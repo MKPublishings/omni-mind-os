@@ -132,3 +132,31 @@ export default {
     return new Response("Not found", { status: 404 })
   }
 }
+document.getElementById("send-btn").addEventListener("click", () => {
+    sendMessage();
+});
+async function sendMessage() {
+    const input = document.getElementById("user-input");
+    const text = input.value.trim();
+    if (!text) return;
+
+    addUserMessage(text);
+    input.value = "";
+
+    const response = await fetch("/api/omni", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    let botMessage = addBotMessage("");
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        botMessage.textContent += decoder.decode(value);
+    }
+}

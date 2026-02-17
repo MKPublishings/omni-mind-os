@@ -50,3 +50,10 @@
     <option value="deepseek">DeepSeek</option>
   </select>
 </div>
+<button id="send-btn">Send</button>
+document.getElementById("user-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        sendMessage();
+    }
+});
