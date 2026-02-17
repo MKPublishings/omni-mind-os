@@ -160,3 +160,9 @@ async function sendMessage() {
         botMessage.textContent += decoder.decode(value);
     }
 }
+document.getElementById("user-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        sendMessage();
+    }
+});
