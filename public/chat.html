@@ -5,7 +5,37 @@
   <title>Omni Chat</title>
   <link rel="stylesheet" href="/styles/chat.css" />
 </head>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM loaded, wiring chat…");
 
+    const input = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+
+    console.log("input:", input);
+    console.log("sendBtn:", sendBtn);
+
+    if (!input || !sendBtn) {
+        console.error("❌ ERROR: Missing #user-input or #send-btn in HTML");
+        return;
+    }
+
+    sendBtn.addEventListener("click", () => {
+        console.log("Send button clicked");
+        sendMessage();
+    });
+
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            console.log("Enter pressed");
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+});
+</script>
+
+<script src="chat.js"></script>
 <body>
   <div id="layout">
 
