@@ -1,8 +1,8 @@
+![42339559-e98e-4eb7-ba72-9f3662a0679a](https://github.com/user-attachments/assets/233f9b2d-9cbd-49c4-8d1d-99a900e238e8)
+
+
               O M N I   M I N D / O S
       A Cognitive Operating System for AI Models
-
-![42339559-e98e-4eb7-ba72-9f3662a0679a](https://github.com/user-attachments/assets/fae31db9-bcb9-40dc-acd4-a4f623923972)
-
 
 # **Omni Mind/OS**  
 ### *A Modular Cognitive Engine for Multi‑Model AI Systems*
@@ -247,4 +247,3 @@ Omni Mind/OS is designed to be:
 It is not just an LLM wrapper — it is a **mind architecture**.
 
 ---
-Just tell me what you want to add.
