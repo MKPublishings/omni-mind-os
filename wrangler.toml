@@ -33,3 +33,4 @@ enabled = true
 
 [assets]
 binding = "ASSETS"
+directory = "./public"
