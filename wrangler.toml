@@ -1,5 +1,5 @@
 name = "omni-mind-os"
-main = "public/pages/index"
+main = "public/pages/index.html"
 compatibility_date = "2024-11-01"
 
 [ai]
