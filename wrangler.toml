@@ -1,5 +1,5 @@
 name = "omni-mind-os"
-main = "src/index.ts"
+main = "index.ts"
 compatibility_date = "2024-11-01"
 
 # Enable Cloudflare AI binding
