@@ -6,6 +6,7 @@ import { omniBrainLoop } from "./api/omni/runtime/loop";
 export interface Env {
   AI: any;
   KV: any;
+  ASSETS: Fetcher; // correct type
 }
 
 export default {
@@ -37,17 +38,20 @@ export default {
         };
 
         logger.log("incoming_request", ctx);
+
         const response = await omniBrainLoop(env, ctx);
+
         logger.log("response_generated", { ...ctx, response });
+
         return new Response(JSON.stringify({ response }), {
           headers: { "Content-Type": "application/json" }
         });
       }
-      
+
       // -----------------------------
-      // Default route
+      // Default route → serve website
       // -----------------------------
-      return new Response("Omni Worker Active");
+      return env.ASSETS.fetch(request);
 
     } catch (err: any) {
       const logger = new OmniLogger(env);
