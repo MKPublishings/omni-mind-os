@@ -30,3 +30,6 @@ enabled = true
 # 
 # [site]
 # bucket = "./public/"
+
+[assets]
+binding = "ASSETS"
