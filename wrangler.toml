@@ -1,5 +1,5 @@
 name = "omni-mind-os"
-main = "index.ts"
+main = "public/index.ts"
 compatibility_date = "2024-11-01"
 
 # Enable Cloudflare AI binding
@@ -24,12 +24,12 @@ enabled = true
 # If you're deploying via Cloudflare Pages with Functions:
 # Uncomment this block:
 #
-[build]
-command = "npm run build"
-functions = "functions"
+#[build]
+#command = "npm run build"
+#functions = "functions"
 # 
-[site]
-bucket = "./public/"
+#[site]
+#bucket = "./public/"
 
 [assets]
 binding = "ASSETS"
