@@ -24,12 +24,12 @@ enabled = true
 # If you're deploying via Cloudflare Pages with Functions:
 # Uncomment this block:
 #
-# [build]
-# command = "npm run build"
-# functions = "functions"
+[build]
+command = "npm run build"
+functions = "functions"
 # 
-# [site]
-# bucket = "./public/"
+[site]
+bucket = "./public/"
 
 [assets]
 binding = "ASSETS"
