@@ -2,7 +2,7 @@ name = "omni-mind-os"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
-# Enable Cloudflare AI binding
+# Cloudflare AI binding
 [ai]
 binding = "AI"
 
@@ -17,20 +17,20 @@ binding = "MEMORY"
 id = "355f713328174c48aff53fad8d81d73e"
 preview_id = "memory_kv_preview"
 
-# Optional: Observability
+# Observability
 [observability]
 enabled = true
 
-# If you're deploying via Cloudflare Pages with Functions:
-# Uncomment this block:
-
+# Build (required for Pages + Functions hybrid)
 [build]
 command = "npm run build"
 functions = "functions"
- 
-[site]
-bucket = "./public/"
 
+# Static site directory
+[site]
+bucket = "./public"
+
+# Asset binding for hybrid routing
 [assets]
 binding = "ASSETS"
 directory = "./public"
