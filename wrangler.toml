@@ -1,5 +1,5 @@
 name = "omni-mind-os"
-main = "public/pages/index.html"
+main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
 [ai]
@@ -21,8 +21,7 @@ enabled = true
 [build]
 command = "npm run build"
 
-# REMOVE [site] — it conflicts with assets
-
+# Hybrid routing: Worker handles /api/*, Pages handles everything else
 [assets]
 binding = "ASSETS"
 directory = "./public"

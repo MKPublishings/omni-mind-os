@@ -5,8 +5,9 @@ import { omniBrainLoop } from "./api/omni/runtime/loop";
 
 export interface Env {
   AI: any;
-  KV: any;
-  ASSETS: any;
+  MIND: KVNamespace;
+  MEMORY: KVNamespace;
+  ASSETS: Fetcher; // Cloudflare Pages asset handler
 }
 
 export default {
