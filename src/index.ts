@@ -6,7 +6,7 @@ import { omniBrainLoop } from "./api/omni/runtime/loop";
 export interface Env {
   AI: any;
   KV: any;
-  ASSETS: Fetcher; // correct type
+  ASSETS: any;
 }
 
 export default {
