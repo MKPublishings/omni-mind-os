@@ -1,6 +1,5 @@
 import { OmniLogger } from "./logging/logger";
 import { OmniSafety } from "./stability/safety";
-import { OmniKV } from "./memory/kv";
 import { omniBrainLoop } from "./api/omni/runtime/loop";
 import type { KVNamespace } from "@cloudflare/workers-types";
 
@@ -13,7 +12,6 @@ export interface Env {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const logger = new OmniLogger(env);
-    const kv = new OmniKV(env);
 
     try {
       const url = new URL(request.url);
@@ -42,12 +40,13 @@ export default {
             const result = await omniBrainLoop(env, ctx);
 
             if (result) {
-              const parsedResult = typeof result === 'string' ? JSON.parse(result) : result;
+              const parsedResult =
+                typeof result === "string" ? JSON.parse(result) : result;
               const safe = OmniSafety.safeGuardResponse(parsedResult.response);
 
               for (let i = 0; i < safe.length; i++) {
                 controller.enqueue(safe[i]);
-                await new Promise(r => setTimeout(r, 8));
+                await new Promise((r) => setTimeout(r, 8));
               }
             }
 
@@ -60,10 +59,9 @@ export default {
         });
       }
 
-      return new Response("Omni Worker Active");
-
+      // Pass through all non-API requests so site assets/pages load normally
+      return fetch(request);
     } catch (err: any) {
-      const logger = new OmniLogger(env);
       logger.error("fatal_error", err);
       return new Response("Omni crashed but recovered", { status: 500 });
     }
