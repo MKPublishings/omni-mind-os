@@ -120,9 +120,9 @@ document.getElementById("model").addEventListener("change", (e) => {
   currentModel = e.target.value;
 });
 const payload = {
-  mode: currentMode,
+  mode: OmniState.mode,
   model: currentModel,
-  messages: chatHistory
+  messages: OmniState.messages
 };
 export default {
   async fetch(request, env) {

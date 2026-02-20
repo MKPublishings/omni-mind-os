@@ -58,7 +58,12 @@ async function sendMessage() {
     });
 
     if (!response.ok) {
-      const errText = await response.text().catch(() => "");
+      let errText = "";
+      try {
+        errText = await response.text();
+      } catch {
+        errText = "";
+      }
       assistantBubble.textContent = `Error ${response.status}${errText ? `: ${errText}` : ""}`;
       return;
     }
@@ -80,6 +85,7 @@ async function sendMessage() {
       chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
+    fullText += decoder.decode();
     fullText = fullText.trim();
     if (fullText) {
       messages.push({ role: "assistant", content: fullText });
