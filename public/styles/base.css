@@ -26,6 +26,7 @@ html, body {
   --text: #e8e4ff;
   --text-dim: #9a94b8;
   --border: rgba(255,255,255,0.08);
+  --omni-cursor-blue: #55c2ff;
 }
 
 /* ------------------------------
@@ -97,4 +98,41 @@ body {
   opacity: 0.7;
   transform: translate(-50%, -50%);
   transition: transform 0.05s linear;
+}
+
+<span id="omni-output"></span><span id="omni-cursor" aria-hidden="true">|</span>
+
+#omni-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--omni-cursor-blue);
+  font-weight: 700;
+  line-height: 1;
+  text-shadow:
+    0 0 4px rgba(85, 194, 255, 0.85),
+    0 0 10px rgba(85, 194, 255, 0.45);
+  user-select: none;
+}
+
+@keyframes omni-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
+#omni-cursor.blink {
+  animation: omni-blink 1s steps(1, end) infinite;
+}
+
+const output = document.getElementById("omni-output");
+const cursor = document.getElementById("omni-cursor");
+
+export function appendText(chunk) {
+  if (!output) return;
+  // Prevent accidental old cursor chars from being appended
+  output.textContent += String(chunk).replace(/\|+$/g, "");
+}
+
+export function setCursorBlink(enabled) {
+  if (!cursor) return;
+  cursor.classList.toggle("blink", !!enabled);
 }
