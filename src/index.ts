@@ -2,6 +2,7 @@ import { OmniLogger } from "./logging/logger";
 import { OmniSafety } from "./stability/safety";
 import { OmniKV } from "./memory/kv";
 import { omniBrainLoop } from "./api/omni/runtime/loop";
+import type { KVNamespace } from "@cloudflare/workers-types";
 
 export interface Env {
   AI: any;
@@ -40,8 +41,9 @@ export default {
           async start(controller) {
             const result = await omniBrainLoop(env, ctx);
 
-            if (result?.response) {
-              const safe = OmniSafety.safeGuardResponse(result.response);
+            if (result) {
+              const parsedResult = typeof result === 'string' ? JSON.parse(result) : result;
+              const safe = OmniSafety.safeGuardResponse(parsedResult.response);
 
               for (let i = 0; i < safe.length; i++) {
                 controller.enqueue(safe[i]);
