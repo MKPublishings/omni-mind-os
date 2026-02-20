@@ -74,59 +74,6 @@ code {
   box-shadow: 0 8px 20px rgba(0,0,0,0.25);
 }
 
-/* Fade-in for all pages */
-body {
-  opacity: 0;
-  animation: fadeIn 0.6s ease forwards;
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-body {
-  cursor: none;
-}
-
-.cursor-aura {
-  position: fixed;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--accent);
-  pointer-events: none;
-  mix-blend-mode: screen;
-  opacity: 0.7;
-  transform: translate(-50%, -50%);
-  transition: transform 0.05s linear;
-}
-
-<span id="omni-output"></span><span id="omni-cursor" aria-hidden="true">|</span>
-
-#omni-cursor {
-  display: inline-block;
-  margin-left: 2px;
-  color: var(--accent, #4da6ff);
-  font-weight: 600;
-  user-select: none;
-}
-
-@keyframes omni-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.15; }
-}
-
-#omni-cursor.blink {
-  animation: omni-blink 1s steps(1, end) infinite;
-}
-
-const output = document.getElementById("omni-output");
-
-export function appendText(chunk) {
-  if (!output) return;
-  output.textContent += String(chunk).replace(/\|+$/g, "");
-}
-
-export function setCursorBlink(enabled) {
-  if (!cursor) return;
-  cursor.classList.toggle("blink", !!enabled);
-}
+/* ------------------------------
+   CHAT-SPECIFIC STYLES
+----------------
