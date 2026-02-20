@@ -105,12 +105,8 @@ body {
 #omni-cursor {
   display: inline-block;
   margin-left: 2px;
-  color: var(--omni-cursor-blue);
-  font-weight: 700;
-  line-height: 1;
-  text-shadow:
-    0 0 4px rgba(85, 194, 255, 0.85),
-    0 0 10px rgba(85, 194, 255, 0.45);
+  color: var(--accent, #4da6ff);
+  font-weight: 600;
   user-select: none;
 }
 
@@ -124,11 +120,9 @@ body {
 }
 
 const output = document.getElementById("omni-output");
-const cursor = document.getElementById("omni-cursor");
 
 export function appendText(chunk) {
   if (!output) return;
-  // Prevent accidental old cursor chars from being appended
   output.textContent += String(chunk).replace(/\|+$/g, "");
 }
 
