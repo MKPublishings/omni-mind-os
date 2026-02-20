@@ -1,9 +1,16 @@
-// src/llm/router.ts
-import type { OmniBrainContext } from "../api/omni/runtime/loop";
+// This file defines the logic for selecting and routing to different LLM models based on the provided model ID.
 import { omniBrainLoop } from "../api/omni/runtime/loop";
-
+export interface Message {
+  role: string;
+  content: string;
+}
+export interface OmniBrainContext {
+  mode: string;
+  model: string;
+  messages: Message[];
+}
 export interface OmniModel {
-  generate: (env: any, messages: any[]) => Promise<{ text: string }>;
+  generate: (env: any, messages: Message[]) => Promise<{ text: string }>;
 }
 
 export function selectModel(modelId: string): OmniModel {
@@ -17,35 +24,35 @@ export function selectModel(modelId: string): OmniModel {
             messages
           };
 
-          const text = await omniBrainLoop(env, ctx);
-          return { text };
+          const result = await omniBrainLoop(env, ctx);
+          return { text: typeof result === "string" ? result : JSON.stringify(result) };
         }
       };
 
     case "gpt-4o":
       return {
-        generate: async () => {
+        generate: async (env: any, messages: Message[]) => {
           return { text: "GPT‑4o placeholder response" };
         }
       };
 
     case "gpt-4o-mini":
       return {
-        generate: async () => {
+        generate: async (env: any, messages: Message[]) => {
           return { text: "GPT‑4o Mini placeholder response" };
         }
       };
 
     case "deepseek":
       return {
-        generate: async () => {
+        generate: async (env: any, messages: Message[]) => {
           return { text: "DeepSeek placeholder response" };
         }
       };
 
     default:
       return {
-        generate: async () => ({
+        generate: async (env: any, messages: Message[]) => ({
           text: `Unknown model "${modelId}".`
         })
       };
