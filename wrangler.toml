@@ -19,5 +19,5 @@ preview_id = "memory_kv_preview"
 enabled = true
 
 [assets]
-directory = "./dist"
+directory = "./public"
 binding = "ASSETS"

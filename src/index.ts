@@ -60,8 +60,8 @@ export default {
         });
       }
 
-      // Serve static site files from Worker assets (no origin dependency)
-      return await env.ASSETS.fetch(request as any) as unknown as Response;
+      // Serve static files from Worker assets
+      return env.ASSETS.fetch(request) as unknown as Response;
     } catch (err: any) {
       logger.error("fatal_error", err);
       return new Response("Omni crashed but recovered", { status: 500 });
