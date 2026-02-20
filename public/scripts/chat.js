@@ -1,92 +1,105 @@
 console.log("chat.js loaded");
 
-const input = document.getElementById("user-input");
-const sendBtn = document.getElementById("send-btn");
-const chatContainer = document.getElementById("chat-container");
-const modeIndicator = document.getElementById("mode-indicator");
-const modelSelect = document.getElementById("model");
+const input = document.getElementById("chat-input");
+const chatWindow = document.getElementById("chat-window");
+const sendBtn = document.getElementById("chat-send");
 
-if (!input || !sendBtn || !chatContainer) {
-  console.error("❌ chat.js: Missing required DOM elements.");
+let messages = [];
+let sending = false;
+
+function addMessage(role, content) {
+  const bubble = document.createElement("div");
+  bubble.className = `bubble ${role}`;
+  bubble.textContent = content;
+  chatWindow.appendChild(bubble);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+  return bubble;
 }
 
-sendBtn?.addEventListener("click", () => {
-  sendMessage();
-});
+function buildPayload() {
+  // Keep only valid message objects
+  const safeMessages = messages.filter(
+    (m) =>
+      m &&
+      (m.role === "user" || m.role === "assistant" || m.role === "system") &&
+      typeof m.content === "string" &&
+      m.content.trim().length > 0
+  );
 
-input?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    sendMessage();
-  }
-});
-
-function addUserMessage(text) {
-  const div = document.createElement("div");
-  div.className = "message user";
-  div.textContent = text;
-  chatContainer.appendChild(div);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-
-function addBotMessage(text = "") {
-  const div = document.createElement("div");
-  div.className = "message bot";
-  div.textContent = text;
-  chatContainer.appendChild(div);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-  return div;
-}
-
-function addTypingIndicator() {
-  const div = document.createElement("div");
-  div.className = "message bot typing";
-  div.textContent = "Omni is thinking…";
-  chatContainer.appendChild(div);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-  return div;
+  return {
+    messages: safeMessages,
+    mode: "Architect",
+    model: "omni"
+  };
 }
 
 async function sendMessage() {
-  const text = input.value.trim();
+  if (sending) return;
+
+  const text = input?.value?.trim() || "";
   if (!text) return;
 
-  addUserMessage(text);
+  sending = true;
+  sendBtn.disabled = true;
+
+  messages.push({ role: "user", content: text });
+  addMessage("user", text);
   input.value = "";
 
-  const typing = addTypingIndicator();
-
-  const payload = {
-    message: text,
-    mode: modeIndicator ? modeIndicator.textContent.replace("Mode: ", "") : "Architect",
-    model: modelSelect ? modelSelect.value : "omni"
-  };
+  const assistantBubble = addMessage("assistant", "…");
 
   try {
-    const res = await fetch("/api/omni", {
+    const payload = buildPayload();
+
+    const response = await fetch("/api/omni", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      typing.textContent = `❌ Error: ${res.status}`;
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      assistantBubble.textContent = `Error ${response.status}${errText ? `: ${errText}` : ""}`;
       return;
     }
 
-    const reader = res.body.getReader();
+    if (!response.body) {
+      assistantBubble.textContent = "No response body";
+      return;
+    }
+
+    const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let botDiv = addBotMessage("");
-    typing.remove();
+    let fullText = "";
 
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
-      botDiv.textContent += decoder.decode(value);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      fullText += decoder.decode(value, { stream: true });
+      assistantBubble.textContent = fullText || "…";
+      chatWindow.scrollTop = chatWindow.scrollHeight;
     }
-  } catch (err) {
-    console.error("Chat error:", err);
-    typing.textContent = "❌ Network error";
+
+    fullText = fullText.trim();
+    if (fullText) {
+      messages.push({ role: "assistant", content: fullText });
+    } else {
+      assistantBubble.textContent = "Empty assistant response";
+    }
+  } catch {
+    assistantBubble.textContent = "Network error";
+  } finally {
+    sending = false;
+    sendBtn.disabled = false;
+    input.focus();
   }
 }
+
+sendBtn?.addEventListener("click", sendMessage);
+
+input?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
