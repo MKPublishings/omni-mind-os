@@ -1,6 +1,4 @@
-/* ------------------------------
-   BASE RESET
------------------------------- */
+/* ---------- RESET ---------- */
 * {
   margin: 0;
   padding: 0;
@@ -9,71 +7,45 @@
 
 html, body {
   height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);
-  color: var(--text);
-  font-family: Inter, system-ui, sans-serif;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ------------------------------
-   COLOR SYSTEM
------------------------------- */
+/* ---------- VARIABLES (LIGHT DEFAULT) ---------- */
 :root {
-  --bg: #0d0b14;
-  --panel: rgba(255,255,255,0.06);
-  --panel-light: rgba(255,255,255,0.12);
-  --accent: #a56bff;
-  --accent-glow: #caa3ff;
-  --text: #e8e4ff;
-  --text-dim: #9a94b8;
-  --border: rgba(255,255,255,0.08);
-  --omni-cursor-blue: #55c2ff;
+  --bg: #F7F7F8;
+  --surface: #FFFFFF;
+  --border: #E5E5E7;
+
+  --text-primary: #111111;
+  --text-secondary: #555555;
+
+  --accent: #4C4CFF;
+
+  --radius: 16px;
+  --shadow: 0 4px 12px rgba(0,0,0,0.06);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
 }
 
-/* ------------------------------
-   TYPOGRAPHY
------------------------------- */
+/* Typography */
 h1, h2, h3 {
-  font-family: "Space Grotesk", sans-serif;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
-p, li, a, input, button {
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--text);
-}
-
-a {
-  text-decoration: none;
-  color: var(--accent);
-}
-
-code {
-  background: rgba(255,255,255,0.1);
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 14px;
-}
-/* Smooth global transitions */
-* {
-  transition:
-    background 0.25s ease,
-    color 0.25s ease,
-    border-color 0.25s ease,
-    box-shadow 0.25s ease,
-    transform 0.25s ease;
-}
-
-/* Soft hover lift */
-.hover-lift {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.hover-lift:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+p {
+  line-height: 1.6;
+  color: var(--text-secondary);
 }
 
 /* ------------------------------
    CHAT-SPECIFIC STYLES
-----------------
+---------------- */
