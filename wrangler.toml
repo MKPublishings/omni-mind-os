@@ -17,3 +17,7 @@ preview_id = "memory_kv_preview"
 
 [observability]
 enabled = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"

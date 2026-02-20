@@ -1,12 +1,13 @@
 import { OmniLogger } from "./logging/logger";
 import { OmniSafety } from "./stability/safety";
 import { omniBrainLoop } from "./api/omni/runtime/loop";
-import type { KVNamespace } from "@cloudflare/workers-types";
+import type { KVNamespace, Fetcher } from "@cloudflare/workers-types";
 
 export interface Env {
   AI: any;
   MEMORY: KVNamespace;
   MIND: KVNamespace;
+  ASSETS: Fetcher;
 }
 
 export default {
@@ -59,8 +60,8 @@ export default {
         });
       }
 
-      // Pass through all non-API requests so site assets/pages load normally
-      return fetch(request);
+      // Serve static site files from Worker assets (no origin dependency)
+      return await env.ASSETS.fetch(request as any) as unknown as Response;
     } catch (err: any) {
       logger.error("fatal_error", err);
       return new Response("Omni crashed but recovered", { status: 500 });
