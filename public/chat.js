@@ -1,169 +1,77 @@
-// ============================================================
-// OMNI MIND/OS — CHAT ENGINE (FINAL VERSION)
-// Handles: message flow, streaming, UI state, mode switching.
-// ============================================================
+console.log("chat.js loaded");
 
-const chatContainer = document.getElementById("chat-container");
-const inputField = document.getElementById("user-input");
-const sendButton = document.getElementById("send-btn");
-const modeIndicator = document.getElementById("mode-indicator");
+const input = document.getElementById("chat-input");
+const chatWindow = document.getElementById("chat-window");
+const sendBtn = document.getElementById("chat-send");
 
-// Omni runtime state
-const OmniState = {
-  mode: "Architect",
-  messages: [],
-  streaming: false,
-  sessionId: crypto.randomUUID()
-};
+if (!input || !chatWindow || !sendBtn) {
+  console.error("Chat UI elements missing:", {
+    input: !!input,
+    chatWindow: !!chatWindow,
+    sendBtn: !!sendBtn
+  });
+}
 
-// ------------------------------------------------------------
-// UI HELPERS
-// ------------------------------------------------------------
+let messages = [];
+let sending = false;
 
-function appendMessage(role, content) {
+function addMessage(role, content) {
   const bubble = document.createElement("div");
-  bubble.className = role === "user" ? "msg user-msg" : "msg omni-msg";
-  bubble.innerHTML = content;
-  chatContainer.appendChild(bubble);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
+  bubble.className = `bubble ${role}`;
+  bubble.textContent = content;
+  chatWindow.appendChild(bubble);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+  return bubble;
 }
-
-function setMode(modeName) {
-  OmniState.mode = modeName;
-  modeIndicator.textContent = `Mode: ${modeName}`;
-}
-
-// ------------------------------------------------------------
-// MESSAGE SENDING
-// ------------------------------------------------------------
 
 async function sendMessage() {
-  const text = inputField.value.trim();
-  if (!text || OmniState.streaming) return;
+  if (!input || !chatWindow || !sendBtn) return;
+  if (sending) return;
 
-  OmniState.messages.push({ role: "user", content: text });
-  appendMessage("user", text);
-  inputField.value = "";
+  const text = input.value.trim();
+  if (!text) return;
 
-  await streamOmniResponse();
-}
+  sending = true;
+  sendBtn.disabled = true;
 
-// ------------------------------------------------------------
-// STREAMING RESPONSE
-// ------------------------------------------------------------
+  messages.push({ role: "user", content: text });
+  addMessage("user", text);
+  input.value = "";
 
-async function streamOmniResponse() {
-  OmniState.streaming = true;
-
-  const bubble = document.createElement("div");
-  bubble.className = "msg omni-msg";
-  chatContainer.appendChild(bubble);
+  const assistantBubble = addMessage("assistant", "…");
 
   try {
-  fetch("/api/omni", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(payload)
+    const res = await fetch("/api/omni", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages,
+        mode: "Architect",
+        model: "omni"
+      })
     });
 
-    const reader = response.body.getReader();
-    let text = "";
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-
-      const chunk = new TextDecoder().decode(value);
-      text += chunk;
-      bubble.innerHTML = text;
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+    if (!res.ok) {
+      assistantBubble.textContent = `Error ${res.status}: ${await res.text()}`;
+      return;
     }
 
-    OmniState.messages.push({
-      role: "assistant",
-      content: text
-    });
-
-  } catch (err) {
-    bubble.innerHTML = "⚠️ Streaming error.";
-  }
-
-  OmniState.streaming = false;
-}
-
-// ------------------------------------------------------------
-// EVENT LISTENERS
-// ------------------------------------------------------------
-
-sendButton.addEventListener("click", sendMessage);
-
-inputField.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage();
-});
-
-// Mode buttons
-document.querySelectorAll("[data-mode]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const newMode = btn.getAttribute("data-mode");
-    setMode(newMode);
-  });
-});
-
-// Initial greeting
-appendMessage(
-  "assistant",
-  "Omni Mind/OS online. Cognitive scaffolding initialized. How shall we begin?"
-);
-let currentModel = "omni";
-
-document.getElementById("model").addEventListener("change", (e) => {
-  currentModel = e.target.value;
-});
-const payload = {
-  mode: OmniState.mode,
-  model: currentModel,
-  messages: OmniState.messages
-};
-export default {
-  async fetch(request, env) {
-    if (new URL(request.url).pathname === "/api/omni") {
-      return handleOmni(request, env)
-    }
-    return new Response("Not found", { status: 404 })
+    const txt = await res.text();
+    assistantBubble.textContent = txt || "Empty response";
+    if (txt) messages.push({ role: "assistant", content: txt });
+  } catch (e) {
+    console.error(e);
+    assistantBubble.textContent = "Network error";
+  } finally {
+    sending = false;
+    sendBtn.disabled = false;
   }
 }
-document.getElementById("send-btn").addEventListener("click", () => {
+
+sendBtn?.addEventListener("click", sendMessage);
+input?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
     sendMessage();
+  }
 });
-async function sendMessage() {
-    const input = document.getElementById("user-input");
-    const text = input.value.trim();
-    if (!text) return;
-
-    addUserMessage(text);
-    input.value = "";
-
-    const response = await fetch("/api/omni", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text })
-    });
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    let botMessage = addBotMessage("");
-
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        botMessage.textContent += decoder.decode(value);
-    }
-}
-document.getElementById("user-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        sendMessage();
-    }
-});
-if (url.pathname === "/api/omni") return handleOmni(request, env)
