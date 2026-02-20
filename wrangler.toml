@@ -17,11 +17,3 @@ preview_id = "memory_kv_preview"
 
 [observability]
 enabled = true
-
-[build]
-command = "npm run build"
-
-# Hybrid routing: Worker handles /api/*, Pages handles everything else
-[assets]
-binding = "ASSETS"
-directory = "./public"

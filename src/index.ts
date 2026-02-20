@@ -5,9 +5,8 @@ import { omniBrainLoop } from "./api/omni/runtime/loop";
 
 export interface Env {
   AI: any;
-  MIND: KVNamespace;
   MEMORY: KVNamespace;
-  ASSETS: Fetcher; // Cloudflare Pages asset handler
+  MIND: KVNamespace;
 }
 
 export default {
@@ -18,9 +17,6 @@ export default {
     try {
       const url = new URL(request.url);
 
-      // -----------------------------
-      // /api/omni — main LLM endpoint
-      // -----------------------------
       if (url.pathname === "/api/omni" && request.method === "POST") {
         const body = await request.json();
 
@@ -40,19 +36,29 @@ export default {
 
         logger.log("incoming_request", ctx);
 
-        const response = await omniBrainLoop(env, ctx);
+        const stream = new ReadableStream({
+          async start(controller) {
+            const result = await omniBrainLoop(env, ctx);
 
-        logger.log("response_generated", { ...ctx, response });
+            if (result?.response) {
+              const safe = OmniSafety.safeGuardResponse(result.response);
 
-        return new Response(JSON.stringify({ response }), {
-          headers: { "Content-Type": "application/json" }
+              for (let i = 0; i < safe.length; i++) {
+                controller.enqueue(safe[i]);
+                await new Promise(r => setTimeout(r, 8));
+              }
+            }
+
+            controller.close();
+          }
+        });
+
+        return new Response(stream, {
+          headers: { "Content-Type": "text/plain; charset=utf-8" }
         });
       }
 
-      // -----------------------------
-      // Default route → serve website
-      // -----------------------------
-      return env.ASSETS.fetch(request);
+      return new Response("Omni Worker Active");
 
     } catch (err: any) {
       const logger = new OmniLogger(env);
