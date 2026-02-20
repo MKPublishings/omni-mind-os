@@ -49,3 +49,30 @@ p {
 /* ------------------------------
    CHAT-SPECIFIC STYLES
 ---------------- */
+
+.page {
+  --page-transition-ms: 350ms;
+}
+
+/* Respect reduced-motion users */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none !important;
+  }
+}
+
+.page-transition {
+  animation: slideDown var(--page-transition-ms) ease forwards;
+  pointer-events: none;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
