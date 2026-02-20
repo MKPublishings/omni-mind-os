@@ -1,60 +1,42 @@
 // This file defines the logic for selecting and routing to different LLM models based on the provided model ID.
-import { omniBrainLoop } from "../api/omni/runtime/loop";
-export interface Message {
-  role: string;
-  content: string;
-}
-export interface OmniBrainContext {
-  mode: string;
-  model: string;
-  messages: Message[];
-}
-export interface OmniModel {
-  generate: (env: any, messages: Message[]) => Promise<{ text: string }>;
+import { omniAdapter } from "./omniAdapter";
+import { openaiAdapter } from "./openaiAdapter";
+import { deepseekAdapter } from "./deepseekAdapter";
+
+type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+
+function isValidMessage(m: any): m is ChatMessage {
+  return (
+    m &&
+    (m.role === "system" || m.role === "user" || m.role === "assistant") &&
+    typeof m.content === "string" &&
+    m.content.trim().length > 0
+  );
 }
 
-export function selectModel(modelId: string): OmniModel {
-  switch (modelId) {
+export async function routeModel(body: any, env: any) {
+  const model = String(body?.model ?? "omni").toLowerCase();
+  const mode = typeof body?.mode === "string" ? body.mode : "Architect";
+  const messages = Array.isArray(body?.messages) ? body.messages.filter(isValidMessage) : [];
+
+  if (!messages.length) {
+    throw new Error("Invalid message format");
+  }
+
+  switch (model) {
     case "omni":
-      return {
-        generate: async (env: any, messages: any[]) => {
-          const ctx: OmniBrainContext = {
-            mode: "Omni",
-            model: "omni",
-            messages
-          };
-
-          const result = await omniBrainLoop(env, ctx);
-          return { text: typeof result === "string" ? result : JSON.stringify(result) };
-        }
-      };
+      return omniAdapter(messages, mode, env);
 
     case "gpt-4o":
-      return {
-        generate: async (env: any, messages: Message[]) => {
-          return { text: "GPT‑4o placeholder response" };
-        }
-      };
+      return openaiAdapter(messages, "gpt-4o", env);
 
     case "gpt-4o-mini":
-      return {
-        generate: async (env: any, messages: Message[]) => {
-          return { text: "GPT‑4o Mini placeholder response" };
-        }
-      };
+      return openaiAdapter(messages, "gpt-4o-mini", env);
 
     case "deepseek":
-      return {
-        generate: async (env: any, messages: Message[]) => {
-          return { text: "DeepSeek placeholder response" };
-        }
-      };
+      return deepseekAdapter(messages, env);
 
     default:
-      return {
-        generate: async (env: any, messages: Message[]) => ({
-          text: `Unknown model "${modelId}".`
-        })
-      };
+      throw new Error("Unknown model: " + model);
   }
 }
