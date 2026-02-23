@@ -22,8 +22,10 @@
       font-weight: 700;
       margin: 0 0 16px 0;
       background:
-        repeating-linear-gradient(35deg, rgba(156, 194, 255, 0.95) 0 2px, rgba(23, 92, 196, 0.92) 2px 7px, rgba(7, 25, 56, 0.88) 7px 11px),
-        repeating-linear-gradient(-35deg, rgba(148, 187, 255, 0.66) 0 1px, rgba(14, 72, 168, 0.72) 1px 5px, rgba(9, 22, 45, 0.6) 5px 9px);
+        repeating-linear-gradient(35deg, rgba(156, 194, 255, 0.96) 0 1px, rgba(23, 92, 196, 0.9) 1px 4px, rgba(7, 25, 56, 0.86) 4px 7px),
+        repeating-linear-gradient(-35deg, rgba(148, 187, 255, 0.68) 0 0.8px, rgba(14, 72, 168, 0.7) 0.8px 3.6px, rgba(9, 22, 45, 0.58) 3.6px 6.8px);
+      background-size: 180% 180%, 160% 160%;
+      background-position: 0% 50%, 100% 50%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -33,7 +35,19 @@
         0 0 30px rgba(15, 82, 186, 0.32),
         0 0 52px rgba(15, 82, 186, 0.2);
       letter-spacing: 0.02em;
-      animation: rainbow-shift 50s linear infinite;
+      animation: rainbow-shift 50s linear infinite, home-wireflow 8s ease-in-out infinite;
+    }
+
+    @keyframes home-wireflow {
+      0% {
+        background-position: 0% 50%, 100% 50%;
+      }
+      50% {
+        background-position: 100% 48%, 0% 52%;
+      }
+      100% {
+        background-position: 0% 50%, 100% 50%;
+      }
     }
 
     .home-hero p {
