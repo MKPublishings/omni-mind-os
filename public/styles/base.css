@@ -88,29 +88,42 @@ p {
 ---------------- */
 
 .page {
-  --page-transition-ms: 350ms;
+  --site-transition-ms: 140ms;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--site-transition-ms) ease-out, transform var(--site-transition-ms) ease-out;
+  animation: page-enter var(--site-transition-ms) ease-out;
 }
 
 /* Respect reduced-motion users */
 @media (prefers-reduced-motion: reduce) {
+  .page,
+  .page.page-leave {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
   .page-transition {
     animation: none !important;
   }
 }
 
-.page-transition {
-  animation: slideDown var(--page-transition-ms) ease forwards;
+.page.page-leave {
+  opacity: 0;
+  transform: translateY(8px);
   pointer-events: none;
 }
 
-@keyframes slideDown {
+@keyframes page-enter {
   from {
-    transform: translateY(0);
-    opacity: 1;
+    transform: translateY(6px);
+    opacity: 0.96;
   }
   to {
-    transform: translateY(40px);
-    opacity: 0;
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 

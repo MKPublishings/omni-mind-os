@@ -56,40 +56,6 @@
   </div>
 
   <script src="/scripts/tools.js"></script>
-  <script>
-(() => {
-  const body = document.body;
-  if (!body) return;
-
-  let navigating = false;
-
-  document.addEventListener("click", (e) => {
-    const link = e.target.closest("a.nav-link");
-    if (!link) return;
-
-    // Ignore special cases
-    const href = link.getAttribute("href");
-    if (!href || href.startsWith("#")) return;
-    if (link.target === "_blank" || link.hasAttribute("download")) return;
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-
-    const url = new URL(link.href, window.location.href);
-    if (url.origin !== window.location.origin) return;
-
-    e.preventDefault();
-    if (navigating) return;
-    navigating = true;
-
-    body.classList.add("page-transition");
-
-    const ms =
-      parseFloat(getComputedStyle(body).getPropertyValue("--page-transition-ms")) || 350;
-
-    window.setTimeout(() => {
-      window.location.assign(url.href);
-    }, ms);
-  });
-})();
-</script>
+  <script src="/scripts/page-transition.js"></script>
 </body>
 </html>
