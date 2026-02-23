@@ -1,0 +1,23 @@
+Omni System Reference
+
+Mode keys:
+- auto
+- architect
+- analyst
+- visual
+- lore
+- reasoning
+- coding
+- knowledge
+- system-knowledge
+
+Router defaults:
+- coding => gpt-4o
+- math => deepseek
+- creative => omni
+- general => omni
+
+Memory endpoint:
+- GET /api/preferences
+- POST /api/preferences
+- DELETE /api/preferences

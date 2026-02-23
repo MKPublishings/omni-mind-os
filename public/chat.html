@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/styles/base.css" />
   <link rel="stylesheet" href="/styles/layout.css" />
   <link rel="stylesheet" href="/styles/chat.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css" />
 </head>
 <body class="page">
   <div id="layout">
@@ -38,6 +39,7 @@
             <label for="model-btn">Model</label>
             <button id="model-btn" type="button" class="chat-control-btn" aria-haspopup="listbox" aria-expanded="false">Omni</button>
             <div id="model-menu" class="chat-dropdown" role="listbox" aria-label="Model selection">
+              <button type="button" class="chat-dropdown-item" role="option" data-value="auto">Auto Router</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="omni">Omni</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="gpt-4o-mini">GPT‑4o Mini</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="gpt-4o">GPT‑4o</button>
@@ -53,14 +55,23 @@
               <button type="button" class="chat-dropdown-item" role="option" data-value="analyst">Analyst</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="visual">Visual</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="lore">Lore</button>
+              <button type="button" class="chat-dropdown-item" role="option" data-value="reasoning">Reasoning</button>
+              <button type="button" class="chat-dropdown-item" role="option" data-value="coding">Coding</button>
+              <button type="button" class="chat-dropdown-item" role="option" data-value="knowledge">Knowledge</button>
+              <button type="button" class="chat-dropdown-item" role="option" data-value="system-knowledge">System Knowledge</button>
             </div>
           </div>
+          <button id="reasoning-toggle-btn" type="button" class="chat-action-btn" aria-pressed="false">Reasoning Mode</button>
+          <button id="coding-toggle-btn" type="button" class="chat-action-btn" aria-pressed="false">Coding Mode</button>
+          <button id="save-preferences-btn" type="button" class="chat-action-btn">Save Preferences</button>
+          <button id="reset-memory-btn" type="button" class="chat-action-btn">Reset Memory</button>
         </div>
       </header>
 
       <section id="chat-area">
         <div id="mode-indicator">
           <span id="mode-label">Mode: Auto</span>
+          <span id="model-inspector">Model: pending</span>
           <span id="api-status" aria-live="polite">API: checking…</span>
         </div>
         <div id="chat-container"></div>
@@ -79,6 +90,7 @@
   </div>
 
   <script src="/scripts/chat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
   <script>
 (() => {
   const body = document.body;

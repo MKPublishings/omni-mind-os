@@ -178,6 +178,38 @@ Main LLM endpoint.
 **Response:**  
 Streamed text output.
 
+### **GET /api/search?q=...**
+Knowledge retrieval endpoint that returns relevant text chunks from files in `/public/knowledge`.
+
+### **GET/POST/DELETE /api/preferences**
+Persistent memory endpoint for user preferences (mode, writing style, last-used settings).
+
+---
+
+# **🧠 Advanced Modes**
+
+Omni now includes additional operational modes:
+
+- `reasoning` → internal step-by-step scaffold, final answer only
+- `coding` → logic-first + fenced code blocks + self-review
+- `knowledge` → retrieval-augmented factual responses
+- `system-knowledge` → injects internal module docs from `/public/modules`
+
+---
+
+# **🧭 Auto Model Router**
+
+When model is set to `auto`, Omni routes by task:
+
+- Coding → `gpt-4o`
+- Math → `deepseek`
+- Creative/general → `omni`
+
+The selected route is exposed to the frontend using response headers:
+
+- `X-Omni-Model-Used`
+- `X-Omni-Route-Reason`
+
 ---
 
 # **⚙️ Environment Bindings**

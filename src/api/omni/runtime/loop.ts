@@ -12,6 +12,8 @@ export interface OmniLoopContext {
 
 export interface OmniLoopResult {
   response: string;
+  modelUsed: string;
+  fallbackUsed: boolean;
 }
 
 type OmniRuntimeEnv = {
@@ -71,7 +73,7 @@ export async function omniBrainLoop(
 ): Promise<OmniLoopResult> {
   try {
     if (!env?.AI?.run) {
-      return { response: "AI binding is not configured." };
+      return { response: "AI binding is not configured.", modelUsed: "none", fallbackUsed: false };
     }
 
     const requestedModel = normalizeModelId(ctx.model || "omni");
@@ -88,17 +90,25 @@ export async function omniBrainLoop(
     };
 
     let raw: any;
+    let modelUsed = resolvedModel;
+    let fallbackUsed = false;
     try {
       raw = await env.AI.run(resolvedModel, runInput);
     } catch {
       const omniFallback = resolveProviderModel("omni", env);
       raw = await env.AI.run(omniFallback, runInput);
+      modelUsed = omniFallback;
+      fallbackUsed = true;
     }
 
     const response = extractResponseText(raw);
 
-    return { response: String(response) };
+    return {
+      response: String(response),
+      modelUsed,
+      fallbackUsed
+    };
   } catch {
-    return { response: "Runtime loop failed." };
+    return { response: "Runtime loop failed.", modelUsed: "error", fallbackUsed: false };
   }
 }

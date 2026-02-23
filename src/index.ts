@@ -1,6 +1,17 @@
 import { OmniLogger } from "./logging/logger";
 import { OmniSafety } from "./stability/safety";
 import { omniBrainLoop } from "./api/omni/runtime/loop";
+import {
+  buildModeTemplate,
+  chooseModelForTask,
+  getPreferences,
+  resetPreferences,
+  savePreferences,
+  searchKnowledge,
+  searchModules,
+  shouldUseKnowledgeRetrieval,
+  shouldUseSystemKnowledge
+} from "./omni/enhancements";
 import type { KVNamespace, Fetcher } from "@cloudflare/workers-types";
 
 export interface Env {
@@ -12,6 +23,8 @@ export interface Env {
   MODEL_GPT_4O?: string;
   MODEL_GPT_4O_MINI?: string;
   MODEL_DEEPSEEK?: string;
+  OPENAI_API_KEY?: string;
+  DEEPSEEK_API_KEY?: string;
   OMNI_RESPONSE_MIN_CHARS?: string;
   OMNI_RESPONSE_BASE_CHARS?: string;
   OMNI_RESPONSE_MAX_CHARS?: string;
@@ -90,8 +103,25 @@ function isNonProduction(request: Request, env: Env): boolean {
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS"
 };
+
+function getLatestUserText(messages: OmniMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i]?.role === "user") {
+      return String(messages[i]?.content || "");
+    }
+  }
+
+  return "";
+}
+
+function makeContextSystemMessage(label: string, content: string): OmniMessage {
+  return {
+    role: "system",
+    content: `[${label}]\n${content}`
+  };
+}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -99,11 +129,65 @@ export default {
 
     try {
       const url = new URL(request.url);
+      const isApiRoute = url.pathname === "/api/omni" || url.pathname === "/api/search" || url.pathname === "/api/preferences";
 
-      if (url.pathname === "/api/omni" && request.method === "OPTIONS") {
+      if (isApiRoute && request.method === "OPTIONS") {
         return new Response(null, {
           status: 204,
           headers: CORS_HEADERS
+        });
+      }
+
+      if (url.pathname === "/api/search" && request.method === "GET") {
+        const query = String(url.searchParams.get("q") || "").trim();
+        const limit = clamp(Number(url.searchParams.get("limit") || 4), 1, 10);
+
+        if (!query) {
+          return new Response(JSON.stringify({ query, hits: [] }), {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const hits = await searchKnowledge(env, request, query, limit);
+        return new Response(JSON.stringify({ query, hits }), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/preferences" && request.method === "GET") {
+        const memory = await getPreferences(env);
+        return new Response(JSON.stringify(memory), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/preferences" && request.method === "POST") {
+        const payload = await request.json();
+        const memory = await savePreferences(env, payload || {});
+        return new Response(JSON.stringify(memory), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/preferences" && request.method === "DELETE") {
+        await resetPreferences(env);
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
         });
       }
 
@@ -125,14 +209,68 @@ export default {
           return new Response("Invalid message format", { status: 400 });
         }
 
+        const normalizedMode = String(body.mode || "auto").trim().toLowerCase();
         const ctx = {
-          mode: body.mode || "Architect",
-          model: body.model || "omni",
+          mode: normalizedMode,
+          model: body.model || "auto",
           messages: body.messages.map((m: any) => ({
             role: m.role,
             content: OmniSafety.sanitizeInput(m.content)
           }))
         };
+
+        const latestUserText = getLatestUserText(ctx.messages);
+        const routeSelection = chooseModelForTask(ctx.model, latestUserText, normalizedMode);
+
+        const promptSystemMessages: OmniMessage[] = [];
+        const savedMemory = await getPreferences(env);
+        if (savedMemory && Object.keys(savedMemory).length > 0) {
+          promptSystemMessages.push(
+            makeContextSystemMessage("User Memory", JSON.stringify(savedMemory, null, 2))
+          );
+        }
+
+        const modeTemplate = buildModeTemplate({
+          mode: normalizedMode,
+          latestUserText
+        });
+
+        if (modeTemplate) {
+          promptSystemMessages.push(makeContextSystemMessage("Mode Template", modeTemplate));
+        }
+
+        const shouldUseKnowledge = shouldUseKnowledgeRetrieval(latestUserText, normalizedMode);
+        if (shouldUseKnowledge) {
+          const hits = await searchKnowledge(env, request, latestUserText, 4);
+          if (hits.length) {
+            const context = hits
+              .map((hit, index) => `(${index + 1}) ${hit.title}\n${hit.chunk}`)
+              .join("\n\n---\n\n");
+            promptSystemMessages.push(
+              makeContextSystemMessage(
+                "Knowledge Retrieval",
+                `Use the following retrieved references when they are relevant:\n\n${context}`
+              )
+            );
+          }
+        }
+
+        if (shouldUseSystemKnowledge(normalizedMode)) {
+          const moduleHits = await searchModules(env, request, latestUserText || "system modules", 3);
+          if (moduleHits.length) {
+            const moduleContext = moduleHits
+              .map((hit, index) => `(${index + 1}) ${hit.title}\n${hit.chunk}`)
+              .join("\n\n---\n\n");
+            promptSystemMessages.push(
+              makeContextSystemMessage(
+                "System Knowledge Modules",
+                `Use these internal modules as authoritative context:\n\n${moduleContext}`
+              )
+            );
+          }
+        }
+
+        const enrichedMessages: OmniMessage[] = [...promptSystemMessages, ...ctx.messages];
 
         const responseLimit = computeAdaptiveResponseMax(ctx.messages, env);
         const outputTokenLimit = computeAdaptiveOutputTokens(responseLimit, env);
@@ -140,6 +278,10 @@ export default {
 
         logger.log("incoming_request", {
           ...ctx,
+          modelSelected: routeSelection.selectedModel,
+          routeReason: routeSelection.reason,
+          taskType: routeSelection.taskType,
+          injectedSystemMessages: promptSystemMessages.length,
           responseCap: responseLimit,
           outputTokenCap: outputTokenLimit,
           debugEnabled
@@ -147,6 +289,8 @@ export default {
 
         const runtimeCtx = {
           ...ctx,
+          model: routeSelection.selectedModel,
+          messages: enrichedMessages,
           maxOutputTokens: outputTokenLimit
         };
 
@@ -187,13 +331,17 @@ export default {
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+            "X-Omni-Model-Used": String(runtimeCtx.model || routeSelection.selectedModel),
+            "X-Omni-Route-Reason": routeSelection.reason,
             ...(debugEnabled
               ? {
                   "X-Omni-Response-Cap": String(responseLimit),
                   "X-Omni-Output-Token-Cap": String(outputTokenLimit),
-                  "Access-Control-Expose-Headers": "X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
+                "Access-Control-Expose-Headers": "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
                 }
-              : {})
+              : {
+                  "Access-Control-Expose-Headers": "X-Omni-Model-Used, X-Omni-Route-Reason"
+                })
           }
         });
       }

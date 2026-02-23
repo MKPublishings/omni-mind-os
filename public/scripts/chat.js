@@ -23,7 +23,12 @@
   const modeBtn = document.getElementById("mode-btn");
   const modeMenu = document.getElementById("mode-menu");
   const modeLabelEl = document.getElementById("mode-label");
+  const modelInspectorEl = document.getElementById("model-inspector");
   const apiStatusEl = document.getElementById("api-status");
+  const reasoningToggleBtn = document.getElementById("reasoning-toggle-btn");
+  const codingToggleBtn = document.getElementById("coding-toggle-btn");
+  const savePreferencesBtn = document.getElementById("save-preferences-btn");
+  const resetMemoryBtn = document.getElementById("reset-memory-btn");
 
   const sessionsSidebarEl = document.getElementById("sessions-sidebar");
   const newSessionBtn = document.getElementById("new-session-btn");
@@ -39,8 +44,8 @@
     MODE_SELECTION: "omni-mode-selection",
     DEFAULT_MODE: "omni-default-mode"
   };
-  const KNOWN_MODELS = ["omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
-  const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore"];
+  const KNOWN_MODELS = ["auto", "omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
+  const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore", "reasoning", "coding", "knowledge", "system-knowledge"];
 
   let state = {
     activeSessionId: null,
@@ -58,7 +63,8 @@
   }
 
   function toModelLabel(model) {
-    const normalized = normalizeModel(model) || "omni";
+    const normalized = normalizeModel(model) || "auto";
+    if (normalized === "auto") return "Auto Router";
     if (normalized === "gpt-4o-mini") return "GPT‑4o Mini";
     if (normalized === "gpt-4o") return "GPT‑4o";
     if (normalized === "deepseek") return "DeepSeek";
@@ -67,6 +73,7 @@
 
   function toModeLabel(mode) {
     const normalized = normalizeMode(mode) || "auto";
+    if (normalized === "system-knowledge") return "System Knowledge";
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
   }
 
@@ -116,6 +123,28 @@
   function updateModeIndicator(mode) {
     if (!modeLabelEl) return;
     modeLabelEl.textContent = `Mode: ${toModeLabel(mode)}`;
+    syncToggleButtons(mode);
+  }
+
+  function updateModelInspector(modelUsed, routeReason = "") {
+    if (!modelInspectorEl) return;
+    const modelText = modelUsed ? toModelLabel(modelUsed) : "Pending";
+    const reasonText = routeReason ? ` (${routeReason})` : "";
+    modelInspectorEl.textContent = `Model: ${modelText}${reasonText}`;
+  }
+
+  function syncToggleButtons(mode) {
+    const normalized = normalizeMode(mode) || "auto";
+    if (reasoningToggleBtn) {
+      const active = normalized === "reasoning";
+      reasoningToggleBtn.setAttribute("aria-pressed", active ? "true" : "false");
+      reasoningToggleBtn.classList.toggle("is-active", active);
+    }
+    if (codingToggleBtn) {
+      const active = normalized === "coding";
+      codingToggleBtn.setAttribute("aria-pressed", active ? "true" : "false");
+      codingToggleBtn.classList.toggle("is-active", active);
+    }
   }
 
   function updateModeButton(mode) {
@@ -206,8 +235,8 @@
       id,
       title: "New conversation",
       messages: [],
-      model: "omni",
       mode: getSelectedModeFromSettings(),
+      model: "auto",
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -234,7 +263,7 @@
 
     const activeMode = getActiveMode(session);
     session.mode = activeMode;
-    session.model = normalizeModel(session.model) || "omni";
+    session.model = normalizeModel(session.model) || "auto";
 
     updateModelButton(session.model);
     updateModeButton(activeMode);
@@ -400,7 +429,16 @@
   function updateAssistantMessageBody(bodyEl, text) {
     if (!bodyEl) return;
     bodyEl.innerHTML = renderMarkdown(text);
+    highlightCodeBlocks(bodyEl);
     smoothScrollToBottom(false);
+  }
+
+  function highlightCodeBlocks(containerEl) {
+    if (!containerEl || !window.hljs) return;
+    const blocks = containerEl.querySelectorAll("pre code");
+    for (const block of blocks) {
+      window.hljs.highlightElement(block);
+    }
   }
 
   function renderActiveSessionMessages() {
@@ -410,7 +448,7 @@
     for (const msg of session.messages) {
       const activeMode = getActiveMode(session);
       appendMessage(msg.role, msg.content, {
-        model: session.model || "omni",
+        model: session.model || "auto",
         mode: activeMode
       });
     }
@@ -585,11 +623,11 @@
     }, 30000);
   }
 
-  async function streamOmniResponse(session, assistantBodyEl, onChunk) {
+  async function streamOmniResponse(session, assistantBodyEl, onChunk, onMeta) {
     const activeMode = getActiveMode(session);
     const payload = {
       messages: session.messages,
-      model: session.model || "omni",
+      model: session.model || "auto",
       mode: activeMode
     };
 
@@ -605,6 +643,13 @@
 
     if (!res.ok || !res.body) {
       throw new Error("Bad response from Omni backend");
+    }
+
+    if (typeof onMeta === "function") {
+      onMeta({
+        modelUsed: (res.headers.get("X-Omni-Model-Used") || "").trim(),
+        routeReason: (res.headers.get("X-Omni-Route-Reason") || "").trim()
+      });
     }
 
     const reader = res.body.getReader();
@@ -690,7 +735,7 @@
         "assistant",
         "[Connection] API is offline right now. Please try again in a moment.",
         {
-          model: session.model || "omni",
+          model: session.model || "auto",
           mode: activeMode
         }
       );
@@ -718,7 +763,7 @@
     }
     
     appendMessage("user", trimmed, {
-      model: session.model || "omni",
+      model: session.model || "auto",
       mode: activeMode
     });
 
@@ -727,7 +772,7 @@
 
     // Prepare assistant placeholder
     const assistantMessage = appendMessage("assistant", "", {
-      model: session.model || "omni",
+      model: session.model || "auto",
       mode: activeMode
     });
     const assistantBodyEl = assistantMessage ? assistantMessage.body : null;
@@ -751,6 +796,9 @@
             token
           );
           assistantTypewriter.append(token);
+        },
+        (meta) => {
+          updateModelInspector(meta?.modelUsed || session.model || "auto", meta?.routeReason || "");
         }
       );
 
@@ -920,6 +968,81 @@
     }
   }
 
+  async function savePreferences() {
+    const session = getActiveSession();
+    if (!session) return;
+
+    const payload = {
+      preferredMode: getActiveMode(session),
+      writingStyle: "concise",
+      lastUsedSettings: {
+        preferredModel: session.model || "auto",
+        reasoningMode: getActiveMode(session) === "reasoning",
+        codingMode: getActiveMode(session) === "coding",
+        knowledgeMode: getActiveMode(session) === "knowledge"
+      }
+    };
+
+    try {
+      await fetch("/api/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      updateModelInspector(session.model || "auto", "preferences-saved");
+    } catch {
+      updateModelInspector(session.model || "auto", "save-failed");
+    }
+  }
+
+  async function loadPreferences() {
+    try {
+      const res = await fetch("/api/preferences", { method: "GET" });
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const session = getActiveSession();
+      if (!session || !data) return;
+
+      const preferredMode = normalizeMode(data.preferredMode) || session.mode || "auto";
+      session.mode = preferredMode;
+      session.updatedAt = Date.now();
+      saveState();
+      syncSelectorsFromSession();
+    } catch {
+      // ignore
+    }
+  }
+
+  async function resetMemory() {
+    try {
+      await fetch("/api/preferences", { method: "DELETE" });
+      updateModelInspector("auto", "memory-reset");
+    } catch {
+      updateModelInspector("auto", "reset-failed");
+    }
+  }
+
+  function setMode(mode) {
+    const session = getActiveSession();
+    if (!session) return;
+
+    session.mode = normalizeMode(mode) || "auto";
+    session.updatedAt = Date.now();
+    saveState();
+    updateModeButton(session.mode);
+    setActiveDropdownItem(modeMenu, session.mode);
+    updateModeIndicator(session.mode);
+    renderSessionsSidebar();
+  }
+
+  function toggleMode(mode) {
+    const session = getActiveSession();
+    if (!session) return;
+    const activeMode = getActiveMode(session);
+    setMode(activeMode === mode ? "auto" : mode);
+  }
+
   // =========================
   // 10. INIT
   // =========================
@@ -929,6 +1052,8 @@
     renderSessionsSidebar();
     renderActiveSessionMessages();
     startApiChecks();
+    updateModelInspector("auto", "router-ready");
+    loadPreferences();
 
     // Listen for settings changes from other tabs or same page
     window.addEventListener("storage", (e) => {
@@ -984,11 +1109,12 @@
         if (!optionBtn) return;
         const session = getActiveSession();
         if (!session) return;
-        session.model = normalizeModel(optionBtn.dataset.value) || "omni";
+        session.model = normalizeModel(optionBtn.dataset.value) || "auto";
         session.updatedAt = Date.now();
         saveState();
         updateModelButton(session.model);
         setActiveDropdownItem(modelMenu, session.model);
+        updateModelInspector(session.model, "manual-selection");
         closeAllDropdowns();
         renderSessionsSidebar();
       });
@@ -1007,23 +1133,33 @@
       modeMenu.addEventListener("click", (e) => {
         const optionBtn = e.target.closest(".chat-dropdown-item[data-value]");
         if (!optionBtn) return;
+        setMode(normalizeMode(optionBtn.dataset.value) || getSelectedModeFromSettings());
         const session = getActiveSession();
         if (!session) return;
-        session.mode = normalizeMode(optionBtn.dataset.value) || getSelectedModeFromSettings();
         try {
           localStorage.setItem(SETTINGS_KEYS.MODE_SELECTION, "manual");
           localStorage.setItem(SETTINGS_KEYS.DEFAULT_MODE, session.mode);
         } catch {
           // ignore
         }
-        session.updatedAt = Date.now();
-        saveState();
-        updateModeButton(session.mode);
-        setActiveDropdownItem(modeMenu, session.mode);
-        updateModeIndicator(session.mode);
         closeAllDropdowns();
-        renderSessionsSidebar();
       });
+    }
+
+    if (reasoningToggleBtn) {
+      reasoningToggleBtn.addEventListener("click", () => toggleMode("reasoning"));
+    }
+
+    if (codingToggleBtn) {
+      codingToggleBtn.addEventListener("click", () => toggleMode("coding"));
+    }
+
+    if (savePreferencesBtn) {
+      savePreferencesBtn.addEventListener("click", savePreferences);
+    }
+
+    if (resetMemoryBtn) {
+      resetMemoryBtn.addEventListener("click", resetMemory);
     }
 
     document.addEventListener("click", (e) => {
