@@ -29,38 +29,99 @@
 ------------------------------ */
 #chat-container {
   flex: 1;
-  padding: 20px;
+  padding: 22px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  scroll-behavior: smooth;
 }
 
 /* ------------------------------
    MESSAGE BUBBLES
 ------------------------------ */
 .message {
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 14px 18px;
+  margin: 12px 0;
+  border-radius: 14px;
   max-width: 70%;
-  line-height: 1.5;
+  line-height: 1.55;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .message.user {
-  background: var(--accent);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
   align-self: flex-end;
 }
 
 .message.bot {
-  background: var(--panel-light);
-  border: 1px solid var(--border);
+  background: rgba(255, 115, 115, 0.08);
+  border: 1px solid rgba(255, 115, 115, 0.22);
+  box-shadow: 0 0 12px rgba(255, 115, 115, 0.24);
   align-self: flex-start;
 }
 
 .message.typing {
   opacity: 0.6;
   font-style: italic;
+}
+
+.message-body,
+.message-body p {
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.message-header {
+  margin-bottom: 8px;
+}
+
+.message-role {
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.message-badge {
+  margin-left: 8px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.message-body .md-inline-code,
+.message-body code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.message-body .md-code,
+.message-body pre {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 10px 0;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.message-body ul {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+
+.message-body li {
+  margin: 4px 0;
 }
 
 /* ------------------------------

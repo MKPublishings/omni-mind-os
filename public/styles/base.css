@@ -8,24 +8,34 @@
 html, body {
   height: 100%;
   font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(255, 115, 115, 0.14), transparent 42%),
+    radial-gradient(circle at 85% 82%, rgba(244, 208, 161, 0.08), transparent 40%),
+    var(--bg);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* ---------- VARIABLES (LIGHT DEFAULT) ---------- */
+/* ---------- VARIABLES (DARK DEFAULT) ---------- */
 :root {
-  --bg: #F7F7F8;
-  --surface: #FFFFFF;
-  --border: #E5E5E7;
+  --bg: #0b0d10;
+  --surface: rgba(255, 255, 255, 0.04);
+  --panel: rgba(255, 255, 255, 0.04);
+  --panel-light: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.08);
 
-  --text-primary: #111111;
-  --text-secondary: #555555;
+  --text: #e5e7eb;
+  --text-dim: #9ca3af;
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
 
-  --accent: #4C4CFF;
+  --accent: #ff7373;
+  --accent-glow: rgba(255, 115, 115, 0.35);
 
   --radius: 16px;
-  --shadow: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 
   --space-1: 4px;
   --space-2: 8px;
