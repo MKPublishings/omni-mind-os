@@ -20,6 +20,7 @@ const SETTINGS_KEYS = {
   REQUEST_TIMEOUT: "omni-request-timeout",
   CHAT_HISTORY: "omni-chat-history"
 };
+const CHAT_SESSIONS_KEY = "omni_chat_sessions_v1";
 
 // ==============================================
 // HELPER FUNCTIONS
@@ -142,7 +143,9 @@ if (clearHistoryBtn) {
   clearHistoryBtn.addEventListener("click", () => {
     if (confirm("Are you sure you want to clear all chat history? This cannot be undone.")) {
       localStorage.removeItem(SETTINGS_KEYS.CHAT_HISTORY);
-      alert("✓ Chat history cleared successfully.");
+      localStorage.removeItem(CHAT_SESSIONS_KEY);
+      broadcastSettingsChange(CHAT_SESSIONS_KEY, null);
+      alert("✓ Chat history cleared. A fresh chat will be created.");
     }
   });
 }

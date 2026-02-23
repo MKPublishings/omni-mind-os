@@ -245,6 +245,33 @@
     renderActiveSessionMessages();
   }
 
+  function resetToFreshChat() {
+    if (isStreaming && currentAbortController) {
+      try {
+        currentAbortController.abort();
+      } catch {
+        // ignore
+      }
+    }
+
+    isStreaming = false;
+    if (sendBtn) sendBtn.disabled = false;
+    if (inputEl) inputEl.disabled = false;
+    if (typingIndicatorEl) typingIndicatorEl.style.display = "none";
+
+    state = {
+      activeSessionId: null,
+      sessions: {}
+    };
+
+    createNewSession();
+    syncSelectorsFromSession();
+    renderSessionsSidebar();
+    renderActiveSessionMessages();
+    shouldStickToBottom = true;
+    updateJumpToLatestVisibility();
+  }
+
   // =========================
   // 3. MARKDOWN ENGINE
   // =========================
@@ -867,6 +894,11 @@
 
     // Listen for settings changes from other tabs or same page
     window.addEventListener("storage", (e) => {
+      if (e.key === STORAGE_KEY && e.newValue === null) {
+        resetToFreshChat();
+        return;
+      }
+
       if (e.key === SETTINGS_KEYS.DEFAULT_MODE || e.key === SETTINGS_KEYS.MODE_SELECTION) {
         const session = getActiveSession();
         if (session) {
@@ -882,6 +914,11 @@
     // Listen for same-page settings events
     window.addEventListener("omni-settings-changed", (e) => {
       const { key } = e.detail;
+      if (key === STORAGE_KEY) {
+        resetToFreshChat();
+        return;
+      }
+
       if (key === SETTINGS_KEYS.DEFAULT_MODE || key === SETTINGS_KEYS.MODE_SELECTION) {
         const session = getActiveSession();
         if (session) {
