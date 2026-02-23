@@ -41,6 +41,39 @@
       line-height: 1.6;
     }
 
+    .home-brain-art {
+      width: min(360px, 76vw);
+      margin: 0 auto 22px;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 16px rgba(15, 82, 186, 0.28));
+    }
+
+    .home-brain-art svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .home-brain-outline {
+      fill: none;
+      stroke: rgba(127, 178, 255, 0.62);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .home-brain-wire {
+      fill: none;
+      stroke: rgba(15, 82, 186, 0.78);
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .home-brain-node {
+      fill: rgba(127, 178, 255, 0.85);
+    }
+
     .hero-buttons {
       display: flex;
       gap: 16px;
@@ -241,6 +274,11 @@
     }
 
     @media (max-width: 768px) {
+      .home-brain-art {
+        width: min(300px, 82vw);
+        margin-bottom: 18px;
+      }
+
       .home-hero h1 {
         font-size: 40px;
       }
@@ -287,6 +325,28 @@
     <main id="main" class="modes-main">
       <!-- HERO SECTION -->
       <section class="home-hero">
+        <div class="home-brain-art" aria-hidden="true">
+          <svg viewBox="0 0 380 220" role="img" xmlns="http://www.w3.org/2000/svg">
+            <path class="home-brain-outline" d="M96 86c0-28 24-50 52-50 15 0 29 6 38 16 9-11 23-18 39-18 28 0 50 22 50 50 13 8 21 22 21 37 0 20-14 37-33 42-7 20-26 33-47 33-12 0-23-4-32-11-7 9-18 14-30 14-22 0-41-14-48-35-19-5-33-22-33-42 0-14 8-28 20-36z"/>
+            <path class="home-brain-wire" d="M92 101h44m-6 0 18-19m-12 40 16 16m26-74v31m0 0h29m-29 0-16 20m77-40v30m0 0h36m-36 0-15 20m-71 29h42m30-2h44m-116 31h38m50 0h44"/>
+            <path class="home-brain-wire" d="M122 167c18-8 30-24 34-42m26-2c6 20 21 34 40 42m-68-26 22-14m25 15 20 12"/>
+            <circle class="home-brain-node" cx="92" cy="101" r="3"/>
+            <circle class="home-brain-node" cx="136" cy="101" r="3"/>
+            <circle class="home-brain-node" cx="154" cy="82" r="3"/>
+            <circle class="home-brain-node" cx="152" cy="122" r="3"/>
+            <circle class="home-brain-node" cx="178" cy="95" r="3"/>
+            <circle class="home-brain-node" cx="207" cy="95" r="3"/>
+            <circle class="home-brain-node" cx="223" cy="75" r="3"/>
+            <circle class="home-brain-node" cx="223" cy="105" r="3"/>
+            <circle class="home-brain-node" cx="259" cy="105" r="3"/>
+            <circle class="home-brain-node" cx="170" cy="154" r="3"/>
+            <circle class="home-brain-node" cx="202" cy="152" r="3"/>
+            <circle class="home-brain-node" cx="236" cy="152" r="3"/>
+            <circle class="home-brain-node" cx="160" cy="183" r="3"/>
+            <circle class="home-brain-node" cx="198" cy="183" r="3"/>
+            <circle class="home-brain-node" cx="248" cy="183" r="3"/>
+          </svg>
+        </div>
         <h1>Omni Mind/OS</h1>
         <p>A sovereign intelligence for creation, architecture, and iteration.</p>
         <div class="hero-buttons">
