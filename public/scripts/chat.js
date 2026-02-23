@@ -134,7 +134,10 @@ async function streamOmniResponse() {
           const dataLines = rawEvent
             .split("\n")
             .filter(line => line.startsWith("data:"))
-            .map(line => line.slice(5).trimStart());
+            .map(line => {
+              const value = line.slice(5);
+              return value.startsWith(" ") ? value.slice(1) : value;
+            });
 
           if (!dataLines.length) continue;
           const payload = dataLines.join("\n");
