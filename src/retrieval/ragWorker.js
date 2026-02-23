@@ -20,7 +20,11 @@ export function searchKnowledge(query, { topK = 4 } = {}) {
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, topK)
-    .map((item) => item.chunk);
+    .map((item) => ({
+      ...item.chunk,
+      score: item.score,
+      source: item.chunk?.source || "index"
+    }));
 
   return ranked;
 }

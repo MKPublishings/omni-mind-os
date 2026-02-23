@@ -5,15 +5,44 @@ function ensureFencedCode(text) {
   return text;
 }
 
+function enforceStability(text, options = {}) {
+  const maxSections = Number.isFinite(options.maxSections) ? options.maxSections : 4;
+  const maxParagraphsPerSection = Number.isFinite(options.maxParagraphsPerSection)
+    ? options.maxParagraphsPerSection
+    : 3;
+
+  const normalized = String(text || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  const sections = normalized.split(/\n(?=#|\*\*)/g).slice(0, maxSections);
+  const clipped = sections.map((section) => {
+    const paragraphs = section.split(/\n\n+/).slice(0, maxParagraphsPerSection);
+    return paragraphs.join("\n\n");
+  });
+
+  return clipped.join("\n\n").trim();
+}
+
 export function formatResponse(text, options = {}) {
   const raw = String(text || "").trim();
   if (!raw) return "No response generated.";
 
-  if (options.mode === "coding") {
-    return ensureFencedCode(raw);
+  let output = raw;
+
+  if (options.stabilityMode !== false) {
+    output = enforceStability(output, {
+      maxSections: 4,
+      maxParagraphsPerSection: 3
+    });
   }
 
-  return raw;
+  if (options.mode === "coding") {
+    output = ensureFencedCode(output);
+  }
+
+  return output;
 }
 
 export function toHtmlWithBasicHighlight(text) {

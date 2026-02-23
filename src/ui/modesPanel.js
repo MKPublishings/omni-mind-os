@@ -1,3 +1,5 @@
+import { get as getMemory, set as setMemory } from "../memory/memoryManager.js";
+
 const MODE_STATE_KEY = "omni-ui-modes";
 
 export function getModesState() {
@@ -12,7 +14,21 @@ export function setModeState(name, enabled) {
   const state = getModesState();
   state[name] = !!enabled;
   localStorage.setItem(MODE_STATE_KEY, JSON.stringify(state));
+  syncMemorySettings(state);
   return state;
+}
+
+function syncMemorySettings(state) {
+  const current = getMemory("lastUsedSettings", {}) || {};
+  setMemory("lastUsedSettings", {
+    ...current,
+    knowledgeMode: Boolean(state.knowledge),
+    reasoningMode: Boolean(state.reasoning),
+    codingMode: Boolean(state.coding),
+    deepKnowledgeMode: Boolean(state.deepKnowledgeMode),
+    stabilityMode: state.stabilityMode !== false,
+    source: "modesPanel"
+  });
 }
 
 export function mountModesPanel(containerEl) {
@@ -23,6 +39,8 @@ export function mountModesPanel(containerEl) {
       <label><input type="checkbox" data-mode="knowledge" /> Knowledge Mode</label>
       <label><input type="checkbox" data-mode="reasoning" /> Reasoning Mode</label>
       <label><input type="checkbox" data-mode="coding" /> Coding Mode</label>
+      <label><input type="checkbox" data-mode="deepKnowledgeMode" /> Deep Knowledge Mode</label>
+      <label><input type="checkbox" data-mode="stabilityMode" /> Stability Mode</label>
       <label><input type="checkbox" data-mode="system-knowledge" /> System Knowledge Mode</label>
     </div>
   `;

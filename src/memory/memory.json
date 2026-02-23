@@ -1,9 +1,15 @@
 {
   "preferredMode": "architect",
-  "writingStyle": "concise",
+  "tone": "concise",
+  "structure": "sectioned",
+  "memoryInfluenceLevel": "medium",
+  "lastTopics": [],
   "lastUsedSettings": {
     "knowledgeMode": false,
     "reasoningMode": false,
-    "codingMode": false
-  }
+    "codingMode": false,
+    "deepKnowledgeMode": false,
+    "stabilityMode": true
+  },
+  "updatedAt": 0
 }

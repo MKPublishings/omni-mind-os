@@ -6,5 +6,16 @@
     "system": "omni",
     "default": "omni"
   },
+  "confidenceThresholds": {
+    "coding": 0.7,
+    "math": 0.74,
+    "creative": 0.58,
+    "system": 0.72,
+    "default": 0.62
+  },
+  "complexityEscalation": {
+    "coding": 0.7,
+    "default": 0.85
+  },
   "fallbackOrder": ["omni", "gpt-4o", "deepseek"]
 }

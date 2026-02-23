@@ -1,5 +1,9 @@
 import rules from "./rules.json";
 
+export function getRoutingThresholds() {
+  return rules?.confidenceThresholds || { default: 0.62 };
+}
+
 function classifyTask(userInput = "", mode = "architect") {
   const text = String(userInput).toLowerCase();
   const normalizedMode = String(mode).toLowerCase();
@@ -16,7 +20,8 @@ export function routeModel({ userInput = "", mode = "architect", complexity = 0 
   const task = classifyTask(userInput, mode);
   let model = rules?.routes?.[task] || rules?.routes?.default || "omni";
 
-  if (task === "coding" && Number(complexity) > 0.7) {
+  const codingEscalation = Number(rules?.complexityEscalation?.coding ?? 0.7);
+  if (task === "coding" && Number(complexity) > codingEscalation) {
     model = "gpt-4o";
   }
 
