@@ -54,11 +54,11 @@ modeBadges.forEach((badge) => {
     navigator.clipboard.writeText(modeName).then(() => {
       const originalText = badge.textContent;
       badge.textContent = "Copied!";
-      badge.style.background = "linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(74, 222, 128, 0.88))";
+      badge.style.background = "linear-gradient(135deg, rgba(15, 82, 186, 0.95), rgba(0, 0, 0, 0.9))";
       
       setTimeout(() => {
         badge.textContent = originalText;
-        badge.style.background = "linear-gradient(135deg, rgba(255, 115, 115, 0.9), rgba(244, 208, 161, 0.88))";
+        badge.style.background = "linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(0, 0, 0, 0.88))";
       }, 1500);
     });
   });

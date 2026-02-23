@@ -38,7 +38,7 @@
   height: 38px;
   padding: 0 12px;
   border-radius: 10px;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
   font-size: 12px;
@@ -51,15 +51,15 @@
 .chat-action-btn:hover,
 .chat-action-btn:focus {
   outline: none;
-  border-color: rgba(34, 197, 94, 0.58);
+  border-color: rgba(15, 82, 186, 0.58);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.14);
+  box-shadow: 0 0 0 2px rgba(15, 82, 186, 0.14);
 }
 
 .chat-action-btn.is-active,
 .chat-action-btn[aria-pressed="true"] {
-  border-color: rgba(34, 197, 94, 0.78);
-  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(15, 82, 186, 0.78);
+  background: rgba(15, 82, 186, 0.18);
 }
 
 .model-selector {
@@ -77,7 +77,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(34, 197, 94, 0.72);
+  color: rgba(255, 255, 255, 0.78);
   margin-left: 2px;
   animation: rainbow-shift 50s linear infinite;
 }
@@ -87,7 +87,7 @@
   height: 42px;
   padding: 10px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(34, 197, 94, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
   font-size: 14px;
@@ -111,7 +111,7 @@
   padding: 10px 14px;
   padding-right: 38px;
   border-radius: 12px;
-  border: 1px solid rgba(34, 197, 94, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
   font-size: 14px;
@@ -133,8 +133,8 @@
   top: 50%;
   width: 8px;
   height: 8px;
-  border-right: 2px solid rgba(34, 197, 94, 0.86);
-  border-bottom: 2px solid rgba(34, 197, 94, 0.86);
+  border-right: 2px solid rgba(255, 255, 255, 0.86);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.86);
   transform: translateY(-60%) rotate(45deg);
   transition: transform 0.16s ease;
 }
@@ -144,15 +144,15 @@
 }
 
 .chat-control-btn:hover {
-  border-color: rgba(34, 197, 94, 0.52);
+  border-color: rgba(15, 82, 186, 0.52);
   background: rgba(255, 255, 255, 0.07);
 }
 
 .chat-control-btn:focus {
   outline: none;
-  border-color: rgba(34, 197, 94, 0.72);
+  border-color: rgba(15, 82, 186, 0.72);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18), 0 0 12px var(--accent-glow);
+  box-shadow: 0 0 0 2px rgba(15, 82, 186, 0.18), 0 0 12px var(--accent-glow);
 }
 
 .chat-dropdown {
@@ -162,9 +162,9 @@
   min-width: 100%;
   padding: 6px;
   border-radius: 12px;
-  border: 1px solid rgba(34, 197, 94, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   background: rgba(14, 14, 14, 0.96);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.42), 0 0 12px rgba(34, 197, 94, 0.12);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.42), 0 0 12px rgba(15, 82, 186, 0.16);
   backdrop-filter: blur(14px) saturate(140%);
   z-index: 20;
   display: none;
@@ -193,27 +193,27 @@
 .chat-dropdown-item:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(34, 197, 94, 0.4);
+  border-color: rgba(15, 82, 186, 0.4);
 }
 
 .chat-dropdown-item.is-active {
-  background: rgba(34, 197, 94, 0.16);
-  border-color: rgba(34, 197, 94, 0.48);
+  background: rgba(15, 82, 186, 0.16);
+  border-color: rgba(15, 82, 186, 0.48);
   color: #fff;
 }
 
 .model-selector select:hover,
 #model:hover {
-  border-color: rgba(34, 197, 94, 0.52);
+  border-color: rgba(15, 82, 186, 0.52);
   background: rgba(255, 255, 255, 0.07);
 }
 
 .model-selector select:focus,
 #model:focus {
   outline: none;
-  border-color: rgba(34, 197, 94, 0.72);
+  border-color: rgba(15, 82, 186, 0.72);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18), 0 0 12px var(--accent-glow);
+  box-shadow: 0 0 0 2px rgba(15, 82, 186, 0.18), 0 0 12px var(--accent-glow);
 }
 
 #chat-area {
@@ -234,7 +234,7 @@
   right: 18px;
   bottom: 74px;
   z-index: 4;
-  border: 1px solid rgba(34, 197, 94, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.48);
   background: rgba(14, 14, 14, 0.84);
   color: var(--text);
   border-radius: 999px;
@@ -242,7 +242,7 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), 0 0 10px rgba(34, 197, 94, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), 0 0 10px rgba(15, 82, 186, 0.22);
   cursor: pointer;
   opacity: 0;
   transform: translateY(8px);
@@ -257,7 +257,7 @@
 }
 
 .jump-to-latest:hover {
-  border-color: rgba(34, 197, 94, 0.78);
+  border-color: rgba(15, 82, 186, 0.78);
 }
 
 #mode-indicator {
@@ -300,7 +300,7 @@
 #chat-container,
 #chat-messages {
   scrollbar-width: thin;
-  scrollbar-color: rgba(34, 197, 94, 0.45) rgba(255, 255, 255, 0.06);
+  scrollbar-color: rgba(15, 82, 186, 0.55) rgba(255, 255, 255, 0.12);
 }
 
 #chat-container::-webkit-scrollbar,
@@ -318,7 +318,7 @@
 #chat-messages::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
-    rgba(34, 197, 94, 0.72),
+    rgba(15, 82, 186, 0.72),
     rgba(12, 17, 32, 0.58)
   );
   border-radius: 999px;
@@ -330,7 +330,7 @@
 #chat-messages::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
     180deg,
-    rgba(34, 197, 94, 0.9),
+    rgba(15, 82, 186, 0.9),
     rgba(12, 17, 32, 0.72)
   );
 }
@@ -521,12 +521,12 @@
   height: 44px;
   padding: 0 16px;
   border-radius: 12px;
-  border: 1px solid rgba(34, 197, 94, 0.48);
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(12, 17, 32, 0.88));
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  background: var(--gradient-primary);
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.02em;
-  box-shadow: 0 0 14px rgba(34, 197, 94, 0.26);
+  box-shadow: 0 0 14px rgba(15, 82, 186, 0.3);
   cursor: pointer;
   transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.2s ease;
   animation: rainbow-shift 50s linear infinite;
@@ -562,7 +562,7 @@
 
 #user-input:focus {
   outline: none;
-  border-color: rgba(255, 115, 115, 0.72);
+  border-color: rgba(15, 82, 186, 0.72);
   background: rgba(255, 255, 255, 0.07);
-  box-shadow: 0 0 0 2px rgba(255, 115, 115, 0.18), 0 0 12px var(--accent-glow);
+  box-shadow: 0 0 0 2px rgba(15, 82, 186, 0.18), 0 0 12px var(--accent-glow);
 }

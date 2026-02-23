@@ -106,7 +106,7 @@ if (saveSettingsBtn) {
     // Visual feedback
     const originalText = saveSettingsBtn.innerHTML;
     saveSettingsBtn.innerHTML = '<span class="btn-icon">✓</span> Saved!';
-    saveSettingsBtn.style.background = "linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(74, 222, 128, 0.88))";
+    saveSettingsBtn.style.background = "linear-gradient(135deg, rgba(15, 82, 186, 0.95), rgba(0, 0, 0, 0.9))";
     
     showToast("✓ Settings saved and applied across all pages", "success");
     

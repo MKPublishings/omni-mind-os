@@ -14,8 +14,8 @@ body {
   height: 100%;
   font-family: 'Inter', system-ui, sans-serif;
   background:
-    radial-gradient(circle at 18% 8%, rgba(34, 197, 94, 0.12), transparent 42%),
-    radial-gradient(circle at 85% 82%, rgba(12, 17, 32, 0.6), transparent 40%),
+    radial-gradient(circle at 18% 8%, rgba(15, 82, 186, 0.22), transparent 42%),
+    radial-gradient(circle at 85% 82%, rgba(255, 255, 255, 0.08), transparent 40%),
     var(--bg);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -25,21 +25,23 @@ body {
 
 /* ---------- VARIABLES (DARK DEFAULT) ---------- */
 :root {
-  --bg: #0E0E0E;
-  --surface: rgba(12, 17, 32, 0.4);
-  --panel: rgba(12, 17, 32, 0.4);
-  --panel-light: rgba(12, 17, 32, 0.6);
-  --border: rgba(34, 197, 94, 0.15);
+  --bg: #05070c;
+  --surface: rgba(0, 0, 0, 0.46);
+  --panel: rgba(0, 0, 0, 0.46);
+  --panel-light: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.18);
 
-  --text: #e5e7eb;
-  --text-dim: #9ca3af;
-  --text-primary: #e5e7eb;
-  --text-secondary: #9ca3af;
+  --text: #ffffff;
+  --text-dim: #c9d1e3;
+  --text-primary: #ffffff;
+  --text-secondary: #c9d1e3;
 
-  --accent: #22C55E;
-  --accent-glow: rgba(34, 197, 94, 0.35);
-  --accent-secondary: #0C1120;
-  --accent-alert: #831914;
+  --accent: #0F52BA;
+  --accent-glow: rgba(15, 82, 186, 0.42);
+  --accent-secondary: #000000;
+  --accent-alert: #ffffff;
+  --gradient-primary: linear-gradient(135deg, #0F52BA, #000000);
+  --gradient-accent: linear-gradient(135deg, #ffffff, #000000);
 
   --radius: 16px;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
@@ -52,10 +54,17 @@ body {
   --space-6: 48px;
 }
 
-/* Rainbow Gradient Animation */
+/* Sapphire / Monochrome Shift Animation */
 @keyframes rainbow-shift {
-  0% { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(360deg); }
+  0% {
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    filter: saturate(1.08) brightness(1.06) contrast(1.02);
+  }
+  100% {
+    filter: saturate(1) brightness(1);
+  }
 }
 
 /* Apply rainbow animation to body */
@@ -103,4 +112,65 @@ p {
     transform: translateY(40px);
     opacity: 0;
   }
+}
+
+/* ---------- GLOBAL SAPPHIRE THEME OVERRIDES ---------- */
+.btn-primary,
+.hero-btn-primary,
+#send-btn,
+.mode-badge,
+.nav-link.active,
+.settings-toast-success {
+  background: var(--gradient-primary) !important;
+  color: #ffffff !important;
+}
+
+.btn-secondary,
+.hero-btn-secondary,
+.btn-danger,
+.settings-toast-error,
+.settings-toast-info {
+  background: var(--gradient-accent) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+}
+
+.mode-content h4,
+.tech-item strong,
+.home-footer a,
+.feature-spec-text,
+.use-case-tag,
+.setting-label,
+.section-title,
+.logo {
+  color: #ffffff !important;
+}
+
+.mode-section,
+.settings-section,
+.mode-card,
+.feature-spec,
+.home-intro,
+.modes-footer,
+.home-footer,
+#chat-area,
+#sidebar,
+.chat-dropdown,
+.settings-dropdown-menu {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.mode-section:hover,
+.mode-card:hover,
+.settings-section:hover,
+.use-case-tag:hover,
+.chat-dropdown-item.is-active,
+.settings-dropdown-item.is-active {
+  border-color: rgba(15, 82, 186, 0.5) !important;
+  box-shadow: 0 0 18px rgba(15, 82, 186, 0.24) !important;
+}
+
+.divider,
+#mode-indicator {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(15, 82, 186, 0.58), rgba(255, 255, 255, 0.42), rgba(0, 0, 0, 0)) !important;
 }
