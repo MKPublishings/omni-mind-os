@@ -50,6 +50,7 @@
   text-transform: uppercase;
   color: rgba(255, 115, 115, 0.72);
   margin-left: 2px;
+  animation: rainbow-shift 30s linear infinite;
 }
 
 .model-selector select,
@@ -93,6 +94,7 @@
   backdrop-filter: blur(14px) saturate(140%);
   text-align: left;
   position: relative;
+  animation: rainbow-shift 30s linear infinite;
 }
 
 .chat-control-btn::after {
@@ -286,6 +288,7 @@
   );
   border-radius: 999px;
   border: 2px solid rgba(11, 13, 16, 0.72);
+  animation: rainbow-shift 30s linear infinite;
 }
 
 #chat-container::-webkit-scrollbar-thumb:hover,
@@ -441,6 +444,7 @@
   box-shadow: 0 0 14px rgba(255, 115, 115, 0.26);
   cursor: pointer;
   transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.2s ease;
+  animation: rainbow-shift 30s linear infinite;
 }
 
 #send-btn:hover {
@@ -459,7 +463,7 @@
   font-weight: 600;
   letter-spacing: 0.5px;
   text-shadow: 0 0 8px var(--accent-glow);
-  animation: pulseGlow 3s infinite ease-in-out;
+  animation: rainbow-shift 30s linear infinite, pulseGlow 3s infinite ease-in-out;
 }
 
 @keyframes pulseGlow {

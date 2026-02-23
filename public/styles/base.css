@@ -45,6 +45,17 @@ html, body {
   --space-6: 48px;
 }
 
+/* Rainbow Gradient Animation */
+@keyframes rainbow-shift {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* Apply rainbow animation to body */
+html, body {
+  animation: rainbow-shift 30s linear infinite;
+}
+
 /* Typography */
 h1, h2, h3 {
   font-weight: 600;

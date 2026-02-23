@@ -299,6 +299,7 @@
   color: #130f12;
   border: 1px solid rgba(255, 115, 115, 0.48);
   box-shadow: 0 0 14px rgba(255, 115, 115, 0.26);
+  animation: rainbow-shift 30s linear infinite;
 }
 
 .btn-secondary {
@@ -313,6 +314,7 @@
   color: #fff;
   border: 1px solid rgba(255, 76, 76, 0.48);
   box-shadow: 0 0 14px rgba(255, 76, 76, 0.26);
+  animation: rainbow-shift 30s linear infinite;
 }
 
 .btn-primary:hover,

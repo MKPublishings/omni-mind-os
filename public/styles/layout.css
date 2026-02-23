@@ -24,6 +24,7 @@
 .logo {
   font-size: 22px;
   color: var(--accent);
+  animation: rainbow-shift 30s linear infinite;
 }
 
 .nav {
@@ -50,6 +51,7 @@
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 6px;
+  animation: rainbow-shift 30s linear infinite;
 }
 
 /* ------------------------------
@@ -68,6 +70,7 @@
   height: 10px;
   background: #4cff4c;
   border-radius: 50%;
+  animation: rainbow-shift 30s linear infinite;
 }
 
 /* ------------------------------
