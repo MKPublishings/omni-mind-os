@@ -119,6 +119,8 @@
 
 .page-header {
   margin-bottom: 30px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
 }
 
 .subtitle {
