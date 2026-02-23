@@ -187,8 +187,55 @@ export interface Env {
   AI: any;               // Cloudflare AI binding
   MEMORY: KVNamespace;   // Long-term memory
   MIND: KVNamespace;     // Cognitive state
+  MODEL_OMNI?: string;        // optional provider model ID for "omni"
+  MODEL_GPT_4O?: string;      // optional provider model ID for "gpt-4o"
+  MODEL_GPT_4O_MINI?: string; // optional provider model ID for "gpt-4o-mini"
+  MODEL_DEEPSEEK?: string;    // optional provider model ID for "deepseek"
 }
 ```
+
+### **Model Alias Vars (Wrangler)**
+
+The chat UI sends these model keys:
+
+- `omni`
+- `gpt-4o`
+- `gpt-4o-mini`
+- `deepseek`
+
+At runtime, `/api/omni` resolves them to provider model IDs through optional Wrangler vars.
+If a specific alias is not set, runtime falls back to `MODEL_OMNI` (or the built-in Omni default).
+
+Add these in `wrangler.toml` (or use environment-specific Wrangler vars):
+
+```toml
+[vars]
+MODEL_OMNI = "@cf/meta/llama-3.1-8b-instruct"
+MODEL_GPT_4O = "@cf/openai/gpt-4o"
+MODEL_GPT_4O_MINI = "@cf/openai/gpt-4o-mini"
+MODEL_DEEPSEEK = "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
+```
+
+Per-environment override example:
+
+```toml
+[env.staging.vars]
+MODEL_OMNI = "@cf/meta/llama-3.1-8b-instruct"
+MODEL_GPT_4O = "@cf/openai/gpt-4o-mini"
+
+[env.production.vars]
+MODEL_OMNI = "@cf/meta/llama-3.1-8b-instruct"
+MODEL_GPT_4O = "@cf/openai/gpt-4o"
+MODEL_GPT_4O_MINI = "@cf/openai/gpt-4o-mini"
+MODEL_DEEPSEEK = "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
+```
+
+Deploy per environment: `wrangler deploy --env staging` and `wrangler deploy --env production`.
+
+Notes:
+
+- Keep these IDs aligned with models available on your Cloudflare account.
+- If an alias model call fails at runtime, Omni automatically falls back to the Omni route.
 
 ---
 

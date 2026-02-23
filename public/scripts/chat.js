@@ -13,11 +13,12 @@
   // =========================
   // 1. DOM SELECTORS
   // =========================
-  const messagesEl = document.getElementById("chat-messages");
-  const inputEl = document.getElementById("chat-input");
+  const messagesEl = document.getElementById("chat-messages") || document.getElementById("chat-container");
+  const inputEl = document.getElementById("chat-input") || document.getElementById("user-input");
   const sendBtn = document.getElementById("send-btn");
-  const modelSelect = document.getElementById("model-select");
+  const modelSelect = document.getElementById("model-select") || document.getElementById("model");
   const modeSelect = document.getElementById("mode-select");
+  const apiStatusEl = document.getElementById("api-status");
 
   const sessionsSidebarEl = document.getElementById("sessions-sidebar");
   const newSessionBtn = document.getElementById("new-session-btn");
@@ -85,7 +86,20 @@
     state.activeSessionId = id;
     saveState();
     renderSessionsSidebar();
+    syncSelectorsFromSession();
     renderActiveSessionMessages();
+  }
+
+  function syncSelectorsFromSession() {
+    const session = getActiveSession();
+    if (!session) return;
+
+    if (modelSelect) {
+      modelSelect.value = session.model || "omni";
+    }
+    if (modeSelect) {
+      modeSelect.value = session.mode || "chat";
+    }
   }
 
   function updateSessionMetaFromMessages(session) {
@@ -167,7 +181,7 @@
 
   function createMessageElement(role, content, meta = {}) {
     const wrapper = document.createElement("div");
-    wrapper.className = `message message-${role}`;
+    wrapper.className = `message ${role === "user" ? "user" : "bot"} message-${role}`;
 
     const inner = document.createElement("div");
     inner.className = "message-inner";
@@ -259,6 +273,56 @@
   // =========================
   let isStreaming = false;
   let currentAbortController = null;
+  let apiHealthy = true;
+  let apiCheckTimer = null;
+
+  function getApiEndpoint() {
+    try {
+      const saved = localStorage.getItem("omni-endpoint") || "";
+      return saved.trim() || "/api/omni";
+    } catch {
+      return "/api/omni";
+    }
+  }
+
+  function setApiStatus(state) {
+    if (!apiStatusEl) return;
+
+    if (state === "online") {
+      apiStatusEl.textContent = "API: online";
+    } else if (state === "offline") {
+      apiStatusEl.textContent = "API: offline";
+    } else {
+      apiStatusEl.textContent = "API: checking…";
+    }
+  }
+
+  async function checkApiStatus() {
+    setApiStatus("checking");
+
+    try {
+      const res = await fetch(getApiEndpoint(), {
+        method: "OPTIONS"
+      });
+      apiHealthy = res.ok || res.status === 204;
+    } catch {
+      apiHealthy = false;
+    }
+
+    setApiStatus(apiHealthy ? "online" : "offline");
+    return apiHealthy;
+  }
+
+  function startApiChecks() {
+    if (apiCheckTimer) {
+      clearInterval(apiCheckTimer);
+    }
+
+    checkApiStatus();
+    apiCheckTimer = setInterval(() => {
+      checkApiStatus();
+    }, 30000);
+  }
 
   async function streamOmniResponse(session, assistantBodyEl, onChunk) {
     const payload = {
@@ -270,7 +334,7 @@
     const controller = new AbortController();
     currentAbortController = controller;
 
-    const res = await fetch("/api/omni", {
+    const res = await fetch(getApiEndpoint(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -336,6 +400,19 @@
     const trimmed = content.trim();
     if (!trimmed) return;
 
+    const isApiOnline = await checkApiStatus();
+    if (!isApiOnline) {
+      appendMessage(
+        "assistant",
+        "[Connection] API is offline right now. Please try again in a moment.",
+        {
+          model: session.model,
+          mode: session.mode
+        }
+      );
+      return;
+    }
+
     // Push user message
     session.messages.push({ role: "user", content: trimmed });
     updateSessionMetaFromMessages(session);
@@ -350,10 +427,11 @@
     if (inputEl) inputEl.value = "";
 
     // Prepare assistant placeholder
-    const { body: assistantBodyEl } = appendMessage("assistant", "", {
+    const assistantMessage = appendMessage("assistant", "", {
       model: session.model,
       mode: session.mode
     });
+    const assistantBodyEl = assistantMessage ? assistantMessage.body : null;
 
     // UI state
     isStreaming = true;
@@ -504,8 +582,32 @@
   // =========================
   function init() {
     loadState();
+    syncSelectorsFromSession();
     renderSessionsSidebar();
     renderActiveSessionMessages();
+    startApiChecks();
+
+    if (modelSelect) {
+      modelSelect.addEventListener("change", () => {
+        const session = getActiveSession();
+        if (!session) return;
+        session.model = modelSelect.value || "omni";
+        session.updatedAt = Date.now();
+        saveState();
+        renderSessionsSidebar();
+      });
+    }
+
+    if (modeSelect) {
+      modeSelect.addEventListener("change", () => {
+        const session = getActiveSession();
+        if (!session) return;
+        session.mode = modeSelect.value || "chat";
+        session.updatedAt = Date.now();
+        saveState();
+        renderSessionsSidebar();
+      });
+    }
 
     if (sendBtn) {
       sendBtn.addEventListener("click", handleSendClick);
@@ -519,6 +621,7 @@
       newSessionBtn.addEventListener("click", () => {
         createNewSession();
         saveState();
+        syncSelectorsFromSession();
         renderSessionsSidebar();
         renderActiveSessionMessages();
       });

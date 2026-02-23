@@ -8,6 +8,10 @@ export interface Env {
   MEMORY: KVNamespace;
   MIND: KVNamespace;
   ASSETS: Fetcher;
+  MODEL_OMNI?: string;
+  MODEL_GPT_4O?: string;
+  MODEL_GPT_4O_MINI?: string;
+  MODEL_DEEPSEEK?: string;
 }
 
 const CORS_HEADERS = {

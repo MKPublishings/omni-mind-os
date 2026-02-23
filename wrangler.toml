@@ -5,6 +5,14 @@ compatibility_date = "2024-11-01"
 [ai]
 binding = "AI"
 
+# Optional model aliases for omni runtime routing.
+# Uncomment and set these to provider model IDs available in your account.
+# [vars]
+# MODEL_OMNI = "@cf/meta/llama-3.1-8b-instruct"
+# MODEL_GPT_4O = "@cf/openai/gpt-4o"
+# MODEL_GPT_4O_MINI = "@cf/openai/gpt-4o-mini"
+# MODEL_DEEPSEEK = "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
+
 [[kv_namespaces]]
 binding = "MIND"
 id = "ddf695e484604a5a974ba5d4165f7102"
