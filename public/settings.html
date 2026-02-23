@@ -62,11 +62,14 @@
               <label class="setting-label">Message Font Size</label>
               <span class="setting-description">Adjust chat message text size</span>
             </div>
-            <select id="font-size" class="setting-select">
-              <option value="small">Small</option>
-              <option value="medium" selected>Medium</option>
-              <option value="large">Large</option>
-            </select>
+            <div class="settings-dropdown-control" id="font-size-dropdown">
+              <button type="button" class="settings-dropdown-btn" id="font-size-btn" aria-haspopup="listbox" aria-expanded="false">Medium</button>
+              <div class="settings-dropdown-menu" role="listbox" id="font-size-menu">
+                <button type="button" class="settings-dropdown-item" role="option" data-value="small">Small</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="medium">Medium</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="large">Large</button>
+              </div>
+            </div>
           </div>
 
           <div class="setting-item">
@@ -90,12 +93,15 @@
               <label class="setting-label">Default Model</label>
               <span class="setting-description">Model used for new chats</span>
             </div>
-            <select id="default-model" class="setting-select">
-              <option value="omni" selected>Omni</option>
-              <option value="gpt-4o-mini">GPT-4o Mini</option>
-              <option value="gpt-4o">GPT-4o</option>
-              <option value="deepseek">DeepSeek</option>
-            </select>
+            <div class="settings-dropdown-control" id="default-model-dropdown">
+              <button type="button" class="settings-dropdown-btn" id="default-model-btn" aria-haspopup="listbox" aria-expanded="false">Omni</button>
+              <div class="settings-dropdown-menu" role="listbox" id="default-model-menu">
+                <button type="button" class="settings-dropdown-item" role="option" data-value="omni">Omni</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="gpt-4o-mini">GPT‑4o Mini</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="gpt-4o">GPT‑4o</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="deepseek">DeepSeek</button>
+              </div>
+            </div>
           </div>
 
           <div class="setting-item">
@@ -103,10 +109,13 @@
               <label class="setting-label">Mode Selection</label>
               <span class="setting-description">Automatic or manual mode control</span>
             </div>
-            <select id="mode-selection" class="setting-select">
-              <option value="automatic" selected>Automatic</option>
-              <option value="manual">Manual</option>
-            </select>
+            <div class="settings-dropdown-control" id="mode-selection-dropdown">
+              <button type="button" class="settings-dropdown-btn" id="mode-selection-btn" aria-haspopup="listbox" aria-expanded="false">Automatic</button>
+              <div class="settings-dropdown-menu" role="listbox" id="mode-selection-menu">
+                <button type="button" class="settings-dropdown-item" role="option" data-value="automatic">Automatic</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="manual">Manual</button>
+              </div>
+            </div>
           </div>
 
           <div class="setting-item" id="default-mode-setting" style="display: none;">
@@ -114,12 +123,15 @@
               <label class="setting-label">Default Mode</label>
               <span class="setting-description">Mode when manual is enabled</span>
             </div>
-            <select id="default-mode" class="setting-select">
-              <option value="architect" selected>Architect</option>
-              <option value="analyst">Analyst</option>
-              <option value="visual">Visual</option>
-              <option value="lore">Lore</option>
-            </select>
+            <div class="settings-dropdown-control" id="default-mode-dropdown">
+              <button type="button" class="settings-dropdown-btn" id="default-mode-btn" aria-haspopup="listbox" aria-expanded="false">Architect</button>
+              <div class="settings-dropdown-menu" role="listbox" id="default-mode-menu">
+                <button type="button" class="settings-dropdown-item" role="option" data-value="architect">Architect</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="analyst">Analyst</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="visual">Visual</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="lore">Lore</button>
+              </div>
+            </div>
           </div>
 
           <div class="setting-item">
@@ -127,11 +139,14 @@
               <label class="setting-label">Response Length</label>
               <span class="setting-description">Preferred response detail level</span>
             </div>
-            <select id="response-length" class="setting-select">
-              <option value="concise">Concise</option>
-              <option value="balanced" selected>Balanced</option>
-              <option value="detailed">Detailed</option>
-            </select>
+            <div class="settings-dropdown-control" id="response-length-dropdown">
+              <button type="button" class="settings-dropdown-btn" id="response-length-btn" aria-haspopup="listbox" aria-expanded="false">Balanced</button>
+              <div class="settings-dropdown-menu" role="listbox" id="response-length-menu">
+                <button type="button" class="settings-dropdown-item" role="option" data-value="concise">Concise</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="balanced">Balanced</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="detailed">Detailed</button>
+              </div>
+            </div>
           </div>
         </section>
 

@@ -118,12 +118,103 @@ if (saveSettingsBtn) {
 }
 
 // ==============================================
+// CUSTOM DROPDOWN MANAGER
+// ==============================================
+
+function createDropdownManager() {
+  const dropdowns = new Map();
+
+  function getDropdownItems(menuEl) {
+    if (!menuEl) return [];
+    return Array.from(menuEl.querySelectorAll(".settings-dropdown-item[data-value]"));
+  }
+
+  function setActiveItem(menuEl, value) {
+    const normalized = (value || "").trim().toLowerCase();
+    for (const item of getDropdownItems(menuEl)) {
+      const isActive = (item.dataset.value || "").toLowerCase() === normalized;
+      item.classList.toggle("is-active", isActive);
+      item.setAttribute("aria-selected", isActive ? "true" : "false");
+    }
+  }
+
+  function setOpen(controlEl, btnEl, open) {
+    if (!controlEl || !btnEl) return;
+    controlEl.classList.toggle("open", !!open);
+    btnEl.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function closeAllDropdowns() {
+    for (const [, handler] of dropdowns) {
+      if (handler.close) handler.close();
+    }
+  }
+
+  function initDropdown(buttonId, menuId, controlId) {
+    const btn = document.getElementById(buttonId);
+    const menu = document.getElementById(menuId);
+    const control = document.getElementById(controlId);
+
+    if (!btn || !menu || !control) return null;
+
+    function open() {
+      closeAllDropdowns();
+      setOpen(control, btn, true);
+    }
+
+    function close() {
+      setOpen(control, btn, false);
+    }
+
+    function toggle() {
+      const isOpen = control.classList.contains("open");
+      closeAllDropdowns();
+      setOpen(control, btn, !isOpen);
+    }
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggle();
+    });
+
+    menu.addEventListener("click", (e) => {
+      const item = e.target.closest(".settings-dropdown-item[data-value]");
+      if (!item) return;
+      const value = item.dataset.value || "";
+      setActiveItem(menu, value);
+      close();
+      return { value };
+    });
+
+    dropdowns.set(controlId, { close, open, toggle, menu, btn, control });
+
+    return { close, open, toggle, setActive: (v) => setActiveItem(menu, v) };
+  }
+
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".settings-dropdown-control")) return;
+    closeAllDropdowns();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAllDropdowns();
+  });
+
+  return { initDropdown, closeAll: closeAllDropdowns };
+}
+
+const dropdownMgr = createDropdownManager();
+
+// ==============================================
 // CHAT SETTINGS
 // ==============================================
 
 const autoScrollToggle = document.getElementById("auto-scroll");
-const fontSizeSelect = document.getElementById("font-size");
+const fontSizeBtn = document.getElementById("font-size-btn");
+const fontSizeMenu = document.getElementById("font-size-menu");
+const fontSizeDropdown = dropdownMgr.initDropdown("font-size-btn", "font-size-menu", "font-size-dropdown");
 const clearHistoryBtn = document.getElementById("clear-history");
+
 
 if (autoScrollToggle) {
   autoScrollToggle.checked = getSettingBool(SETTINGS_KEYS.AUTO_SCROLL, true);
@@ -132,10 +223,12 @@ if (autoScrollToggle) {
   });
 }
 
-if (fontSizeSelect) {
-  fontSizeSelect.value = getSetting(SETTINGS_KEYS.FONT_SIZE, "medium");
-  fontSizeSelect.addEventListener("change", () => {
-    setSetting(SETTINGS_KEYS.FONT_SIZE, fontSizeSelect.value);
+if (fontSizeDropdown && fontSizeMenu) {
+  fontSizeDropdown.setActive(getSetting(SETTINGS_KEYS.FONT_SIZE, "medium"));
+  fontSizeMenu.addEventListener("click", (e) => {
+    const item = e.target.closest(".settings-dropdown-item[data-value]");
+    if (!item) return;
+    setSetting(SETTINGS_KEYS.FONT_SIZE, item.dataset.value);
   });
 }
 
@@ -154,61 +247,86 @@ if (clearHistoryBtn) {
 // MODEL & MODE SETTINGS
 // ==============================================
 
-const defaultModelSelect = document.getElementById("default-model");
-const modeSelectionSelect = document.getElementById("mode-selection");
-const defaultModeSelect = document.getElementById("default-mode");
+const defaultModelDropdown = dropdownMgr.initDropdown("default-model-btn", "default-model-menu", "default-model-dropdown");
+const defaultModelMenu = document.getElementById("default-model-menu");
+const modeSelectionDropdown = dropdownMgr.initDropdown("mode-selection-btn", "mode-selection-menu", "mode-selection-dropdown");
+const modeSelectionMenu = document.getElementById("mode-selection-menu");
+const defaultModeDropdown = dropdownMgr.initDropdown("default-mode-btn", "default-mode-menu", "default-mode-dropdown");
+const defaultModeMenu = document.getElementById("default-mode-menu");
 const defaultModeSetting = document.getElementById("default-mode-setting");
-const responseLengthSelect = document.getElementById("response-length");
+const responseLengthDropdown = dropdownMgr.initDropdown("response-length-btn", "response-length-menu", "response-length-dropdown");
+const responseLengthMenu = document.getElementById("response-length-menu");
 
 function updateModeSettingVisibility() {
-  if (!modeSelectionSelect || !defaultModeSetting) return;
-  defaultModeSetting.style.display = modeSelectionSelect.value === "manual" ? "flex" : "none";
+  if (!defaultModeSetting) return;
+  const modeSelectionBtn = document.getElementById("mode-selection-btn");
+  const isManual = modeSelectionBtn && modeSelectionBtn.textContent.trim().toLowerCase() === "manual";
+  defaultModeSetting.style.display = isManual ? "flex" : "none";
 }
 
-if (defaultModelSelect) {
-  defaultModelSelect.value = getSetting(SETTINGS_KEYS.DEFAULT_MODEL, "omni");
-  defaultModelSelect.addEventListener("change", () => {
-    setSetting(SETTINGS_KEYS.DEFAULT_MODEL, defaultModelSelect.value);
+if (defaultModelDropdown && defaultModelMenu) {
+  defaultModelDropdown.setActive(getSetting(SETTINGS_KEYS.DEFAULT_MODEL, "omni"));
+  defaultModelMenu.addEventListener("click", (e) => {
+    const item = e.target.closest(".settings-dropdown-item[data-value]");
+    if (!item) return;
+    setSetting(SETTINGS_KEYS.DEFAULT_MODEL, item.dataset.value);
   });
 }
 
-if (modeSelectionSelect) {
-  modeSelectionSelect.value = getSetting(SETTINGS_KEYS.MODE_SELECTION, "automatic");
-
+if (modeSelectionDropdown && modeSelectionMenu) {
+  modeSelectionDropdown.setActive(getSetting(SETTINGS_KEYS.MODE_SELECTION, "automatic"));
   updateModeSettingVisibility();
 
-  modeSelectionSelect.addEventListener("change", () => {
-    setSetting(SETTINGS_KEYS.MODE_SELECTION, modeSelectionSelect.value);
+  modeSelectionMenu.addEventListener("click", (e) => {
+    const item = e.target.closest(".settings-dropdown-item[data-value]");
+    if (!item) return;
+    setSetting(SETTINGS_KEYS.MODE_SELECTION, item.dataset.value);
     updateModeSettingVisibility();
   });
 }
 
-if (defaultModeSelect) {
-  defaultModeSelect.value = getSetting(SETTINGS_KEYS.DEFAULT_MODE, "architect");
-  defaultModeSelect.addEventListener("change", () => {
-    setSetting(SETTINGS_KEYS.DEFAULT_MODE, defaultModeSelect.value);
+if (defaultModeDropdown && defaultModeMenu) {
+  defaultModeDropdown.setActive(getSetting(SETTINGS_KEYS.DEFAULT_MODE, "architect"));
+  defaultModeMenu.addEventListener("click", (e) => {
+    const item = e.target.closest(".settings-dropdown-item[data-value]");
+    if (!item) return;
+    setSetting(SETTINGS_KEYS.DEFAULT_MODE, item.dataset.value);
+  });
+}
+
+if (responseLengthDropdown && responseLengthMenu) {
+  responseLengthDropdown.setActive(getSetting(SETTINGS_KEYS.RESPONSE_LENGTH, "balanced"));
+  responseLengthMenu.addEventListener("click", (e) => {
+    const item = e.target.closest(".settings-dropdown-item[data-value]");
+    if (!item) return;
+    setSetting(SETTINGS_KEYS.RESPONSE_LENGTH, item.dataset.value);
   });
 }
 
 window.addEventListener("storage", (e) => {
-  if (!modeSelectionSelect || !defaultModeSelect) return;
+  const defaultModelBtn = document.getElementById("default-model-btn");
+  const modeSelectionBtn = document.getElementById("mode-selection-btn");
+  const defaultModeBtn = document.getElementById("default-mode-btn");
 
   if (e.key === SETTINGS_KEYS.MODE_SELECTION) {
-    modeSelectionSelect.value = getSetting(SETTINGS_KEYS.MODE_SELECTION, "automatic");
+    const val = getSetting(SETTINGS_KEYS.MODE_SELECTION, "automatic");
+    if (modeSelectionDropdown) modeSelectionDropdown.setActive(val);
+    if (modeSelectionBtn) modeSelectionBtn.textContent = val.charAt(0).toUpperCase() + val.slice(1);
     updateModeSettingVisibility();
   }
 
   if (e.key === SETTINGS_KEYS.DEFAULT_MODE) {
-    defaultModeSelect.value = getSetting(SETTINGS_KEYS.DEFAULT_MODE, "architect");
+    const val = getSetting(SETTINGS_KEYS.DEFAULT_MODE, "architect");
+    if (defaultModeDropdown) defaultModeDropdown.setActive(val);
+    if (defaultModeBtn) defaultModeBtn.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+  }
+
+  if (e.key === SETTINGS_KEYS.DEFAULT_MODEL) {
+    const val = getSetting(SETTINGS_KEYS.DEFAULT_MODEL, "omni");
+    if (defaultModelDropdown) defaultModelDropdown.setActive(val);
+    if (defaultModelBtn) defaultModelBtn.textContent = val === "gpt-4o-mini" ? "GPT‑4o Mini" : val === "gpt-4o" ? "GPT‑4o" : val === "deepseek" ? "DeepSeek" : "Omni";
   }
 });
-
-if (responseLengthSelect) {
-  responseLengthSelect.value = getSetting(SETTINGS_KEYS.RESPONSE_LENGTH, "balanced");
-  responseLengthSelect.addEventListener("change", () => {
-    setSetting(SETTINGS_KEYS.RESPONSE_LENGTH, responseLengthSelect.value);
-  });
-}
 
 // ==============================================
 // INTERFACE SETTINGS
