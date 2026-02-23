@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>API Reference – Omni Mind/OS Documentation</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/components.css" />
+  <link rel="stylesheet" href="/styles/docs.css" />
+</head>
+<body class="page">
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link active">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <div class="docs-breadcrumb">
+        <a href="/docs.html" class="breadcrumb-link">← Documentation Hub</a>
+      </div>
+
+      <header class="page-header">
+        <h2>API Reference</h2>
+        <p class="page-subtitle">HTTP endpoints, streaming protocols, and integration examples</p>
+      </header>
+
+      <div class="docs-content">
+        <section id="overview">
+          <h3>API Overview</h3>
+          <p>Omni Mind/OS exposes a RESTful API for chat streaming, memory management, mode configuration, and system health monitoring. All endpoints run on Cloudflare Workers with global edge distribution.</p>
+
+          <div class="info-card">
+            <h4>Base URL</h4>
+            <p><code>https://your-worker.workers.dev</code></p>
+            <p><em>Replace with your deployed Worker URL</em></p>
+          </div>
+
+          <h4>Authentication</h4>
+          <p>Currently, the API is open for prototype use. Production deployments should implement:</p>
+          <ul>
+            <li><strong>API Keys</strong> – Pass via <code>Authorization: Bearer {token}</code> header</li>
+            <li><strong>Rate Limiting</strong> – 60 requests/minute per IP/session</li>
+            <li><strong>CORS</strong> – Restrict to trusted origins</li>
+          </ul>
+        </section>
+
+        <section id="streaming">
+          <h3>Chat Streaming</h3>
+          
+          <h4>POST /api/omni/stream</h4>
+          <p>Initiate a streaming chat conversation with cognitive mode selection and model routing.</p>
+
+          <h5>Request</h5>
+          <div class="code-block">
+            <pre><code>POST /api/omni/stream
+Content-Type: application/json
+
+{
+  "message": "Explain the actor model in distributed systems",
+  "mode": "auto",           // "auto" | "architect" | "analyst" | "visual" | "lore"
+  "model": "omni",          // "omni" | "gpt-4o" | "gpt-4o-mini" | "deepseek"
+  "sessionId": "uuid",      // Optional: resume existing session
+  "userId": "user123",      // Optional: for memory persistence
+  "temperature": 0.7,       // Optional: 0.0-1.0 (default varies by mode)
+  "maxTokens": 2048        // Optional: 512-8192 (default: adaptive)
+}</code></pre>
+          </div>
+
+          <h5>Response (Server-Sent Events)</h5>
+          <div class="code-block">
+            <pre><code>event: connected
+data: {"status": "connected"}
+
+event: metadata
+data: {"mode": "lore", "model": "omni", "sessionId": "abc-123"}
+
+event: token
+data: {"content": "The "}
+
+event: token
+data: {"content": "actor "}
+
+event: token
+data: {"content": "model..."}
+
+event: done
+data: {"totalTokens": 847, "latency": 1240}</code></pre>
+          </div>
+
+          <h5>JavaScript Client Example</h5>
+          <div class="code-block">
+            <pre><code>async function streamChat(message, mode = 'auto', model = 'omni') {
+  const response = await fetch('/api/omni/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, mode, model })
+  });
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n\n');
+    buffer = lines.pop();  // Keep incomplete chunk
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = JSON.parse(line.slice(6));
+
+      if (data.type === 'token') {
+        appendToChat(data.content);
+      } else if (data.type === 'done') {
+        console.log('Stream complete:', data);
+      }
+    }
+  }
+}
+
+streamChat('Design a microservices architecture', 'architect', 'gpt-4o');</code></pre>
+          </div>
+
+          <h5>Error Handling</h5>
+          <div class="code-block">
+            <pre><code>event: error
+data: {"error": "Model timeout", "code": "MODEL_TIMEOUT", "retryable": true}
+
+// Client should:
+// 1. Display error to user
+// 2. If retryable=true, retry with exponential backoff
+// 3. If retryable=false, prompt user to modify request</code></pre>
+          </div>
+        </section>
+
+        <section id="memory">
+          <h3>Memory Management</h3>
+          
+          <h4>GET /api/memory</h4>
+          <p>List all memories for a user with optional filtering.</p>
+
+          <div class="code-block">
+            <pre><code>GET /api/memory?userId={userId}&type={type}&tags={tags}&limit={limit}
+
+// Response
+{
+  "memories": [
+    {
+      "id": "mem-abc",
+      "type": "preference",
+      "content": "Prefers TypeScript over JavaScript",
+      "confidence": 0.9,
+      "tags": ["language", "preference"],
+      "timestamp": 1704067200000
+    }
+  ],
+  "total": 42,
+  "cursor": "next-page-token"
+}</code></pre>
+          </div>
+
+          <h4>POST /api/memory</h4>
+          <p>Create a new memory entry.</p>
+
+          <div class="code-block">
+            <pre><code>POST /api/memory
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "type": "fact",
+  "content": "Uses PostgreSQL for time-series data",
+  "confidence": 0.85,
+  "tags": ["database", "postgres", "time-series"]
+}
+
+// Response
+{
+  "id": "mem-xyz",
+  "created": 1704067200000
+}</code></pre>
+          </div>
+
+          <h4>PUT /api/memory/{memoryId}</h4>
+          <p>Update existing memory.</p>
+
+          <div class="code-block">
+            <pre><code>PUT /api/memory/mem-xyz
+Content-Type: application/json
+
+{
+  "confidence": 0.95,
+  "tags": ["database", "postgres", "time-series", "verified"]
+}</code></pre>
+          </div>
+
+          <h4>DELETE /api/memory/{memoryId}</h4>
+          <p>Delete specific memory.</p>
+
+          <div class="code-block">
+            <pre><code>DELETE /api/memory/mem-xyz
+
+// Response
+{ "deleted": true }</code></pre>
+          </div>
+
+          <h4>DELETE /api/memory?userId={userId}</h4>
+          <p>Clear all memories for a user (requires confirmation).</p>
+
+          <div class="code-block">
+            <pre><code>DELETE /api/memory?userId=user123&confirm=true
+
+// Response
+{ "deleted": 42, "userId": "user123" }</code></pre>
+          </div>
+        </section>
+
+        <section id="modes">
+          <h3>Mode Management</h3>
+          
+          <h4>GET /api/modes</h4>
+          <p>List available cognitive modes with descriptions.</p>
+
+          <div class="code-block">
+            <pre><code>GET /api/modes
+
+// Response
+{
+  "modes": [
+    {
+      "id": "architect",
+      "name": "Architect",
+      "description": "Systems thinking and strategic planning",
+      "icon": "🏗️",
+      "temperature": 0.4,
+      "optimizedFor": ["design", "architecture", "planning"]
+    },
+    {
+      "id": "analyst",
+      "name": "Analyst",
+      "description": "Data-driven reasoning and quantitative analysis",
+      "icon": "📊",
+      "temperature": 0.3,
+      "optimizedFor": ["analysis", "comparison", "metrics"]
+    }
+  ]
+}</code></pre>
+          </div>
+
+          <h4>POST /api/modes/select</h4>
+          <p>Manually select mode for a session (overrides auto-selection).</p>
+
+          <div class="code-block">
+            <pre><code>POST /api/modes/select
+Content-Type: application/json
+
+{
+  "sessionId": "session-abc",
+  "mode": "visual"
+}
+
+// Response
+{
+  "sessionId": "session-abc",
+  "mode": "visual",
+  "appliedAt": 1704067200000
+}</code></pre>
+          </div>
+        </section>
+
+        <section id="health">
+          <h3>System Health</h3>
+          
+          <h4>GET /api/ping</h4>
+          <p>Health check endpoint for monitoring and load balancing.</p>
+
+          <div class="code-block">
+            <pre><code>GET /api/ping
+
+// Response
+{
+  "status": "ok",
+  "timestamp": 1704067200000,
+  "version": "1.0.0",
+  "region": "IAD",               // Cloudflare colo code
+  "services": {
+    "ai": "operational",
+    "memory": "operational",
+    "mind": "operational"
+  }
+}</code></pre>
+          </div>
+
+          <h4>GET /api/ping (with details)</h4>
+          <div class="code-block">
+            <pre><code>GET /api/ping?detailed=true
+
+// Response
+{
+  "status": "ok",
+  "timestamp": 1704067200000,
+  "latencies": {
+    "kvRead": 23,    // ms
+    "aiInference": 87,  // ms (last request)
+    "total": 110
+  },
+  "quotas": {
+    "kvReadsRemaining": 98450,
+    "aiRequestsRemaining": 9850
+  }
+}</code></pre>
+          </div>
+        </section>
+
+        <section id="sessions">
+          <h3>Session Management</h3>
+          
+          <h4>GET /api/session/{sessionId}</h4>
+          <p>Retrieve session state and conversation history.</p>
+
+          <div class="code-block">
+            <pre><code>GET /api/session/session-abc
+
+// Response
+{
+  "id": "session-abc",
+  "userId": "user123",
+  "createdAt": 1704060000000,
+  "lastActive": 1704067200000,
+  "messageCount": 12,
+  "currentMode": "analyst",
+  "messages": [
+    {
+      "id": "msg-1",
+      "role": "user",
+      "content": "Analyze this SQL query performance",
+      "timestamp": 1704067100000
+    },
+    {
+      "id": "msg-2",
+      "role": "assistant",
+      "content": "Based on the EXPLAIN output...",
+      "timestamp": 1704067102000,
+      "metadata": {
+        "mode": "analyst",
+        "model": "omni",
+        "tokens": 847
+      }
+    }
+  ]
+}</code></pre>
+          </div>
+
+          <h4>DELETE /api/session/{sessionId}</h4>
+          <p>Clear session history (keeps user memories intact).</p>
+
+          <div class="code-block">
+            <pre><code>DELETE /api/session/session-abc
+
+// Response
+{ "deleted": true, "messageCount": 12 }</code></pre>
+          </div>
+
+          <h4>POST /api/session/export</h4>
+          <p>Export session data as JSON for backup/analysis.</p>
+
+          <div class="code-block">
+            <pre><code>POST /api/session/export
+Content-Type: application/json
+
+{
+  "sessionId": "session-abc",
+  "format": "json"  // or "markdown"
+}
+
+// Response (JSON format)
+{
+  "session": {...},
+  "exportedAt": 1704067200000,
+  "format": "json"
+}
+
+// Response (Markdown format)
+# Conversation Export
+**Session ID:** session-abc
+**Created:** 2024-01-01 00:00:00
+
+## Messages
+
+### User (2024-01-01 00:01:40)
+Analyze this SQL query performance
+
+### Assistant (2024-01-01 00:01:42)
+Based on the EXPLAIN output...</code></pre>
+          </div>
+        </section>
+
+        <section id="rate-limits">
+          <h3>Rate Limits & Quotas</h3>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th>Limit</th>
+                <th>Window</th>
+                <th>Headers</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>/api/omni/stream</td>
+                <td>60 req</td>
+                <td>1 minute</td>
+                <td><code>X-RateLimit-Remaining: 45</code></td>
+              </tr>
+              <tr>
+                <td>/api/memory/*</td>
+                <td>120 req</td>
+                <td>1 minute</td>
+                <td><code>X-RateLimit-Reset: 1704067260</code></td>
+              </tr>
+              <tr>
+                <td>/api/ping</td>
+                <td>600 req</td>
+                <td>1 minute</td>
+                <td>No limits on health checks</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4>Rate Limit Headers</h4>
+          <div class="code-block">
+            <pre><code>X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1704067260  // Unix timestamp</code></pre>
+          </div>
+
+          <h4>429 Response</h4>
+          <div class="code-block">
+            <pre><code>HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+Retry-After: 30
+
+{
+  "error": "Rate limit exceeded",
+  "retryAfter": 30,  // seconds
+  "limit": 60,
+  "window": "1m"
+}</code></pre>
+          </div>
+        </section>
+
+        <section id="errors">
+          <h3>Error Codes</h3>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Status</th>
+                <th>Meaning</th>
+                <th>Retryable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>INVALID_REQUEST</td>
+                <td>400</td>
+                <td>Malformed JSON or missing required fields</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td>UNAUTHORIZED</td>
+                <td>401</td>
+                <td>Invalid or missing API key</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td>RATE_LIMITED</td>
+                <td>429</td>
+                <td>Too many requests</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td>MODEL_TIMEOUT</td>
+                <td>504</td>
+                <td>AI inference exceeded timeout</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td>KV_UNAVAILABLE</td>
+                <td>503</td>
+                <td>Memory storage temporarily unavailable</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td>INTERNAL_ERROR</td>
+                <td>500</td>
+                <td>Unexpected server error</td>
+                <td>Yes</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4>Error Response Format</h4>
+          <div class="code-block">
+            <pre><code>{
+  "error": "Model timeout",
+  "code": "MODEL_TIMEOUT",
+  "retryable": true,
+  "details": {
+    "model": "gpt-4o",
+    "timeout": 30000,
+    "elapsed": 31200
+  },
+  "timestamp": 1704067200000
+}</code></pre>
+          </div>
+        </section>
+
+        <section id="examples">
+          <h3>Integration Examples</h3>
+          
+          <h4>cURL</h4>
+          <div class="code-block">
+            <pre><code># Stream chat with auto mode selection
+curl -N -X POST https://your-worker.workers.dev/api/omni/stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Design a rate limiting system",
+    "mode": "auto",
+    "model": "omni"
+  }'
+
+# Create memory
+curl -X POST https://your-worker.workers.dev/api/memory \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "user123",
+    "type": "preference",
+    "content": "Prefers concise explanations",
+    "confidence": 0.9
+  }'
+
+# Health check
+curl https://your-worker.workers.dev/api/ping</code></pre>
+          </div>
+
+          <h4>Python</h4>
+          <div class="code-block">
+            <pre><code>import requests
+import json
+
+def stream_chat(message, mode='auto', model='omni'):
+    url = 'https://your-worker.workers.dev/api/omni/stream'
+    payload = {
+        'message': message,
+        'mode': mode,
+        'model': model
+    }
+
+    response = requests.post(url, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if not line or not line.startswith(b'data: '):
+            continue
+
+        data = json.loads(line[6:])
+        if data.get('type') == 'token':
+            print(data['content'], end='', flush=True)
+        elif data.get('type') == 'done':
+            print(f"\n\nCompleted in {data['latency']}ms")
+
+stream_chat("Explain ACID properties", mode='lore')</code></pre>
+          </div>
+
+          <h4>Node.js</h4>
+          <div class="code-block">
+            <pre><code>const fetch = require('node-fetch');
+
+async function streamChat(message, mode = 'auto', model = 'omni') {
+  const response = await fetch('https://your-worker.workers.dev/api/omni/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, mode, model })
+  });
+
+  const reader = response.body;
+  let buffer = '';
+
+  reader.on('data', (chunk) => {
+    buffer += chunk.toString();
+    const lines = buffer.split('\n\n');
+    buffer = lines.pop();
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = JSON.parse(line.slice(6));
+
+      if (data.type === 'token') {
+        process.stdout.write(data.content);
+      } else if (data.type === 'done') {
+        console.log(`\n\nDone: ${data.totalTokens} tokens`);
+      }
+    }
+  });
+}
+
+streamChat('Compare Redis vs Memcached', 'analyst');</code></pre>
+          </div>
+        </section>
+
+        <section id="webhooks">
+          <h3>Webhooks (Coming Soon)</h3>
+          <p>Future support for event-driven integrations:</p>
+          <ul>
+            <li><strong>conversation.completed</strong> – Fired when streaming finishes</li>
+            <li><strong>memory.created</strong> – New memory extracted from conversation</li>
+            <li><strong>mode.switched</strong> – Automatic mode change detected</li>
+            <li><strong>session.expired</strong> – Session reaches TTL</li>
+          </ul>
+        </section>
+
+        <section id="sdks">
+          <h3>Official SDKs (Planned)</h3>
+          <div class="sdk-grid">
+            <div class="sdk-card">
+              <h4>JavaScript/TypeScript</h4>
+              <p>NPM package with full TypeScript support</p>
+              <code>npm install @omni-mind/sdk</code>
+            </div>
+            <div class="sdk-card">
+              <h4>Python</h4>
+              <p>PyPI package with async/await support</p>
+              <code>pip install omni-mind-sdk</code>
+            </div>
+            <div class="sdk-card">
+              <h4>Go</h4>
+              <p>Idiomatic Go client with context support</p>
+              <code>go get github.com/omni-mind/sdk-go</code>
+            </div>
+          </div>
+        </section>
+
+        <section id="next-steps">
+          <h3>What's Next?</h3>
+          <div class="nav-cards">
+            <a href="/chat.html" class="nav-card">
+              <span class="nav-icon">💬</span>
+              <div>
+                <strong>Try the Chat Interface</strong>
+                <p>Experience the API in action</p>
+              </div>
+              <span class="nav-arrow">→</span>
+            </a>
+            <a href="/docs-memory.html" class="nav-card">
+              <span class="nav-icon">💾</span>
+              <div>
+                <strong>Memory System</strong>
+                <p>Learn about context persistence</p>
+              </div>
+              <span class="nav-arrow">→</span>
+            </a>
+            <a href="/docs-architecture.html" class="nav-card">
+              <span class="nav-icon">🏗️</span>
+              <div>
+                <strong>Architecture</strong>
+                <p>Deep dive into system design</p>
+              </div>
+              <span class="nav-arrow">→</span>
+            </a>
+          </div>
+        </section>
+      </div>
+
+      <button id="scroll-top" class="scroll-top-btn" aria-label="Scroll to top">↑</button>
+    </main>
+  </div>
+
+  <script src="/scripts/docs.js"></script>
+</body>
+</html>

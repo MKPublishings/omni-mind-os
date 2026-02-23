@@ -34,170 +34,101 @@
         <p class="page-subtitle">Technical reference for Omni Mind/OS architecture, modes, memory systems, and API integration.</p>
       </header>
 
-      <div class="docs-layout">
-        <!-- TABLE OF CONTENTS -->
-        <aside class="docs-toc">
-          <div class="toc-sticky">
-            <h3 class="toc-title">Contents</h3>
-            <nav class="toc-nav">
-              <a href="#overview" class="toc-link active" data-section="overview">
-                <span class="toc-icon">📘</span>
-                Overview
-              </a>
-              <a href="#architecture" class="toc-link" data-section="architecture">
-                <span class="toc-icon">🏗️</span>
-                Architecture
-              </a>
-              <a href="#modes" class="toc-link" data-section="modes">
-                <span class="toc-icon">🧠</span>
-                Modes
-              </a>
-              <a href="#memory" class="toc-link" data-section="memory">
-                <span class="toc-icon">💾</span>
-                Memory
-              </a>
-              <a href="#api" class="toc-link" data-section="api">
-                <span class="toc-icon">⚡</span>
-                API
-              </a>
-            </nav>
+      <div class="docs-hub-grid">
+        <a href="/docs-overview.html" class="docs-hub-card">
+          <div class="docs-hub-icon">📘</div>
+          <h3>Overview</h3>
+          <p>Core philosophy, technology stack, and project structure</p>
+          <span class="docs-hub-arrow">→</span>
+        </a>
+
+        <a href="/docs-architecture.html" class="docs-hub-card">
+          <div class="docs-hub-icon">🏗️</div>
+          <h3>Architecture</h3>
+          <p>System design, request flow, and data storage</p>
+          <span class="docs-hub-arrow">→</span>
+        </a>
+
+        <a href="/docs-modes.html" class="docs-hub-card">
+          <div class="docs-hub-icon">🧠</div>
+          <h3>Modes</h3>
+          <p>Cognitive primitives and mode selection logic</p>
+          <span class="docs-hub-arrow">→</span>
+        </a>
+
+        <a href="/docs-memory.html" class="docs-hub-card">
+          <div class="docs-hub-icon">💾</div>
+          <h3>Memory</h3>
+          <p>Persistent context and session management</p>
+          <span class="docs-hub-arrow">→</span>
+        </a>
+
+        <a href="/docs-api.html" class="docs-hub-card">
+          <div class="docs-hub-icon">⚡</div>
+          <h3>API Reference</h3>
+          <p>Endpoints, streaming, and integration examples</p>
+          <span class="docs-hub-arrow">→</span>
+        </a>
+      </div>
+
+      <div class="docs-footer">
+        <div class="quick-links">
+          <h3>Quick Links</h3>
+          <div class="quick-links-grid">
+            <a href="/chat.html" class="quick-link">
+              <span>💬</span>
+              Try Chat Interface
+            </a>
+            <a href="/modes.html" class="quick-link">
+              <span>🔮</span>
+              Explore Modes
+            </a>
+            <a href="/settings.html" class="quick-link">
+              <span>⚙️</span>
+              Configure Settings
+            </a>
           </div>
-        </aside>
+        </div>
+      </div>
+    </main>
+  </div>
 
-        <!-- DOCUMENTATION CONTENT -->
-        <article class="docs-content">
-          
-          <!-- SECTION: OVERVIEW -->
-          <section id="overview" class="doc-section">
-            <h2 class="section-title">Overview</h2>
-            
-            <div class="doc-intro">
-              <p class="lead">Omni Mind/OS is a <strong>multi-mode intelligence shell</strong> designed to unify reasoning, memory, and creative workflows into a single cinematic interface powered by Cloudflare Workers AI.</p>
-            </div>
+  <script>
+(() => {
+  const body = document.body;
+  if (!body) return;
 
-            <div class="info-box">
-              <div class="info-icon">💡</div>
-              <div>
-                <strong>Core Philosophy</strong>
-                <p>Switch cognitive lenses instantly. Each mode optimizes reasoning patterns, language style, and output format for specific problem domains.</p>
-              </div>
-            </div>
+  let navigating = false;
 
-            <h3>Key Features</h3>
-            <ul class="feature-checklist">
-              <li>🧠 <strong>Cognitive Modes</strong> — Architect, Analyst, Visual, Lore</li>
-              <li>💾 <strong>Persistent Memory</strong> — KV-backed facts, preferences, codex</li>
-              <li>⚡ <strong>Streaming Responses</strong> — Real-time SSE token delivery</li>
-              <li>🎨 <strong>Dark Neapolitan Theme</strong> — Cinematic glass-panel UI</li>
-              <li>🔧 <strong>Multi-Model Support</strong> — Omni, GPT-4o, DeepSeek routing</li>
-              <li>📊 <strong>Emotional Modulation</strong> — Adaptive response tone based on context</li>
-            </ul>
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest("a.nav-link");
+    if (!link) return;
 
-            <h3>Technology Stack</h3>
-            <div class="tech-stack-grid">
-              <div class="tech-stack-item">
-                <h4>Frontend</h4>
-                <ul>
-                  <li>Vanilla JavaScript (ES6+)</li>
-                  <li>Server-Sent Events (SSE)</li>
-                  <li>CSS Glass Morphism</li>
-                  <li>LocalStorage Sessions</li>
-                </ul>
-              </div>
-              <div class="tech-stack-item">
-                <h4>Backend</h4>
-                <ul>
-                  <li>Cloudflare Workers</li>
-                  <li>Workers AI Binding</li>
-                  <li>KV Namespaces (Memory/Mind)</li>
-                  <li>TypeScript</li>
-                </ul>
-              </div>
-              <div class="tech-stack-item">
-                <h4>Deployment</h4>
-                <ul>
-                  <li>Cloudflare Pages</li>
-                  <li>Wrangler CLI</li>
-                  <li>Edge Runtime</li>
-                  <li>Global CDN</li>
-                </ul>
-              </div>
-            </div>
+    const href = link.getAttribute("href");
+    if (!href || href.startsWith("#")) return;
+    if (link.target === "_blank" || link.hasAttribute("download")) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
-            <h3>Project Structure</h3>
-            <pre><code>omni-mind-os/
-├── public/              # Static frontend assets
-│   ├── styles/          # CSS modules
-│   ├── scripts/         # Client-side JavaScript
-│   └── *.html           # Page templates
-├── src/                 # TypeScript backend
-│   ├── api/             # API route handlers
-│   ├── llm/             # Model inference & routing
-│   ├── memory/          # KV storage layer
-│   ├── omni/            # Core cognitive engine
-│   │   ├── modes/       # Mode primers (architect, analyst, etc.)
-│   │   ├── emotion/     # Emotional state system
-│   │   ├── reflection/  # Self-assessment loops
-│   │   └── runtime/     # Execution loop
-│   ├── stability/       # Safety & validation
-│   ├── tools/           # Function calling registry
-│   └── utils/           # Shared utilities
-└── wrangler.toml        # Worker configuration</code></pre>
-          </section>
+    const url = new URL(link.href, window.location.href);
+    if (url.origin !== window.location.origin) return;
 
-          <!-- SECTION: ARCHITECTURE -->
-          <section id="architecture" class="doc-section">
-            <h2 class="section-title">Architecture</h2>
+    e.preventDefault();
+    if (navigating) return;
+    navigating = true;
 
-            <div class="doc-intro">
-              <p class="lead">Omni Mind/OS follows a <strong>modular, edge-first architecture</strong> built on Cloudflare's global network. The system separates concerns into frontend presentation, backend orchestration, and AI inference layers.</p>
-            </div>
+    body.classList.add("page-transition");
 
-            <h3>System Diagram</h3>
-            <div class="diagram-box">
-              <pre class="architecture-diagram">
-┌─────────────────────────────────────────────────────────────┐
-│                    CLIENT (Browser)                         │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  chat.html  │  │  settings.js │  │  modes.html  │      │
-│  └─────────────┘  └──────────────┘  └──────────────┘      │
-│         │                  │                  │             │
-│         └──────────────────┴──────────────────┘             │
-│                           │                                 │
-│                     SSE Streaming                           │
-└───────────────────────────┼─────────────────────────────────┘
-                            │
-                    ┌───────▼────────┐
-                    │  Cloudflare    │
-                    │  Edge Network  │
-                    └───────┬────────┘
-                            │
-        ┌───────────────────┴───────────────────┐
-        │                                       │
-┌───────▼────────┐                  ┌──────────▼─────────┐
-│  Workers API   │                  │   Cloudflare Pages │
-│  /api/omni     │                  │   Static Assets    │
-└───────┬────────┘                  └────────────────────┘
-        │
-        │  ┌──────────────────┐
-        ├──► Mode Selector    │  (architect/analyst/visual/lore)
-        │  └──────────────────┘
-        │
-        │  ┌──────────────────┐
-        ├──► Memory Layer     │  (KV: MEMORY, MIND)
-        │  └──────────────────┘
-        │
-        │  ┌──────────────────┐
-        ├──► Emotion Engine   │  (checkpoint/detect/modulate)
-        │  └──────────────────┘
-        │
-        │  ┌──────────────────┐
-        └──► Workers AI      │  (omni/gpt-4o/deepseek)
-           └──────────────────┘
-              </pre>
-            </div>
+    const ms =
+      parseFloat(getComputedStyle(body).getPropertyValue("--page-transition-ms")) || 350;
 
-            <h3>Request Flow</h3>
+    window.setTimeout(() => {
+      window.location.assign(url.href);
+    }, ms);
+  });
+})();
+</script>
+</body>
+</html>
             <ol class="numbered-steps">
               <li>
                 <strong>Client Request</strong>

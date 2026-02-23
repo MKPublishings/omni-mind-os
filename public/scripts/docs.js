@@ -280,6 +280,31 @@ function initializeSearch() {
   console.log("Search functionality ready for implementation");
 }
 
+// ==============================================
+// SCROLL TO TOP BUTTON
+// ==============================================
+
+const scrollTopBtn = document.getElementById("scroll-top");
+
+if (scrollTopBtn) {
+  // Show/hide button based on scroll position
+  window.addEventListener("scroll", () => {
+    if (window.scrollY > 300) {
+      scrollTopBtn.classList.add("visible");
+    } else {
+      scrollTopBtn.classList.remove("visible");
+    }
+  });
+
+  // Scroll to top on click
+  scrollTopBtn.addEventListener("click", () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  });
+}
+
 // Initialize
 console.log("Documentation page initialized with", docSections.length, "sections");
 console.log("Keyboard shortcuts: Ctrl/Cmd + ↑/↓ to navigate, Ctrl/Cmd + Home to jump to top");

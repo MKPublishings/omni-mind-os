@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Memory – Omni Mind/OS Documentation</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/components.css" />
+  <link rel="stylesheet" href="/styles/docs.css" />
+</head>
+<body class="page">
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link active">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <div class="docs-breadcrumb">
+        <a href="/docs.html" class="breadcrumb-link">← Documentation Hub</a>
+      </div>
+
+      <header class="page-header">
+        <h2>Memory System</h2>
+        <p class="page-subtitle">Persistent context management and session storage</p>
+      </header>
+
+      <div class="docs-content">
+        <section id="overview">
+          <h3>Memory Architecture</h3>
+          <p>Omni Mind/OS maintains two distinct memory layers—<strong>Long-Term Memory</strong> (persistent user context) and <strong>Short-Term Memory</strong> (active session state). This dual-layer approach balances immediate conversational coherence with long-term personalization.</p>
+
+          <div class="memory-diagram">
+            <div class="memory-layer">
+              <h4>🧠 Long-Term Memory (MEMORY KV)</h4>
+              <div class="memory-items">
+                <span>User Preferences</span>
+                <span>Learned Facts</span>
+                <span>Historical Context</span>
+              </div>
+              <p class="memory-ttl">TTL: Persistent</p>
+            </div>
+            <div class="memory-arrow">⇅</div>
+            <div class="memory-layer">
+              <h4>💭 Short-Term Memory (MIND KV)</h4>
+              <div class="memory-items">
+                <span>Active Session</span>
+                <span>Conversation History</span>
+                <span>Mode State</span>
+              </div>
+              <p class="memory-ttl">TTL: 7 days</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="long-term">
+          <h3>Long-Term Memory (MEMORY)</h3>
+          <p>Persistent storage for user context, preferences, and learned facts that persist across sessions and devices.</p>
+
+          <h4>Data Schema</h4>
+          <div class="code-block">
+            <pre><code>interface MemoryEntry {
+  id: string;              // UUID
+  userId: string;          // User identifier
+  type: 'fact' | 'preference' | 'context' | 'skill';
+  content: string;         // Memory payload
+  timestamp: number;       // Unix timestamp (ms)
+  confidence: number;      // 0.0-1.0 reliability score
+  tags: string[];          // Categorization tags
+  links: string[];         // Related memory IDs
+  accessCount: number;     // Retrieval frequency
+  lastAccessed: number;    // Last retrieval timestamp
+}</code></pre>
+          </div>
+
+          <h4>Memory Types</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Purpose</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>fact</code></td>
+                <td>Verifiable information learned from user</td>
+                <td>"User prefers React over Vue"</td>
+              </tr>
+              <tr>
+                <td><code>preference</code></td>
+                <td>User choices, settings, and style preferences</td>
+                <td>"Prefers concise explanations"</td>
+              </tr>
+              <tr>
+                <td><code>context</code></td>
+                <td>Background info about user's projects/work</td>
+                <td>"Working on e-commerce platform"</td>
+              </tr>
+              <tr>
+                <td><code>skill</code></td>
+                <td>User's technical expertise and knowledge level</td>
+                <td>"Expert in PostgreSQL, beginner in Rust"</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4>Storage Operations</h4>
+          <div class="code-block">
+            <pre><code>// Write memory
+await env.MEMORY.put(
+  `user:${userId}:memory:${memoryId}`,
+  JSON.stringify(memoryEntry),
+  { metadata: { type: 'fact', tags: ['database', 'postgres'] } }
+);
+
+// Read memory
+const memory = await env.MEMORY.get(
+  `user:${userId}:memory:${memoryId}`,
+  'json'
+);
+
+// List user memories
+const { keys } = await env.MEMORY.list({
+  prefix: `user:${userId}:memory:`,
+  limit: 100
+});
+
+// Delete expired memory
+await env.MEMORY.delete(`user:${userId}:memory:${memoryId}`);</code></pre>
+          </div>
+        </section>
+
+        <section id="short-term">
+          <h3>Short-Term Memory (MIND)</h3>
+          <p>Active session storage for conversation history, mode state, and temporary context with 7-day TTL.</p>
+
+          <h4>Session Schema</h4>
+          <div class="code-block">
+            <pre><code>interface Session {
+  id: string;                    // Session UUID
+  userId: string;                // User identifier
+  createdAt: number;             // Session start timestamp
+  lastActive: number;            // Last interaction timestamp
+  messages: Message[];           // Conversation history
+  currentMode: CognitiveMode;    // Active mode
+  emotionalState: EmotionalProfile;  // Current emotion checkpoint
+  context: Record<string, any>;  // Temporary context
+}
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: number;
+  mode?: CognitiveMode;
+  model?: string;
+  metadata?: Record<string, any>;
+}</code></pre>
+          </div>
+
+          <h4>Session Lifecycle</h4>
+          <ol class="numbered-steps">
+            <li>
+              <strong>Creation</strong>
+              <p>New session initialized on first message. Session ID stored in client localStorage.</p>
+              <div class="code-block">
+                <pre><code>const sessionId = crypto.randomUUID();
+await env.MIND.put(`session:${sessionId}`, JSON.stringify({
+  id: sessionId,
+  userId: userId,
+  createdAt: Date.now(),
+  messages: [],
+  currentMode: 'auto'
+}), { expirationTtl: 604800 });  // 7 days</code></pre>
+              </div>
+            </li>
+            <li>
+              <strong>Updates</strong>
+              <p>Session updated after each message exchange. Recent messages kept in memory buffer.</p>
+              <div class="code-block">
+                <pre><code>session.messages.push({ role: 'user', content: userMessage });
+session.messages.push({ role: 'assistant', content: response });
+session.lastActive = Date.now();
+await env.MIND.put(`session:${sessionId}`, JSON.stringify(session));</code></pre>
+              </div>
+            </li>
+            <li>
+              <strong>Retrieval</strong>
+              <p>Session loaded on subsequent requests. Falls back to new session if expired.</p>
+              <div class="code-block">
+                <pre><code>const session = await env.MIND.get(`session:${sessionId}`, 'json');
+if (!session || Date.now() - session.lastActive > 7 * 24 * 60 * 60 * 1000) {
+  return createNewSession(userId);
+}</code></pre>
+              </div>
+            </li>
+            <li>
+              <strong>Expiration</strong>
+              <p>Sessions auto-expire after 7 days of inactivity. Cleared from storage automatically.</p>
+            </li>
+          </ol>
+        </section>
+
+        <section id="retrieval">
+          <h3>Context Retrieval</h3>
+          <p>Memory retrieval uses a multi-stage pipeline to select relevant context for each request.</p>
+
+          <h4>Retrieval Pipeline</h4>
+          <div class="code-block">
+            <pre><code>async function retrieveContext(userId: string, query: string) {
+  // Stage 1: Load recent session history
+  const session = await getActiveSession(userId);
+  const recentMessages = session.messages.slice(-10);  // Last 10 messages
+
+  // Stage 2: Semantic search on long-term memory
+  const memories = await searchMemories(userId, query);
+  const relevantMemories = rankByRelevance(memories, query)
+    .slice(0, 5)  // Top 5 memories
+    .filter(m => m.confidence > 0.7);
+
+  // Stage 3: Build context payload
+  return {
+    sessionHistory: recentMessages,
+    persistentContext: relevantMemories,
+    userPreferences: await getUserPreferences(userId)
+  };
+}</code></pre>
+          </div>
+
+          <h4>Relevance Ranking</h4>
+          <p>Memories scored based on:</p>
+          <ul>
+            <li><strong>Recency</strong> – Recent memories weighted higher (decay factor: 0.95^days)</li>
+            <li><strong>Access Frequency</strong> – Often-retrieved memories prioritized</li>
+            <li><strong>Semantic Similarity</strong> – Keyword overlap with current query</li>
+            <li><strong>Confidence Score</strong> – Only memories with confidence > 0.7 included</li>
+          </ul>
+
+          <h4>Context Injection</h4>
+          <div class="code-block">
+            <pre><code>const systemPrompt = `
+You are Omni Mind/OS operating in ${mode} mode.
+
+## User Context
+${context.persistentContext.map(m => `- ${m.content}`).join('\n')}
+
+## Recent Conversation
+${context.sessionHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
+## Preferences
+${Object.entries(context.userPreferences).map(([k, v]) => `- ${k}: ${v}`).join('\n')}
+`;</code></pre>
+          </div>
+        </section>
+
+        <section id="extraction">
+          <h3>Memory Extraction</h3>
+          <p>After generating responses, the system extracts learnings to update long-term memory.</p>
+
+          <h4>Extraction Heuristics</h4>
+          <div class="code-block">
+            <pre><code>async function extractMemories(conversation: Message[]) {
+  const userMessages = conversation.filter(m => m.role === 'user');
+  const memories: MemoryEntry[] = [];
+
+  for (const msg of userMessages) {
+    // Detect explicit preferences
+    if (/I (prefer|like|want|need)/i.test(msg.content)) {
+      memories.push({
+        type: 'preference',
+        content: extractPreference(msg.content),
+        confidence: 0.9,
+        tags: ['explicit-preference']
+      });
+    }
+
+    // Detect factual statements
+    if (/I (am|work on|use|have)/i.test(msg.content)) {
+      memories.push({
+        type: 'fact',
+        content: extractFact(msg.content),
+        confidence: 0.8,
+        tags: ['user-fact']
+      });
+    }
+
+    // Detect skill mentions
+    if (/(expert|beginner|learning|familiar with)/i.test(msg.content)) {
+      memories.push({
+        type: 'skill',
+        content: extractSkill(msg.content),
+        confidence: 0.85,
+        tags: ['skill-level']
+      });
+    }
+  }
+
+  return memories;
+}</code></pre>
+          </div>
+
+          <h4>Confidence Scoring</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Confidence</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Explicit statement</td>
+                <td>0.9</td>
+                <td>"I prefer TypeScript over JavaScript"</td>
+              </tr>
+              <tr>
+                <td>Implicit preference</td>
+                <td>0.7</td>
+                <td>"Always write async/await instead of .then()"</td>
+              </tr>
+              <tr>
+                <td>Inferred from context</td>
+                <td>0.5</td>
+                <td>User repeatedly asks about React → likely uses React</td>
+              </tr>
+              <tr>
+                <td>Contradictory info</td>
+                <td>-0.3</td>
+                <td>User says "I use Vue" but earlier said "I prefer React"</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="privacy">
+          <h3>Privacy & Security</h3>
+          
+          <h4>Data Isolation</h4>
+          <ul>
+            <li>User memories namespaced by <code>user:{userId}</code> prefix</li>
+            <li>No cross-user data leakage—strict key isolation</li>
+            <li>Anonymous session IDs prevent user tracking</li>
+          </ul>
+
+          <h4>PII Filtering</h4>
+          <div class="code-block">
+            <pre><code>function sanitizeMemory(content: string): string {
+  // Redact email addresses
+  content = content.replace(/[\w\.-]+@[\w\.-]+\.\w+/g, '[EMAIL]');
+
+  // Redact phone numbers
+  content = content.replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '[PHONE]');
+
+  // Redact credit card numbers
+  content = content.replace(/\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g, '[CARD]');
+
+  return content;
+}</code></pre>
+          </div>
+
+          <h4>Data Retention</h4>
+          <ul>
+            <li><strong>Long-Term Memory</strong> – Persistent until manually deleted by user</li>
+            <li><strong>Short-Term Memory</strong> – Auto-expires after 7 days</li>
+            <li><strong>User Control</strong> – Full export/import/clear via Settings page</li>
+          </ul>
+        </section>
+
+        <section id="management">
+          <h3>Memory Management API</h3>
+          
+          <h4>Endpoints</h4>
+          <div class="code-block">
+            <pre><code>// List all memories for user
+GET /api/memory?userId={userId}
+
+// Get specific memory
+GET /api/memory/{memoryId}
+
+// Create new memory
+POST /api/memory
+{
+  "userId": "user123",
+  "type": "preference",
+  "content": "Prefers dark mode",
+  "tags": ["ui", "preference"]
+}
+
+// Update memory
+PUT /api/memory/{memoryId}
+{
+  "confidence": 0.95,
+  "tags": ["ui", "preference", "verified"]
+}
+
+// Delete memory
+DELETE /api/memory/{memoryId}
+
+// Clear all user memories
+DELETE /api/memory?userId={userId}</code></pre>
+          </div>
+
+          <h4>Client-Side Management</h4>
+          <p>Users can manage memories via the <a href="/settings.html">Settings</a> page:</p>
+          <ul>
+            <li><strong>View Memories</strong> – Browse all stored facts and preferences</li>
+            <li><strong>Edit Entries</strong> – Correct inaccurate memories</li>
+            <li><strong>Delete Specific</strong> – Remove individual memories</li>
+            <li><strong>Clear All</strong> – Full memory reset</li>
+            <li><strong>Export</strong> – Download memories as JSON</li>
+            <li><strong>Import</strong> – Restore from backup</li>
+          </ul>
+        </section>
+
+        <section id="optimization">
+          <h3>Performance Optimization</h3>
+          
+          <h4>Caching Strategy</h4>
+          <ul>
+            <li><strong>Session Cache</strong> – Active session kept in Worker memory (80ms read → 5ms)</li>
+            <li><strong>Memory Index</strong> – User memory keys cached for 5 minutes</li>
+            <li><strong>Batch Reads</strong> – Load multiple memories in parallel</li>
+          </ul>
+
+          <h4>Latency Breakdown</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Operation</th>
+                <th>Cold</th>
+                <th>Warm</th>
+                <th>Optimization</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Session Load</td>
+                <td>~80ms</td>
+                <td>~5ms</td>
+                <td>Worker memory cache</td>
+              </tr>
+              <tr>
+                <td>Memory Search</td>
+                <td>~120ms</td>
+                <td>~15ms</td>
+                <td>Indexed prefix scan</td>
+              </tr>
+              <tr>
+                <td>Context Build</td>
+                <td>~50ms</td>
+                <td>~10ms</td>
+                <td>Parallel retrieval</td>
+              </tr>
+              <tr>
+                <td>Memory Write</td>
+                <td>~30ms</td>
+                <td>~30ms</td>
+                <td>Async (non-blocking)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4>Storage Efficiency</h4>
+          <ul>
+            <li>Average memory entry: ~200 bytes</li>
+            <li>Session state: ~5KB (10 messages)</li>
+            <li>100 users @ 50 memories each = ~1MB total storage</li>
+            <li>KV free tier: 100k reads/day, 1k writes/day (sufficient for prototype)</li>
+          </ul>
+        </section>
+
+        <section id="next-steps">
+          <h3>Related Documentation</h3>
+          <div class="nav-cards">
+            <a href="/docs-api.html" class="nav-card">
+              <span class="nav-icon">⚡</span>
+              <div>
+                <strong>API Reference</strong>
+                <p>Memory management endpoints</p>
+              </div>
+              <span class="nav-arrow">→</span>
+            </a>
+            <a href="/settings.html" class="nav-card">
+              <span class="nav-icon">⚙️</span>
+              <div>
+                <strong>Settings</strong>
+                <p>Manage your memories in the UI</p>
+              </div>
+              <span class="nav-arrow">→</span>
+            </a>
+            <a href="/docs-architecture.html" class="nav-card">
+              <span class="nav-icon">🏗️</span>
+              <div>
+                <strong>Architecture</strong>
+                <p>System design and data flow</p>
+              </div>
+              <span class="nav-arrow">→</span>
+            </a>
+          </div>
+        </section>
+      </div>
+
+      <button id="scroll-top" class="scroll-top-btn" aria-label="Scroll to top">↑</button>
+    </main>
+  </div>
+
+  <script src="/scripts/docs.js"></script>
+</body>
+</html>

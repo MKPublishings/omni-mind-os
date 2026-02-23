@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Modes – Omni Mind/OS Documentation</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/components.css" />
+  <link rel="stylesheet" href="/styles/docs.css" />
+</head>
+<body class="page">
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link active">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <div class="docs-breadcrumb">
+        <a href="/docs.html" class="breadcrumb-link">← Documentation Hub</a>
+      </div>
+
+      <header class="page-header">
+        <h2>Cognitive Modes</h2>
+        <p class="page-subtitle">Specialized reasoning frameworks and automatic mode selection</p>
+      </header>
+
+      <div class="docs-content">
+        <section id="overview">
+          <h3>What Are Modes?</h3>
+          <p>Cognitive modes are specialized mental frameworks that shape how Omni Mind/OS processes information and generates responses. Each mode embeds distinct reasoning strategies, output formats, and heuristics optimized for specific problem domains.</p>
+
+          <div class="info-card">
+            <h4>Mode Philosophy</h4>
+            <p>Rather than training separate models, we use <strong>cognitive priming</strong>—injecting mode-specific system prompts that steer the underlying AI's attention and reasoning patterns. This approach allows dynamic switching without model retraining.</p>
+          </div>
+        </section>
+
+        <section id="mode-types">
+          <h3>Available Modes</h3>
+          
+          <div class="mode-grid">
+            <div class="mode-detail-card architect">
+              <div class="mode-detail-header">
+                <span class="mode-icon">🏗️</span>
+                <h4>Architect</h4>
+              </div>
+              <p class="mode-tagline">Systems thinking and strategic planning</p>
+              
+              <h5>Cognitive Focus</h5>
+              <ul>
+                <li>Breaking complex problems into hierarchical structures</li>
+                <li>Identifying dependencies and relationships</li>
+                <li>Long-term planning and roadmapping</li>
+                <li>Design patterns and architectural principles</li>
+              </ul>
+
+              <h5>Output Style</h5>
+              <ul>
+                <li>Structured diagrams (ASCII art, Mermaid)</li>
+                <li>Hierarchical outlines</li>
+                <li>Decision trees and flowcharts</li>
+                <li>Trade-off analyses</li>
+              </ul>
+
+              <h5>Optimized For</h5>
+              <div class="mode-tags">
+                <span class="mode-tag">System Design</span>
+                <span class="mode-tag">Project Planning</span>
+                <span class="mode-tag">Architecture Reviews</span>
+                <span class="mode-tag">Refactoring</span>
+              </div>
+
+              <h5>Example Prompt</h5>
+              <div class="code-block">
+                <pre><code>"Design a scalable microservices architecture for an e-commerce platform handling 10M daily users."</code></pre>
+              </div>
+            </div>
+
+            <div class="mode-detail-card analyst">
+              <div class="mode-detail-header">
+                <span class="mode-icon">📊</span>
+                <h4>Analyst</h4>
+              </div>
+              <p class="mode-tagline">Data-driven reasoning and quantitative analysis</p>
+              
+              <h5>Cognitive Focus</h5>
+              <ul>
+                <li>Statistical interpretation and trend analysis</li>
+                <li>Evidence-based argumentation</li>
+                <li>Hypothesis testing and validation</li>
+                <li>Comparative evaluation</li>
+              </ul>
+
+              <h5>Output Style</h5>
+              <ul>
+                <li>Tables and comparison matrices</li>
+                <li>Quantitative metrics and KPIs</li>
+                <li>Citation-backed claims</li>
+                <li>Pros/cons lists with confidence scores</li>
+              </ul>
+
+              <h5>Optimized For</h5>
+              <div class="mode-tags">
+                <span class="mode-tag">Data Analysis</span>
+                <span class="mode-tag">Research Summaries</span>
+                <span class="mode-tag">Performance Tuning</span>
+                <span class="mode-tag">Cost-Benefit Analysis</span>
+              </div>
+
+              <h5>Example Prompt</h5>
+              <div class="code-block">
+                <pre><code>"Compare the performance characteristics of PostgreSQL vs MongoDB for a social media analytics workload."</code></pre>
+              </div>
+            </div>
+
+            <div class="mode-detail-card visual">
+              <div class="mode-detail-header">
+                <span class="mode-icon">🎨</span>
+                <h4>Visual</h4>
+              </div>
+              <p class="mode-tagline">Spatial reasoning and visual metaphors</p>
+              
+              <h5>Cognitive Focus</h5>
+              <ul>
+                <li>Visual metaphors and analogies</li>
+                <li>Spatial relationships and layouts</li>
+                <li>Interface design and UX patterns</li>
+                <li>Color theory and typography</li>
+              </ul>
+
+              <h5>Output Style</h5>
+              <ul>
+                <li>ASCII diagrams and visual charts</li>
+                <li>Mockup descriptions</li>
+                <li>CSS/styling recommendations</li>
+                <li>Spatial layout specifications</li>
+              </ul>
+
+              <h5>Optimized For</h5>
+              <div class="mode-tags">
+                <span class="mode-tag">UI/UX Design</span>
+                <span class="mode-tag">Data Visualization</span>
+                <span class="mode-tag">Infographic Creation</span>
+                <span class="mode-tag">Brand Identity</span>
+              </div>
+
+              <h5>Example Prompt</h5>
+              <div class="code-block">
+                <pre><code>"Redesign this dashboard's information hierarchy to highlight critical metrics while maintaining visual harmony."</code></pre>
+              </div>
+            </div>
+
+            <div class="mode-detail-card lore">
+              <div class="mode-detail-header">
+                <span class="mode-icon">📖</span>
+                <h4>Lore</h4>
+              </div>
+              <p class="mode-tagline">Narrative reasoning and contextual synthesis</p>
+              
+              <h5>Cognitive Focus</h5>
+              <ul>
+                <li>Historical context and precedent</li>
+                <li>Narrative construction and storytelling</li>
+                <li>Cultural patterns and human factors</li>
+                <li>Knowledge synthesis across domains</li>
+              </ul>
+
+              <h5>Output Style</h5>
+              <ul>
+                <li>Chronological timelines</li>
+                <li>Explanatory narratives</li>
+                <li>Metaphorical frameworks</li>
+                <li>Contextual background</li>
+              </ul>
+
+              <h5>Optimized For</h5>
+              <div class="mode-tags">
+                <span class="mode-tag">Documentation</span>
+                <span class="mode-tag">Onboarding Materials</span>
+                <span class="mode-tag">Technical Writing</span>
+                <span class="mode-tag">Knowledge Base</span>
+              </div>
+
+              <h5>Example Prompt</h5>
+              <div class="code-block">
+                <pre><code>"Explain the evolution of JavaScript frameworks from jQuery to React, highlighting the problems each solved."</code></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="selection">
+          <h3>Automatic Mode Selection</h3>
+          <p>When mode is set to "Auto," Omni Mind/OS analyzes incoming messages using keyword heuristics and intent classification to select the optimal cognitive framework.</p>
+
+          <h4>Selection Algorithm</h4>
+          <div class="code-block">
+            <pre><code>function selectMode(message: string): CognitiveMode {
+  const keywords = {
+    architect: ['design', 'architecture', 'system', 'plan', 'structure', 'organize'],
+    analyst: ['analyze', 'compare', 'data', 'performance', 'metrics', 'evaluate'],
+    visual: ['design', 'ui', 'ux', 'layout', 'color', 'style', 'diagram'],
+    lore: ['explain', 'history', 'context', 'why', 'background', 'story']
+  };
+
+  const scores = Object.entries(keywords).map(([mode, words]) => ({
+    mode,
+    score: words.filter(w => message.toLowerCase().includes(w)).length
+  }));
+
+  const winner = scores.reduce((a, b) => a.score > b.score ? a : b);
+
+  // Default to Analyst if no clear signal
+  return winner.score > 0 ? winner.mode : 'analyst';
+}</code></pre>
+          </div>
+
+          <h4>Selection Heuristics</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Trigger Pattern</th>
+                <th>Selected Mode</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>System/architecture keywords</td>
+                <td>Architect</td>
+                <td>"How should I structure this microservices app?"</td>
+              </tr>
+              <tr>
+                <td>Comparison/evaluation requests</td>
+                <td>Analyst</td>
+                <td>"Which database is faster for time-series data?"</td>
+              </tr>
+              <tr>
+                <td>Visual/design terminology</td>
+                <td>Visual</td>
+                <td>"Make this UI more intuitive"</td>
+              </tr>
+              <tr>
+                <td>Explanation/history queries</td>
+                <td>Lore</td>
+                <td>"Why did REST become so popular?"</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="priming">
+          <h3>Mode Priming System</h3>
+          <p>Each mode injects a specialized system prompt that establishes the cognitive framework before processing user input.</p>
+
+          <h4>Architect Primer</h4>
+          <div class="code-block">
+            <pre><code>You are operating in ARCHITECT mode—a systems thinking specialist.
+
+Focus on:
+- Hierarchical decomposition of complex problems
+- Identifying dependencies and relationships
+- Trade-off analysis between design alternatives
+- Long-term maintainability and scalability
+
+Output format:
+- Start with high-level overview
+- Use visual diagrams (ASCII, Mermaid) when helpful
+- Structure responses as nested hierarchies
+- Highlight critical decision points</code></pre>
+          </div>
+
+          <h4>Analyst Primer</h4>
+          <div class="code-block">
+            <pre><code>You are operating in ANALYST mode—a data-driven reasoning specialist.
+
+Focus on:
+- Quantitative metrics and performance characteristics
+- Evidence-based comparisons
+- Statistical patterns and trends
+- Objective evaluation criteria
+
+Output format:
+- Lead with key findings and metrics
+- Use tables for comparative analysis
+- Cite sources and confidence levels
+- Provide concrete numbers when available</code></pre>
+          </div>
+
+          <h4>Visual Primer</h4>
+          <div class="code-block">
+            <pre><code>You are operating in VISUAL mode—a spatial reasoning and design specialist.
+
+Focus on:
+- Visual hierarchy and information architecture
+- Color theory and typography principles
+- User interface patterns and usability
+- Aesthetic coherence and brand consistency
+
+Output format:
+- Describe visual layouts spatially
+- Use ASCII diagrams for mockups
+- Reference design systems (Material, Fluent, etc.)
+- Provide CSS/styling recommendations</code></pre>
+          </div>
+
+          <h4>Lore Primer</h4>
+          <div class="code-block">
+            <pre><code>You are operating in LORE mode—a narrative synthesis specialist.
+
+Focus on:
+- Historical context and evolution
+- Human factors and cultural patterns
+- Connecting concepts across domains
+- Storytelling and explanatory narratives
+
+Output format:
+- Begin with contextual background
+- Use chronological timelines
+- Employ metaphors and analogies
+- Synthesize disparate knowledge sources</code></pre>
+          </div>
+        </section>
+
+        <section id="manual-override">
+          <h3>Manual Mode Selection</h3>
+          <p>Users can override automatic mode selection via the settings interface or per-message mode hints.</p>
+
+          <h4>Via Settings</h4>
+          <p>Navigate to <a href="/settings.html">Settings</a> → Model & Mode → Cognitive Mode → Select preferred mode</p>
+
+          <h4>Per-Message Hints</h4>
+          <div class="code-block">
+            <pre><code>// Prefix message with mode hint
+"[architect] Design a caching layer for this API"
+
+// System detects hint and forces Architect mode</code></pre>
+          </div>
+
+          <h4>API Parameter</h4>
+          <div class="code-block">
+            <pre><code>POST /api/omni/stream
+{
+  "message": "Explain React hooks",
+  "mode": "lore",  // Force Lore mode
+  "model": "omni"
+}</code></pre>
+          </div>
+        </section>
+
+        <section id="performance">
+          <h3>Mode Performance Characteristics</h3>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Mode</th>
+                <th>Avg Response Length</th>
+                <th>Temperature</th>
+                <th>Use Case Hit Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Architect</td>
+                <td>~1200 tokens</td>
+                <td>0.4</td>
+                <td>87%</td>
+              </tr>
+              <tr>
+                <td>Analyst</td>
+                <td>~900 tokens</td>
+                <td>0.3</td>
+                <td>92%</td>
+              </tr>
+              <tr>
+                <td>Visual</td>
+                <td>~800 tokens</td>
+                <td>0.6</td>
+                <td>78%</td>
+              </tr>
+              <tr>
+                <td>Lore</td>
+                <td>~1100 tokens</td>
+                <td>0.5</td>
+                <td>85%</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p><em>Use Case Hit Rate measures how often automatic mode selection matches user intent (based on follow-up queries)</em></p>
+        </section>
+
+        <section id="future">
+          <h3>Future Enhancements</h3>
+          <ul>
+            <li><strong>Mode Blending</strong> – Combine multiple modes for hybrid reasoning (e.g., Architect + Analyst for technical roadmaps)</li>
+            <li><strong>Custom Modes</strong> – User-defined cognitive frameworks with custom primers</li>
+            <li><strong>Mode History</strong> – Track mode switches across conversation to detect patterns</li>
+            <li><strong>Confidence Scoring</strong> – Display mode selection confidence to surface ambiguous cases</li>
+          </ul>
+        </section>
+
+        <section id="next-steps">
+          <h3>Continue Learning</h3>
+          <div class="nav-cards">
+            <a href="/docs-memory.html" class="nav-card">
+              <span class="nav-icon">💾</span>
+              <div>
+                <strong>Memory</strong>
+                <p>Persistent context across sessions</p>
+              </div>
+              <span class="nav-arrow">→</span>
+            </a>
+            <a href="/docs-api.html" class="nav-card">
+              <span class="nav-icon">⚡</span>
+              <div>
+                <strong>API Reference</strong>
+                <p>Integration endpoints and examples</p>
+              </div>
+              <span class="nav-arrow">→</span>
+            </a>
+            <a href="/modes.html" class="nav-card">
+              <span class="nav-icon">🔮</span>
+              <div>
+                <strong>Try Modes</strong>
+                <p>Interactive mode exploration interface</p>
+              </div>
+              <span class="nav-arrow">→</span>
+            </a>
+          </div>
+        </section>
+      </div>
+
+      <button id="scroll-top" class="scroll-top-btn" aria-label="Scroll to top">↑</button>
+    </main>
+  </div>
+
+  <script src="/scripts/docs.js"></script>
+</body>
+</html>
