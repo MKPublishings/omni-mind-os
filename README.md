@@ -309,6 +309,22 @@ Add tool handlers and integrate them into the loop.
 
 ---
 
+# **🧱 6-Track Scaffold (Implemented)**
+
+The following implementation scaffold now exists in this workspace:
+
+- `src/modes/` → `architectMode.js`, `reasoningMode.js`, `codingMode.js`, `creativeMode.js`, `osMode.js`
+- `src/retrieval/` → `ragWorker.js`, `searchIndex.json`, `chunker.js`
+- `src/modules/` → `omni_philosophy.md`, `system_rules.md`, `identity_layer.md`, `modes_reference.md`
+- `src/router/` → `modelRouter.js`, `rules.json`
+- `src/memory/` → `memory.json`, `memoryManager.js`
+- `src/utils/` → `promptBuilder.js`, `textCleaner.js`, `responseFormatter.js`
+- `src/api/` → `omniHandler.js`, `openaiHandler.js`, `deepseekHandler.js`
+- `src/ui/` → `modesPanel.js`, `memoryPanel.js`, `routerInspector.js`, `settingsPanel.js`
+- `public/` → `app.js`, `styles.css`
+
+---
+
 # **📜 License**
 MIT License — free to use, modify, and extend.
 

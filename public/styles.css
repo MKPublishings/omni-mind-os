@@ -1,0 +1,38 @@
+:root {
+  --panel-bg: rgba(255, 255, 255, 0.06);
+  --panel-border: rgba(255, 255, 255, 0.2);
+  --panel-text: #ffffff;
+}
+
+.ui-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--panel-text);
+  display: grid;
+  gap: 8px;
+}
+
+.ui-panel h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.ui-panel button {
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(135deg, #0F52BA, #000000);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ui-panel input {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  padding: 7px 8px;
+}

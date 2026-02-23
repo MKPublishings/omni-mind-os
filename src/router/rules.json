@@ -1,0 +1,10 @@
+{
+  "routes": {
+    "coding": "gpt-4o",
+    "math": "deepseek",
+    "creative": "omni",
+    "system": "omni",
+    "default": "omni"
+  },
+  "fallbackOrder": ["omni", "gpt-4o", "deepseek"]
+}
