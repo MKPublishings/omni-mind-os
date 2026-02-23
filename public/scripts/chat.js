@@ -689,6 +689,35 @@
     renderActiveSessionMessages();
     startApiChecks();
 
+    // Listen for settings changes from other tabs or same page
+    window.addEventListener("storage", (e) => {
+      if (e.key === SETTINGS_KEYS.DEFAULT_MODE || e.key === SETTINGS_KEYS.MODE_SELECTION) {
+        const session = getActiveSession();
+        if (session) {
+          const newMode = getSelectedModeFromSettings();
+          session.mode = newMode;
+          saveState();
+          updateModeIndicator(newMode);
+          syncSelectorsFromSession();
+        }
+      }
+    });
+
+    // Listen for same-page settings events
+    window.addEventListener("omni-settings-changed", (e) => {
+      const { key } = e.detail;
+      if (key === SETTINGS_KEYS.DEFAULT_MODE || key === SETTINGS_KEYS.MODE_SELECTION) {
+        const session = getActiveSession();
+        if (session) {
+          const newMode = getSelectedModeFromSettings();
+          session.mode = newMode;
+          saveState();
+          updateModeIndicator(newMode);
+          syncSelectorsFromSession();
+        }
+      }
+    });
+
     if (modelSelect) {
       modelSelect.addEventListener("change", () => {
         const session = getActiveSession();

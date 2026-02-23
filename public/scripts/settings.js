@@ -32,6 +32,7 @@ function getSetting(key, defaultValue = null) {
 
 function setSetting(key, value) {
   localStorage.setItem(key, value);
+  broadcastSettingsChange(key, value);
 }
 
 function getSettingBool(key, defaultValue = false) {
@@ -41,6 +42,37 @@ function getSettingBool(key, defaultValue = false) {
 
 function setSettingBool(key, value) {
   localStorage.setItem(key, value ? "true" : "false");
+  broadcastSettingsChange(key, value);
+}
+
+function broadcastSettingsChange(key, value) {
+  // Dispatch custom event for same-page listeners
+  window.dispatchEvent(new CustomEvent("omni-settings-changed", {
+    detail: { key, value }
+  }));
+  
+  // Storage events automatically fire for other tabs/windows
+}
+
+function showToast(message, type = "success") {
+  const existingToast = document.getElementById("settings-toast");
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  const toast = document.createElement("div");
+  toast.id = "settings-toast";
+  toast.className = `settings-toast settings-toast-${type}`;
+  toast.textContent = message;
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => toast.classList.add("show"), 10);
+  
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 function calculateStorageUsage() {
@@ -57,6 +89,31 @@ function formatBytes(bytes) {
   if (bytes < 1024) return bytes + " B";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + " KB";
   return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+// ==============================================
+// SAVE SETTINGS BUTTON
+// ==============================================
+
+const saveSettingsBtn = document.getElementById("save-settings-btn");
+
+if (saveSettingsBtn) {
+  saveSettingsBtn.addEventListener("click", () => {
+    // Trigger a manual save event (settings already auto-save)
+    window.dispatchEvent(new CustomEvent("omni-settings-saved"));
+    
+    // Visual feedback
+    const originalText = saveSettingsBtn.innerHTML;
+    saveSettingsBtn.innerHTML = '<span class="btn-icon">✓</span> Saved!';
+    saveSettingsBtn.style.background = "linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(74, 222, 128, 0.88))";
+    
+    showToast("✓ Settings saved and applied across all pages", "success");
+    
+    setTimeout(() => {
+      saveSettingsBtn.innerHTML = originalText;
+      saveSettingsBtn.style.background = "";
+    }, 2000);
+  });
 }
 
 // ==============================================
