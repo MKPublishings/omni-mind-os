@@ -12,6 +12,7 @@ import {
   shouldUseKnowledgeRetrieval,
   shouldUseSystemKnowledge
 } from "./omni/enhancements";
+import { warmupConnections, getConnectionStats, TokenStreamOptimizer } from "./llm/cloudflareOptimizations";
 import type { KVNamespace, Fetcher } from "@cloudflare/workers-types";
 
 export interface Env {
@@ -131,13 +132,22 @@ function makeContextSystemMessage(label: string, content: string): OmniMessage {
   };
 }
 
+// Warmup connections on first request (non-blocking)
+let connectionsWarmedUp = false;
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const logger = new OmniLogger(env);
 
+    // Warmup API connections on first request (non-blocking)
+    if (!connectionsWarmedUp) {
+      connectionsWarmedUp = true;
+      warmupConnections(env).catch(() => {}); // Fire and forget
+    }
+
     try {
       const url = new URL(request.url);
-      const isApiRoute = url.pathname === "/api/omni" || url.pathname === "/api/search" || url.pathname === "/api/preferences";
+      const isApiRoute = url.pathname === "/api/omni" || url.pathname === "/api/search" || url.pathname === "/api/preferences" || url.pathname === "/api/stats";
 
       if (isApiRoute && request.method === "OPTIONS") {
         return new Response(null, {
@@ -171,6 +181,16 @@ export default {
       if (url.pathname === "/api/preferences" && request.method === "GET") {
         const memory = await getPreferences(env);
         return new Response(JSON.stringify(memory), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/stats" && request.method === "GET") {
+        const stats = getConnectionStats();
+        return new Response(JSON.stringify(stats), {
           headers: {
             ...CORS_HEADERS,
             "Content-Type": "application/json"
@@ -302,42 +322,75 @@ export default {
           maxOutputTokens: outputTokenLimit
         };
 
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream({
-          async start(controller) {
-            try {
-              const result = await omniBrainLoop(env, runtimeCtx);
+        const streamOptimizer = new TokenStreamOptimizer({ chunkSize: 48, batchDelay: 5 });
 
-              if (result) {
-                const parsedResult =
-                  typeof result === "string"
-                    ? { response: result }
-                    : result;
-                const safe = OmniSafety.safeGuardResponse(parsedResult.response || "", responseLimit);
+        try {
+          const result = await omniBrainLoop(env, runtimeCtx);
 
-                const chunkSize = 48;
-                for (let i = 0; i < safe.length; i += chunkSize) {
-                  const token = safe.slice(i, i + chunkSize);
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(token)}\n\n`));
-                }
+          if (result) {
+            const parsedResult =
+              typeof result === "string"
+                ? { response: result }
+                : result;
+            const safe = OmniSafety.safeGuardResponse(parsedResult.response || "", responseLimit);
+
+            // Use optimized streaming
+            const stream = streamOptimizer.createOptimizedStream(safe);
+
+            return new Response(stream, {
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Omni-Model-Used": String(runtimeCtx.model || routeSelection.selectedModel),
+                "X-Omni-Route-Reason": routeSelection.reason,
+                ...(debugEnabled
+                  ? {
+                      "X-Omni-Response-Cap": String(responseLimit),
+                      "X-Omni-Output-Token-Cap": String(outputTokenLimit),
+                    "Access-Control-Expose-Headers": "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
+                    }
+                  : {
+                      "Access-Control-Expose-Headers": "X-Omni-Model-Used, X-Omni-Route-Reason"
+                    })
               }
+            });
+          }
 
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-            } catch (streamErr: any) {
-              logger.error("stream_error", streamErr);
-              controller.enqueue(encoder.encode("data: Runtime loop failed.\n\n"));
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-            } finally {
+          // Fallback empty response
+          const encoder = new TextEncoder();
+          const emptyStream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode("data: [DONE]\\n\\n"));
               controller.close();
             }
-          }
-        });
+          });
 
-        return new Response(stream, {
-          headers: {
-            ...CORS_HEADERS,
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
+          return new Response(emptyStream, {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              "Connection": "keep-alive"
+            }
+          });
+
+        } catch (streamErr: any) {
+          logger.error("stream_error", streamErr);
+          const encoder = new TextEncoder();
+          const errorStream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode("data: Runtime loop failed.\\n\\n"));
+              controller.enqueue(encoder.encode("data: [DONE]\\n\\n"));
+              controller.close();
+            }
+          });
+
+          return new Response(errorStream, {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "text/event-stream",
             "Connection": "keep-alive",
             "X-Omni-Model-Used": String(runtimeCtx.model || routeSelection.selectedModel),
             "X-Omni-Route-Reason": routeSelection.reason,
