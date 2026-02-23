@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <title>Omni Mind/OS – Settings</title>
   <link rel="stylesheet" href="/styles/base.css" />
   <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/components.css" />
+  <link rel="stylesheet" href="/styles/settings.css" />
 </head>
 <body class="page">
   <div id="layout">
@@ -16,7 +18,7 @@
         <a href="/chat.html" class="nav-link">Chat</a>
         <a href="/docs.html" class="nav-link">Docs</a>
         <a href="/modes.html" class="nav-link">Modes</a>
-        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/settings.html" class="nav-link active">Settings</a>
         <a href="/about.html" class="nav-link">About</a>
       </nav>
 
@@ -26,11 +28,256 @@
       </div>
     </aside>
 
-    <main id="main">
-      <!-- page-specific content goes here -->
+    <main id="main" class="settings-main">
+      <div class="page-header">
+        <h2>Settings</h2>
+        <p class="page-subtitle">Configure your Omni Mind/OS experience</p>
+      </div>
+
+      <div class="settings-grid">
+        <!-- CHAT SETTINGS -->
+        <section class="settings-section">
+          <h3 class="section-title">
+            <span class="section-icon">💬</span>
+            Chat Settings
+          </h3>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Auto-scroll</label>
+              <span class="setting-description">Automatically scroll to latest message</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="auto-scroll" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Message Font Size</label>
+              <span class="setting-description">Adjust chat message text size</span>
+            </div>
+            <select id="font-size" class="setting-select">
+              <option value="small">Small</option>
+              <option value="medium" selected>Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Clear Chat History</label>
+              <span class="setting-description">Remove all messages from local storage</span>
+            </div>
+            <button id="clear-history" class="btn-danger">Clear</button>
+          </div>
+        </section>
+
+        <!-- MODEL & MODE SETTINGS -->
+        <section class="settings-section">
+          <h3 class="section-title">
+            <span class="section-icon">🤖</span>
+            Model & Mode
+          </h3>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Default Model</label>
+              <span class="setting-description">Model used for new chats</span>
+            </div>
+            <select id="default-model" class="setting-select">
+              <option value="omni" selected>Omni</option>
+              <option value="gpt-4o-mini">GPT-4o Mini</option>
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="deepseek">DeepSeek</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Mode Selection</label>
+              <span class="setting-description">Automatic or manual mode control</span>
+            </div>
+            <select id="mode-selection" class="setting-select">
+              <option value="automatic" selected>Automatic</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+
+          <div class="setting-item" id="default-mode-setting" style="display: none;">
+            <div class="setting-info">
+              <label class="setting-label">Default Mode</label>
+              <span class="setting-description">Mode when manual is enabled</span>
+            </div>
+            <select id="default-mode" class="setting-select">
+              <option value="architect" selected>Architect</option>
+              <option value="analyst">Analyst</option>
+              <option value="visual">Visual</option>
+              <option value="lore">Lore</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Response Length</label>
+              <span class="setting-description">Preferred response detail level</span>
+            </div>
+            <select id="response-length" class="setting-select">
+              <option value="concise">Concise</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="detailed">Detailed</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- INTERFACE SETTINGS -->
+        <section class="settings-section">
+          <h3 class="section-title">
+            <span class="section-icon">🎨</span>
+            Interface
+          </h3>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Animations</label>
+              <span class="setting-description">Enable page transitions and effects</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="toggle-animations" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Sound Notifications</label>
+              <span class="setting-description">Play sounds for events</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="toggle-sound" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Show Timestamps</label>
+              <span class="setting-description">Display message timestamps</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="show-timestamps" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Compact Mode</label>
+              <span class="setting-description">Reduce spacing between messages</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="compact-mode" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- API CONFIGURATION -->
+        <section class="settings-section">
+          <h3 class="section-title">
+            <span class="section-icon">⚙️</span>
+            API Configuration
+          </h3>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">API Endpoint</label>
+              <span class="setting-description">Custom API endpoint URL</span>
+            </div>
+            <input 
+              type="text" 
+              id="api-endpoint" 
+              class="setting-input" 
+              placeholder="/api/omni/stream"
+            />
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Debug Mode</label>
+              <span class="setting-description">Show debug headers and logs</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="debug-mode" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Request Timeout</label>
+              <span class="setting-description">Maximum wait time (seconds)</span>
+            </div>
+            <input 
+              type="number" 
+              id="request-timeout" 
+              class="setting-input" 
+              value="60" 
+              min="10" 
+              max="300"
+            />
+          </div>
+        </section>
+
+        <!-- DATA MANAGEMENT -->
+        <section class="settings-section">
+          <h3 class="section-title">
+            <span class="section-icon">💾</span>
+            Data Management
+          </h3>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Export Chat History</label>
+              <span class="setting-description">Download all conversations as JSON</span>
+            </div>
+            <button id="export-history" class="btn-primary">Export</button>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Import Chat History</label>
+              <span class="setting-description">Load conversations from file</span>
+            </div>
+            <input type="file" id="import-history" accept=".json" style="display: none;" />
+            <button id="import-history-btn" class="btn-secondary">Import</button>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Storage Usage</label>
+              <span class="setting-description" id="storage-info">Calculating...</span>
+            </div>
+            <span class="storage-badge" id="storage-badge">--</span>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Reset All Settings</label>
+              <span class="setting-description">Restore default configuration</span>
+            </div>
+            <button id="reset-settings" class="btn-danger">Reset</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="settings-footer">
+        <p>Changes are saved automatically</p>
+      </div>
     </main>
   </div>
 
-  <!-- page-specific scripts go here -->
+  <script src="/scripts/settings.js"></script>
 </body>
 </html>
