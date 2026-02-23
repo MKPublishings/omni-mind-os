@@ -22,9 +22,22 @@
 }
 
 .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: 22px;
   color: var(--accent);
   animation: rainbow-shift 50s linear infinite;
+}
+
+.logo::after {
+  content: "";
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  background: url('/favicon.svg') no-repeat center center;
+  background-size: contain;
+  flex-shrink: 0;
 }
 
 .nav {
