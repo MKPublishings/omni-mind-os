@@ -41,8 +41,15 @@
   // =========================
   const STORAGE_KEY = "omni_chat_sessions_v1";
   const SETTINGS_KEYS = {
+    AUTO_SCROLL: "omni-auto-scroll",
+    FONT_SIZE: "omni-font-size",
+    DEFAULT_MODEL: "omni-default-model",
     MODE_SELECTION: "omni-mode-selection",
-    DEFAULT_MODE: "omni-default-mode"
+    DEFAULT_MODE: "omni-default-mode",
+    SOUND: "omni-sound",
+    SHOW_TIMESTAMPS: "omni-show-timestamps",
+    COMPACT_MODE: "omni-compact-mode",
+    REQUEST_TIMEOUT: "omni-request-timeout"
   };
   const KNOWN_MODELS = ["auto", "omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
   const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore", "reasoning", "coding", "knowledge", "system-knowledge"];
@@ -51,6 +58,98 @@
     activeSessionId: null,
     sessions: {}
   };
+
+  let runtimeSettings = {
+    autoScroll: true,
+    fontSize: "medium",
+    soundEnabled: false,
+    showTimestamps: false,
+    compactMode: false,
+    requestTimeoutSeconds: 60
+  };
+
+  function getSetting(key, fallback = "") {
+    try {
+      const value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function getSettingBool(key, fallback = false) {
+    const value = getSetting(key, "");
+    if (value === "") return fallback;
+    return value === "true";
+  }
+
+  function loadRuntimeSettings() {
+    const fontSize = String(getSetting(SETTINGS_KEYS.FONT_SIZE, "medium") || "medium").trim().toLowerCase();
+    const timeoutRaw = Number(getSetting(SETTINGS_KEYS.REQUEST_TIMEOUT, "60"));
+
+    runtimeSettings = {
+      autoScroll: getSettingBool(SETTINGS_KEYS.AUTO_SCROLL, true),
+      fontSize: ["small", "medium", "large"].includes(fontSize) ? fontSize : "medium",
+      soundEnabled: getSettingBool(SETTINGS_KEYS.SOUND, false),
+      showTimestamps: getSettingBool(SETTINGS_KEYS.SHOW_TIMESTAMPS, false),
+      compactMode: getSettingBool(SETTINGS_KEYS.COMPACT_MODE, false),
+      requestTimeoutSeconds: Number.isFinite(timeoutRaw)
+        ? Math.max(10, Math.min(300, Math.floor(timeoutRaw)))
+        : 60
+    };
+  }
+
+  function applyRuntimeSettings() {
+    if (!messagesEl) return;
+
+    messagesEl.classList.toggle("chat-compact", !!runtimeSettings.compactMode);
+    messagesEl.classList.toggle("chat-font-small", runtimeSettings.fontSize === "small");
+    messagesEl.classList.toggle("chat-font-medium", runtimeSettings.fontSize === "medium");
+    messagesEl.classList.toggle("chat-font-large", runtimeSettings.fontSize === "large");
+  }
+
+  function getDefaultModelFromSettings() {
+    const candidate = normalizeModel(getSetting(SETTINGS_KEYS.DEFAULT_MODEL, "auto"));
+    return candidate || "auto";
+  }
+
+  function formatMessageTimestamp(timestamp) {
+    const ts = Number(timestamp);
+    if (!Number.isFinite(ts) || ts <= 0) return "";
+    return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function playNotificationSound(kind = "assistant") {
+    if (!runtimeSettings.soundEnabled) return;
+    if (typeof window.AudioContext === "undefined" && typeof window.webkitAudioContext === "undefined") return;
+
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const context = new AudioCtx();
+      const oscillator = context.createOscillator();
+      const gainNode = context.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.value = kind === "error" ? 180 : kind === "send" ? 420 : 660;
+      gainNode.gain.value = 0.0001;
+
+      oscillator.connect(gainNode);
+      gainNode.connect(context.destination);
+
+      const now = context.currentTime;
+      gainNode.gain.exponentialRampToValueAtTime(0.04, now + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+      oscillator.start(now);
+      oscillator.stop(now + 0.15);
+
+      oscillator.onended = () => {
+        context.close().catch(() => {});
+      };
+    } catch {
+      // ignore sound failures
+    }
+  }
 
   function normalizeMode(mode) {
     const normalized = typeof mode === "string" ? mode.trim().toLowerCase() : "";
@@ -236,7 +335,7 @@
       title: "New conversation",
       messages: [],
       mode: getSelectedModeFromSettings(),
-      model: "auto",
+      model: getDefaultModelFromSettings(),
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -392,6 +491,13 @@
 
     header.appendChild(roleLabel);
 
+    if (runtimeSettings.showTimestamps && meta.timestamp) {
+      const timestampEl = document.createElement("span");
+      timestampEl.className = "message-timestamp";
+      timestampEl.textContent = formatMessageTimestamp(meta.timestamp);
+      header.appendChild(timestampEl);
+    }
+
     if (role === "assistant" && (meta.model || meta.mode)) {
       const badge = document.createElement("span");
       badge.className = "message-badge";
@@ -422,7 +528,7 @@
     if (!messagesEl) return null;
     const { wrapper, body } = createMessageElement(role, content, meta);
     messagesEl.appendChild(wrapper);
-    smoothScrollToBottom(true);
+    smoothScrollToBottom(false);
     return { wrapper, body };
   }
 
@@ -449,7 +555,8 @@
       const activeMode = getActiveMode(session);
       appendMessage(msg.role, msg.content, {
         model: session.model || "auto",
-        mode: activeMode
+        mode: activeMode,
+        timestamp: msg.timestamp || msg.ts || null
       });
     }
   }
@@ -633,13 +740,26 @@
 
     const controller = new AbortController();
     currentAbortController = controller;
+    const timeoutMs = Math.max(10, runtimeSettings.requestTimeoutSeconds) * 1000;
+    const timeoutHandle = setTimeout(() => {
+      try {
+        controller.abort("request-timeout");
+      } catch {
+        // ignore
+      }
+    }, timeoutMs);
 
-    const res = await fetch(getApiEndpoint(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
+    let res;
+    try {
+      res = await fetch(getApiEndpoint(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
 
     if (!res.ok || !res.body) {
       throw new Error("Bad response from Omni backend");
@@ -743,7 +863,7 @@
     }
 
     // Push user message
-    session.messages.push({ role: "user", content: trimmed });
+    session.messages.push({ role: "user", content: trimmed, timestamp: Date.now() });
     updateSessionMetaFromMessages(session);
     saveState();
 
@@ -764,8 +884,10 @@
     
     appendMessage("user", trimmed, {
       model: session.model || "auto",
-      mode: activeMode
+      mode: activeMode,
+      timestamp: Date.now()
     });
+    playNotificationSound("send");
 
     // Clear input
     if (inputEl) inputEl.value = "";
@@ -810,9 +932,15 @@
       updateAssistantMessageBody(assistantBodyEl, safeText);
 
       session.messages.push({ role: "assistant", content: safeText });
+      session.messages[session.messages.length - 1].timestamp = Date.now();
       delete session._streamingAssistantText;
       updateSessionMetaFromMessages(session);
       saveState();
+      playNotificationSound("assistant");
+
+      if (runtimeSettings.showTimestamps || runtimeSettings.compactMode) {
+        renderActiveSessionMessages();
+      }
     } catch (err) {
       console.error("Omni streaming error:", err);
       assistantTypewriter.flush();
@@ -820,6 +948,7 @@
         assistantBodyEl,
         "[Error] Something went wrong while streaming the response."
       );
+      playNotificationSound("error");
     } finally {
       isStreaming = false;
       updateJumpToLatestVisibility();
@@ -872,7 +1001,7 @@
 
   function smoothScrollToBottom(force = false) {
     if (!messagesEl) return;
-    if (!force && !shouldStickToBottom) return;
+    if (!force && (!runtimeSettings.autoScroll || !shouldStickToBottom)) return;
     if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
 
     const start = messagesEl.scrollTop;
@@ -1047,6 +1176,8 @@
   // 10. INIT
   // =========================
   function init() {
+    loadRuntimeSettings();
+    applyRuntimeSettings();
     loadState();
     syncSelectorsFromSession();
     renderSessionsSidebar();
@@ -1072,6 +1203,30 @@
           syncSelectorsFromSession();
         }
       }
+
+      if (
+        e.key === SETTINGS_KEYS.AUTO_SCROLL ||
+        e.key === SETTINGS_KEYS.FONT_SIZE ||
+        e.key === SETTINGS_KEYS.SOUND ||
+        e.key === SETTINGS_KEYS.SHOW_TIMESTAMPS ||
+        e.key === SETTINGS_KEYS.COMPACT_MODE ||
+        e.key === SETTINGS_KEYS.REQUEST_TIMEOUT
+      ) {
+        loadRuntimeSettings();
+        applyRuntimeSettings();
+        renderActiveSessionMessages();
+      }
+
+      if (e.key === SETTINGS_KEYS.DEFAULT_MODEL) {
+        const session = getActiveSession();
+        if (session) {
+          session.model = getDefaultModelFromSettings();
+          session.updatedAt = Date.now();
+          saveState();
+          syncSelectorsFromSession();
+          renderSessionsSidebar();
+        }
+      }
     });
 
     // Listen for same-page settings events
@@ -1090,6 +1245,30 @@
           saveState();
           updateModeIndicator(newMode);
           syncSelectorsFromSession();
+        }
+      }
+
+      if (
+        key === SETTINGS_KEYS.AUTO_SCROLL ||
+        key === SETTINGS_KEYS.FONT_SIZE ||
+        key === SETTINGS_KEYS.SOUND ||
+        key === SETTINGS_KEYS.SHOW_TIMESTAMPS ||
+        key === SETTINGS_KEYS.COMPACT_MODE ||
+        key === SETTINGS_KEYS.REQUEST_TIMEOUT
+      ) {
+        loadRuntimeSettings();
+        applyRuntimeSettings();
+        renderActiveSessionMessages();
+      }
+
+      if (key === SETTINGS_KEYS.DEFAULT_MODEL) {
+        const session = getActiveSession();
+        if (session) {
+          session.model = getDefaultModelFromSettings();
+          session.updatedAt = Date.now();
+          saveState();
+          syncSelectorsFromSession();
+          renderSessionsSidebar();
         }
       }
     });

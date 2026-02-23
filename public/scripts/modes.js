@@ -141,7 +141,11 @@ const modeColors = {
   architect: { primary: "59, 130, 246", name: "Architect" },
   analyst: { primary: "34, 197, 94", name: "Analyst" },
   visual: { primary: "168, 85, 247", name: "Visual" },
-  lore: { primary: "244, 208, 161", name: "Lore" }
+  lore: { primary: "244, 208, 161", name: "Lore" },
+  reasoning: { primary: "20, 184, 166", name: "Reasoning" },
+  coding: { primary: "99, 102, 241", name: "Coding" },
+  knowledge: { primary: "234, 179, 8", name: "Knowledge" },
+  "system-knowledge": { primary: "148, 163, 184", name: "System Knowledge" }
 };
 
 modeSections.forEach((section) => {
