@@ -40,8 +40,8 @@ body {
   --accent-glow: rgba(15, 82, 186, 0.42);
   --accent-secondary: #000000;
   --accent-alert: #ffffff;
-  --gradient-primary: linear-gradient(135deg, #0F52BA, #000000);
-  --gradient-accent: linear-gradient(135deg, #ffffff, #000000);
+  --gradient-primary: linear-gradient(135deg, #0F52BA 0%, #0b3a84 52%, #000000 100%);
+  --gradient-accent: linear-gradient(135deg, #ffffff 0%, #aab3c4 52%, #000000 100%);
 
   --radius: 16px;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
@@ -172,5 +172,5 @@ p {
 
 .divider,
 #mode-indicator {
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(15, 82, 186, 0.58), rgba(255, 255, 255, 0.42), rgba(0, 0, 0, 0)) !important;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(15, 82, 186, 0.46) 36%, rgba(84, 132, 207, 0.5) 58%, rgba(255, 255, 255, 0.34) 78%, rgba(0, 0, 0, 0) 100%) !important;
 }

@@ -318,8 +318,9 @@
 #chat-messages::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
-    rgba(15, 82, 186, 0.72),
-    rgba(12, 17, 32, 0.58)
+    rgba(15, 82, 186, 0.72) 0%,
+    rgba(27, 64, 128, 0.64) 54%,
+    rgba(12, 17, 32, 0.58) 100%
   );
   border-radius: 999px;
   border: 2px solid rgba(14, 14, 14, 0.72);
@@ -330,8 +331,9 @@
 #chat-messages::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
     180deg,
-    rgba(15, 82, 186, 0.9),
-    rgba(12, 17, 32, 0.72)
+    rgba(15, 82, 186, 0.9) 0%,
+    rgba(31, 74, 148, 0.8) 56%,
+    rgba(12, 17, 32, 0.72) 100%
   );
 }
 
@@ -357,6 +359,22 @@
 
 .message.user {
   align-self: stretch;
+}
+
+.message.user .message-body,
+.message.user .message-body p {
+  color: #0f52ba;
+}
+
+.message.user .message-body a,
+.message.user .message-body a:visited,
+.message.user .message-body .md-inline-code,
+.message.user .message-body code,
+.message.user .message-body .md-code,
+.message.user .message-body pre,
+.message.user .message-body pre code,
+.message.user .message-body pre code * {
+  color: #0f52ba !important;
 }
 
 .message.bot {
@@ -543,7 +561,7 @@
   box-shadow: none;
 }
 #mode-indicator {
-  background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(15, 82, 186, 0.9) 0%, rgba(15, 82, 186, 0.48) 52%, transparent 100%);
   color: #fff;
   font-weight: 600;
   letter-spacing: 0.5px;

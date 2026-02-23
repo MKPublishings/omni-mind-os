@@ -169,8 +169,9 @@
   height: 140%;
   background: radial-gradient(
     circle at 30% 20%,
-    rgba(15, 82, 186, 0.18),
-    transparent 60%
+    rgba(15, 82, 186, 0.18) 0%,
+    rgba(15, 82, 186, 0.1) 42%,
+    transparent 72%
   );
   pointer-events: none;
   z-index: -1;
