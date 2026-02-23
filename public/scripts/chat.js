@@ -18,6 +18,7 @@
   const sendBtn = document.getElementById("send-btn");
   const modelSelect = document.getElementById("model-select") || document.getElementById("model");
   const modeSelect = document.getElementById("mode-select");
+  const modeLabelEl = document.getElementById("mode-label") || document.querySelector("#mode-indicator span");
   const apiStatusEl = document.getElementById("api-status");
 
   const sessionsSidebarEl = document.getElementById("sessions-sidebar");
@@ -30,11 +31,50 @@
   // 2. STATE ENGINE
   // =========================
   const STORAGE_KEY = "omni_chat_sessions_v1";
+  const SETTINGS_KEYS = {
+    MODE_SELECTION: "omni-mode-selection",
+    DEFAULT_MODE: "omni-default-mode"
+  };
+  const KNOWN_MODES = ["architect", "analyst", "visual", "lore"];
 
   let state = {
     activeSessionId: null,
     sessions: {}
   };
+
+  function normalizeMode(mode) {
+    const normalized = typeof mode === "string" ? mode.trim().toLowerCase() : "";
+    return KNOWN_MODES.includes(normalized) ? normalized : "";
+  }
+
+  function toModeLabel(mode) {
+    const normalized = normalizeMode(mode) || "architect";
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  function getSelectedModeFromSettings() {
+    try {
+      const fallbackMode = normalizeMode(localStorage.getItem(SETTINGS_KEYS.DEFAULT_MODE)) || "architect";
+      const selectionMode = (localStorage.getItem(SETTINGS_KEYS.MODE_SELECTION) || "automatic").trim().toLowerCase();
+      if (selectionMode === "manual") {
+        return fallbackMode;
+      }
+      return fallbackMode;
+    } catch {
+      return "architect";
+    }
+  }
+
+  function getActiveMode(session = getActiveSession()) {
+    const sessionMode = normalizeMode(session?.mode);
+    if (sessionMode) return sessionMode;
+    return getSelectedModeFromSettings();
+  }
+
+  function updateModeIndicator(mode) {
+    if (!modeLabelEl) return;
+    modeLabelEl.textContent = `Mode: ${toModeLabel(mode)}`;
+  }
 
   function loadState() {
     try {
@@ -49,6 +89,23 @@
         return;
       }
       state = parsed;
+
+      for (const session of Object.values(state.sessions)) {
+        if (!session || typeof session !== "object") continue;
+        session.mode = getActiveMode(session);
+      }
+
+      if (!state.sessions[state.activeSessionId]) {
+        const firstSessionId = Object.keys(state.sessions)[0];
+        if (firstSessionId) {
+          state.activeSessionId = firstSessionId;
+        } else {
+          createNewSession();
+          return;
+        }
+      }
+
+      saveState();
     } catch {
       createNewSession();
     }
@@ -69,7 +126,7 @@
       title: "New conversation",
       messages: [],
       model: "omni",
-      mode: "chat",
+      mode: getSelectedModeFromSettings(),
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -94,12 +151,17 @@
     const session = getActiveSession();
     if (!session) return;
 
+    const activeMode = getActiveMode(session);
+    session.mode = activeMode;
+
     if (modelSelect) {
       modelSelect.value = session.model || "omni";
     }
     if (modeSelect) {
-      modeSelect.value = session.mode || "chat";
+      modeSelect.value = activeMode;
     }
+
+    updateModeIndicator(activeMode);
   }
 
   function updateSessionMetaFromMessages(session) {
@@ -642,9 +704,10 @@
       modeSelect.addEventListener("change", () => {
         const session = getActiveSession();
         if (!session) return;
-        session.mode = modeSelect.value || "chat";
+        session.mode = normalizeMode(modeSelect.value) || getSelectedModeFromSettings();
         session.updatedAt = Date.now();
         saveState();
+        updateModeIndicator(session.mode);
         renderSessionsSidebar();
       });
     }
