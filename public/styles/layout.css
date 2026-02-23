@@ -4,6 +4,7 @@
 #layout {
   display: flex;
   height: 100vh;
+  min-height: 0;
   width: 100%;
 }
 
@@ -72,6 +73,7 @@
 #main {
   flex: 1;
   padding: 40px;
+  min-height: 0;
   overflow-y: auto;
 }
 
