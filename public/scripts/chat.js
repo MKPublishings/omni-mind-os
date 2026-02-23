@@ -222,14 +222,14 @@
     if (!messagesEl) return null;
     const { wrapper, body } = createMessageElement(role, content, meta);
     messagesEl.appendChild(wrapper);
-    smoothScrollToBottom();
+    smoothScrollToBottom(true);
     return { wrapper, body };
   }
 
   function updateAssistantMessageBody(bodyEl, text) {
     if (!bodyEl) return;
     bodyEl.innerHTML = renderMarkdown(text);
-    smoothScrollToBottom();
+    smoothScrollToBottom(false);
   }
 
   function renderActiveSessionMessages() {
@@ -476,6 +476,7 @@
       );
     } finally {
       isStreaming = false;
+      updateJumpToLatestVisibility();
       if (sendBtn) sendBtn.disabled = false;
       if (inputEl) inputEl.disabled = false;
       if (typingIndicatorEl) typingIndicatorEl.style.display = "none";
@@ -487,8 +488,45 @@
   // 7. UI ENGINE (SCROLL, INPUT)
   // =========================
   let scrollTimeout = null;
-  function smoothScrollToBottom() {
+  let shouldStickToBottom = true;
+  let jumpToLatestBtn = null;
+
+  function ensureJumpToLatestPill() {
+    if (jumpToLatestBtn || !messagesEl) return;
+
+    const chatArea = messagesEl.closest("#chat-area");
+    if (!chatArea) return;
+
+    jumpToLatestBtn = document.createElement("button");
+    jumpToLatestBtn.type = "button";
+    jumpToLatestBtn.className = "jump-to-latest";
+    jumpToLatestBtn.textContent = "Jump to latest";
+    jumpToLatestBtn.setAttribute("aria-label", "Jump to latest message");
+
+    jumpToLatestBtn.addEventListener("click", () => {
+      shouldStickToBottom = true;
+      smoothScrollToBottom(true);
+      updateJumpToLatestVisibility();
+    });
+
+    chatArea.appendChild(jumpToLatestBtn);
+  }
+
+  function updateJumpToLatestVisibility() {
+    if (!jumpToLatestBtn) return;
+    const shouldShow = isStreaming && !shouldStickToBottom;
+    jumpToLatestBtn.classList.toggle("visible", shouldShow);
+  }
+
+  function isNearBottom() {
+    if (!messagesEl) return true;
+    const distanceFromBottom = messagesEl.scrollHeight - messagesEl.clientHeight - messagesEl.scrollTop;
+    return distanceFromBottom <= 96;
+  }
+
+  function smoothScrollToBottom(force = false) {
     if (!messagesEl) return;
+    if (!force && !shouldStickToBottom) return;
     if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
 
     const start = messagesEl.scrollTop;
@@ -506,6 +544,10 @@
     }
 
     scrollTimeout = requestAnimationFrame(animate);
+    if (force) {
+      shouldStickToBottom = true;
+      updateJumpToLatestVisibility();
+    }
   }
 
   function autoResizeInput() {
@@ -623,6 +665,15 @@
       inputEl.addEventListener("keydown", handleInputKeydown);
       inputEl.addEventListener("input", autoResizeInput);
       autoResizeInput();
+    }
+    if (messagesEl) {
+      ensureJumpToLatestPill();
+      messagesEl.addEventListener("scroll", () => {
+        shouldStickToBottom = isNearBottom();
+        updateJumpToLatestVisibility();
+      });
+      shouldStickToBottom = true;
+      updateJumpToLatestVisibility();
     }
     if (newSessionBtn) {
       newSessionBtn.addEventListener("click", () => {
