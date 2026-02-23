@@ -7,6 +7,7 @@ export interface OmniLoopContext {
   mode: string;
   model: string;
   messages: OmniLoopMessage[];
+  maxOutputTokens?: number;
 }
 
 export interface OmniLoopResult {
@@ -75,17 +76,23 @@ export async function omniBrainLoop(
 
     const requestedModel = normalizeModelId(ctx.model || "omni");
     const resolvedModel = resolveProviderModel(requestedModel, env);
+    const maxOutputTokens =
+      Number.isFinite(ctx.maxOutputTokens) && Number(ctx.maxOutputTokens) > 0
+        ? Math.floor(Number(ctx.maxOutputTokens))
+        : 2048;
+
+    const runInput = {
+      messages: ctx.messages,
+      max_tokens: maxOutputTokens,
+      maxTokens: maxOutputTokens
+    };
 
     let raw: any;
     try {
-      raw = await env.AI.run(resolvedModel, {
-        messages: ctx.messages
-      });
+      raw = await env.AI.run(resolvedModel, runInput);
     } catch {
       const omniFallback = resolveProviderModel("omni", env);
-      raw = await env.AI.run(omniFallback, {
-        messages: ctx.messages
-      });
+      raw = await env.AI.run(omniFallback, runInput);
     }
 
     const response = extractResponseText(raw);

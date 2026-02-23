@@ -15,6 +15,8 @@ export interface Env {
   OMNI_RESPONSE_MIN_CHARS?: string;
   OMNI_RESPONSE_BASE_CHARS?: string;
   OMNI_RESPONSE_MAX_CHARS?: string;
+  OMNI_MIN_OUTPUT_TOKENS?: string;
+  OMNI_MAX_OUTPUT_TOKENS?: string;
   OMNI_ENV?: string;
 }
 
@@ -61,6 +63,18 @@ function computeAdaptiveResponseMax(messages: OmniMessage[], env: Env): number {
 
   const adaptive = base + Math.floor(effortScore * 3.2);
   return clamp(adaptive, floor, ceiling);
+}
+
+function computeAdaptiveOutputTokens(responseCharLimit: number, env: Env): number {
+  const configuredMinTokens = toPositiveInt(env.OMNI_MIN_OUTPUT_TOKENS, 512);
+  const configuredMaxTokens = toPositiveInt(env.OMNI_MAX_OUTPUT_TOKENS, 8192);
+
+  const minTokens = Math.max(128, configuredMinTokens);
+  const maxTokens = Math.max(minTokens, configuredMaxTokens);
+
+  const charsPerToken = 4;
+  const targetTokens = Math.ceil(responseCharLimit / charsPerToken);
+  return clamp(targetTokens, minTokens, maxTokens);
 }
 
 function isNonProduction(request: Request, env: Env): boolean {
@@ -121,19 +135,26 @@ export default {
         };
 
         const responseLimit = computeAdaptiveResponseMax(ctx.messages, env);
+        const outputTokenLimit = computeAdaptiveOutputTokens(responseLimit, env);
         const debugEnabled = isNonProduction(request, env);
 
         logger.log("incoming_request", {
           ...ctx,
           responseCap: responseLimit,
+          outputTokenCap: outputTokenLimit,
           debugEnabled
         });
+
+        const runtimeCtx = {
+          ...ctx,
+          maxOutputTokens: outputTokenLimit
+        };
 
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           async start(controller) {
             try {
-              const result = await omniBrainLoop(env, ctx);
+              const result = await omniBrainLoop(env, runtimeCtx);
 
               if (result) {
                 const parsedResult =
@@ -169,7 +190,8 @@ export default {
             ...(debugEnabled
               ? {
                   "X-Omni-Response-Cap": String(responseLimit),
-                  "Access-Control-Expose-Headers": "X-Omni-Response-Cap"
+                  "X-Omni-Output-Token-Cap": String(outputTokenLimit),
+                  "Access-Control-Expose-Headers": "X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
                 }
               : {})
           }
