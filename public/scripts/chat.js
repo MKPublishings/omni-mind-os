@@ -25,8 +25,6 @@
   const modeLabelEl = document.getElementById("mode-label");
   const modelInspectorEl = document.getElementById("model-inspector");
   const apiStatusEl = document.getElementById("api-status");
-  const reasoningToggleBtn = document.getElementById("reasoning-toggle-btn");
-  const codingToggleBtn = document.getElementById("coding-toggle-btn");
   const savePreferencesBtn = document.getElementById("save-preferences-btn");
   const resetMemoryBtn = document.getElementById("reset-memory-btn");
 
@@ -222,7 +220,6 @@
   function updateModeIndicator(mode) {
     if (!modeLabelEl) return;
     modeLabelEl.textContent = `Mode: ${toModeLabel(mode)}`;
-    syncToggleButtons(mode);
   }
 
   function updateModelInspector(modelUsed, routeReason = "") {
@@ -230,20 +227,6 @@
     const modelText = modelUsed ? toModelLabel(modelUsed) : "Pending";
     const reasonText = routeReason ? ` (${routeReason})` : "";
     modelInspectorEl.textContent = `Model: ${modelText}${reasonText}`;
-  }
-
-  function syncToggleButtons(mode) {
-    const normalized = normalizeMode(mode) || "auto";
-    if (reasoningToggleBtn) {
-      const active = normalized === "reasoning";
-      reasoningToggleBtn.setAttribute("aria-pressed", active ? "true" : "false");
-      reasoningToggleBtn.classList.toggle("is-active", active);
-    }
-    if (codingToggleBtn) {
-      const active = normalized === "coding";
-      codingToggleBtn.setAttribute("aria-pressed", active ? "true" : "false");
-      codingToggleBtn.classList.toggle("is-active", active);
-    }
   }
 
   function updateModeButton(mode) {
@@ -1165,13 +1148,6 @@
     renderSessionsSidebar();
   }
 
-  function toggleMode(mode) {
-    const session = getActiveSession();
-    if (!session) return;
-    const activeMode = getActiveMode(session);
-    setMode(activeMode === mode ? "auto" : mode);
-  }
-
   // =========================
   // 10. INIT
   // =========================
@@ -1323,14 +1299,6 @@
         }
         closeAllDropdowns();
       });
-    }
-
-    if (reasoningToggleBtn) {
-      reasoningToggleBtn.addEventListener("click", () => toggleMode("reasoning"));
-    }
-
-    if (codingToggleBtn) {
-      codingToggleBtn.addEventListener("click", () => toggleMode("coding"));
     }
 
     if (savePreferencesBtn) {
