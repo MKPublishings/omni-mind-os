@@ -374,6 +374,110 @@
     return (currentText || "") + t;
   }
 
+  function getTypingSpeedForLength(textLength) {
+    const length = Math.max(1, Number(textLength) || 1);
+    const charsPerSecond = 34 + Math.sqrt(length) * 3.5;
+    return Math.min(220, Math.max(34, charsPerSecond));
+  }
+
+  function createStreamingTypewriter(bodyEl) {
+    let targetText = "";
+    let renderedLength = 0;
+    let carryChars = 0;
+    let isComplete = false;
+    let rafId = 0;
+    let lastTimestamp = 0;
+    const drainWaiters = [];
+
+    function resolveDrainWaiters() {
+      if (!isComplete || renderedLength < targetText.length) return;
+      while (drainWaiters.length) {
+        const resolve = drainWaiters.pop();
+        if (typeof resolve === "function") resolve();
+      }
+    }
+
+    function tick(now) {
+      if (!bodyEl) {
+        rafId = 0;
+        renderedLength = targetText.length;
+        resolveDrainWaiters();
+        return;
+      }
+
+      if (!lastTimestamp) {
+        lastTimestamp = now;
+      }
+
+      const deltaSeconds = Math.min(0.05, Math.max(0, now - lastTimestamp) / 1000);
+      lastTimestamp = now;
+
+      const pendingChars = targetText.length - renderedLength;
+      if (pendingChars > 0) {
+        const typingSpeed = getTypingSpeedForLength(targetText.length);
+        const totalChars = typingSpeed * deltaSeconds + carryChars;
+        let charsToAdd = Math.floor(totalChars);
+
+        if (charsToAdd < 1) charsToAdd = 1;
+        carryChars = Math.max(0, totalChars - charsToAdd);
+
+        renderedLength = Math.min(targetText.length, renderedLength + charsToAdd);
+        updateAssistantMessageBody(bodyEl, targetText.slice(0, renderedLength));
+      }
+
+      if (renderedLength < targetText.length || !isComplete) {
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
+      rafId = 0;
+      resolveDrainWaiters();
+    }
+
+    function ensureRunning() {
+      if (rafId) return;
+      lastTimestamp = 0;
+      rafId = requestAnimationFrame(tick);
+    }
+
+    return {
+      append(chunk) {
+        targetText = appendTokenWithSpacing(targetText, chunk);
+        ensureRunning();
+      },
+      complete() {
+        isComplete = true;
+        if (!rafId) {
+          if (renderedLength < targetText.length && bodyEl) {
+            renderedLength = targetText.length;
+            updateAssistantMessageBody(bodyEl, targetText);
+          }
+          resolveDrainWaiters();
+        }
+      },
+      flush() {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
+        renderedLength = targetText.length;
+        if (bodyEl) {
+          updateAssistantMessageBody(bodyEl, targetText);
+        }
+        isComplete = true;
+        resolveDrainWaiters();
+      },
+      waitForDrain() {
+        if (isComplete && renderedLength >= targetText.length) {
+          return Promise.resolve();
+        }
+        return new Promise((resolve) => {
+          drainWaiters.push(resolve);
+        });
+      }
+    };
+  }
+
   // =========================
   // 6. STREAMING + NETWORK ENGINE
   // =========================
@@ -487,7 +591,6 @@
       }
 
       onChunk(token);
-      updateAssistantMessageBody(assistantBodyEl, session._streamingAssistantText);
       return false;
     };
 
@@ -571,6 +674,7 @@
     if (typingIndicatorEl) typingIndicatorEl.style.display = "block";
 
     session._streamingAssistantText = "";
+    const assistantTypewriter = createStreamingTypewriter(assistantBodyEl);
 
     try {
       await streamOmniResponse(
@@ -581,8 +685,12 @@
             session._streamingAssistantText,
             token
           );
+          assistantTypewriter.append(token);
         }
       );
+
+      assistantTypewriter.complete();
+      await assistantTypewriter.waitForDrain();
 
       const finalText = (session._streamingAssistantText || "").trim();
       const safeText = finalText || "[No response received]";
@@ -594,6 +702,7 @@
       saveState();
     } catch (err) {
       console.error("Omni streaming error:", err);
+      assistantTypewriter.flush();
       updateAssistantMessageBody(
         assistantBodyEl,
         "[Error] Something went wrong while streaming the response."
