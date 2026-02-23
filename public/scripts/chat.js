@@ -16,8 +16,12 @@
   const messagesEl = document.getElementById("chat-messages") || document.getElementById("chat-container");
   const inputEl = document.getElementById("chat-input") || document.getElementById("user-input");
   const sendBtn = document.getElementById("send-btn");
-  const modelSelect = document.getElementById("model-select") || document.getElementById("model");
-  const modeSelect = document.getElementById("mode-select");
+  const modelDropdown = document.getElementById("model-dropdown");
+  const modelBtn = document.getElementById("model-btn");
+  const modelMenu = document.getElementById("model-menu");
+  const modeDropdown = document.getElementById("mode-dropdown");
+  const modeBtn = document.getElementById("mode-btn");
+  const modeMenu = document.getElementById("mode-menu");
   const modeLabelEl = document.getElementById("mode-label");
   const apiStatusEl = document.getElementById("api-status");
 
@@ -35,6 +39,7 @@
     MODE_SELECTION: "omni-mode-selection",
     DEFAULT_MODE: "omni-default-mode"
   };
+  const KNOWN_MODELS = ["omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
   const KNOWN_MODES = ["architect", "analyst", "visual", "lore"];
 
   let state = {
@@ -45,6 +50,19 @@
   function normalizeMode(mode) {
     const normalized = typeof mode === "string" ? mode.trim().toLowerCase() : "";
     return KNOWN_MODES.includes(normalized) ? normalized : "";
+  }
+
+  function normalizeModel(model) {
+    const normalized = typeof model === "string" ? model.trim().toLowerCase() : "";
+    return KNOWN_MODELS.includes(normalized) ? normalized : "";
+  }
+
+  function toModelLabel(model) {
+    const normalized = normalizeModel(model) || "omni";
+    if (normalized === "gpt-4o-mini") return "GPT‑4o Mini";
+    if (normalized === "gpt-4o") return "GPT‑4o";
+    if (normalized === "deepseek") return "DeepSeek";
+    return "Omni";
   }
 
   function toModeLabel(mode) {
@@ -74,6 +92,45 @@
   function updateModeIndicator(mode) {
     if (!modeLabelEl) return;
     modeLabelEl.textContent = `Mode: ${toModeLabel(mode)}`;
+  }
+
+  function updateModeButton(mode) {
+    if (!modeBtn) return;
+    const label = toModeLabel(mode);
+    modeBtn.textContent = label;
+    modeBtn.setAttribute("aria-label", `Change chat mode. Current mode: ${label}`);
+  }
+
+  function updateModelButton(model) {
+    if (!modelBtn) return;
+    const label = toModelLabel(model);
+    modelBtn.textContent = label;
+    modelBtn.setAttribute("aria-label", `Change model. Current model: ${label}`);
+  }
+
+  function getDropdownItems(menuEl) {
+    if (!menuEl) return [];
+    return Array.from(menuEl.querySelectorAll(".chat-dropdown-item[data-value]"));
+  }
+
+  function setActiveDropdownItem(menuEl, value) {
+    const normalized = (value || "").trim().toLowerCase();
+    for (const item of getDropdownItems(menuEl)) {
+      const isActive = (item.dataset.value || "").toLowerCase() === normalized;
+      item.classList.toggle("is-active", isActive);
+      item.setAttribute("aria-selected", isActive ? "true" : "false");
+    }
+  }
+
+  function setDropdownOpen(dropdownEl, buttonEl, open) {
+    if (!dropdownEl || !buttonEl) return;
+    dropdownEl.classList.toggle("open", !!open);
+    buttonEl.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function closeAllDropdowns() {
+    setDropdownOpen(modelDropdown, modelBtn, false);
+    setDropdownOpen(modeDropdown, modeBtn, false);
   }
 
   function loadState() {
@@ -153,14 +210,12 @@
 
     const activeMode = getActiveMode(session);
     session.mode = activeMode;
+    session.model = normalizeModel(session.model) || "omni";
 
-    if (modelSelect) {
-      modelSelect.value = session.model || "omni";
-    }
-    if (modeSelect) {
-      modeSelect.value = activeMode;
-    }
-
+    updateModelButton(session.model);
+    updateModeButton(activeMode);
+    setActiveDropdownItem(modelMenu, session.model);
+    setActiveDropdownItem(modeMenu, activeMode);
     updateModeIndicator(activeMode);
   }
 
@@ -379,7 +434,7 @@
     const activeMode = getActiveMode(session);
     const payload = {
       messages: session.messages,
-      model: session.model || (modelSelect ? modelSelect.value : "omni"),
+      model: session.model || "omni",
       mode: activeMode
     };
 
@@ -730,28 +785,67 @@
       }
     });
 
-    if (modelSelect) {
-      modelSelect.addEventListener("change", () => {
+    if (modelBtn && modelDropdown) {
+      modelBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const willOpen = !modelDropdown.classList.contains("open");
+        closeAllDropdowns();
+        setDropdownOpen(modelDropdown, modelBtn, willOpen);
+      });
+    }
+
+    if (modelMenu) {
+      modelMenu.addEventListener("click", (e) => {
+        const optionBtn = e.target.closest(".chat-dropdown-item[data-value]");
+        if (!optionBtn) return;
         const session = getActiveSession();
         if (!session) return;
-        session.model = modelSelect.value || "omni";
+        session.model = normalizeModel(optionBtn.dataset.value) || "omni";
         session.updatedAt = Date.now();
         saveState();
+        updateModelButton(session.model);
+        setActiveDropdownItem(modelMenu, session.model);
+        closeAllDropdowns();
         renderSessionsSidebar();
       });
     }
 
-    if (modeSelect) {
-      modeSelect.addEventListener("change", () => {
+    if (modeBtn && modeDropdown) {
+      modeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const willOpen = !modeDropdown.classList.contains("open");
+        closeAllDropdowns();
+        setDropdownOpen(modeDropdown, modeBtn, willOpen);
+      });
+    }
+
+    if (modeMenu) {
+      modeMenu.addEventListener("click", (e) => {
+        const optionBtn = e.target.closest(".chat-dropdown-item[data-value]");
+        if (!optionBtn) return;
         const session = getActiveSession();
         if (!session) return;
-        session.mode = normalizeMode(modeSelect.value) || getSelectedModeFromSettings();
+        session.mode = normalizeMode(optionBtn.dataset.value) || getSelectedModeFromSettings();
         session.updatedAt = Date.now();
         saveState();
+        updateModeButton(session.mode);
+        setActiveDropdownItem(modeMenu, session.mode);
         updateModeIndicator(session.mode);
+        closeAllDropdowns();
         renderSessionsSidebar();
       });
     }
+
+    document.addEventListener("click", (e) => {
+      if (e.target.closest(".dropdown-control")) return;
+      closeAllDropdowns();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeAllDropdowns();
+      }
+    });
 
     if (sendBtn) {
       sendBtn.addEventListener("click", handleSendClick);
