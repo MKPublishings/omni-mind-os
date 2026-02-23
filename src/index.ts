@@ -30,6 +30,16 @@ export default {
         });
       }
 
+      if (url.pathname === "/api/omni" && request.method !== "POST") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
       if (url.pathname === "/api/omni" && request.method === "POST") {
         const body = await request.json();
 

@@ -8,6 +8,7 @@ const inputField = document.getElementById("user-input");
 const sendButton = document.getElementById("send-btn");
 const modeIndicator = document.getElementById("mode-indicator");
 const modelSelector = document.getElementById("model");
+const apiStatus = document.getElementById("api-status");
 
 // ------------------------------------------------------------
 // OMNI STATE
@@ -38,6 +39,27 @@ function setMode(modeName) {
 
 function setModel(modelName) {
   OmniState.model = modelName;
+}
+
+function setApiStatus(text, connected) {
+  if (!apiStatus) return;
+  apiStatus.textContent = text;
+  apiStatus.style.color = connected ? "var(--success, #4ade80)" : "var(--danger, #f87171)";
+}
+
+async function checkApiConnection() {
+  try {
+    const response = await fetch("/api/omni", { method: "OPTIONS" });
+
+    if (response.ok) {
+      setApiStatus("API: connected", true);
+      return;
+    }
+
+    setApiStatus("API: unavailable", false);
+  } catch {
+    setApiStatus("API: offline", false);
+  }
 }
 
 // ------------------------------------------------------------
@@ -177,3 +199,5 @@ appendMessage(
   "assistant",
   "Omni Mind/OS online. Cognitive scaffolding initialized."
 );
+
+checkApiConnection();
