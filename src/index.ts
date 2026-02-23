@@ -12,6 +12,65 @@ export interface Env {
   MODEL_GPT_4O?: string;
   MODEL_GPT_4O_MINI?: string;
   MODEL_DEEPSEEK?: string;
+  OMNI_RESPONSE_MIN_CHARS?: string;
+  OMNI_RESPONSE_BASE_CHARS?: string;
+  OMNI_RESPONSE_MAX_CHARS?: string;
+  OMNI_ENV?: string;
+}
+
+type OmniMessage = {
+  role?: string;
+  content?: string;
+};
+
+function toPositiveInt(value: unknown, fallback: number): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.floor(n);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function computeAdaptiveResponseMax(messages: OmniMessage[], env: Env): number {
+  const configuredMin = toPositiveInt(env.OMNI_RESPONSE_MIN_CHARS, 2000);
+  const configuredBase = toPositiveInt(env.OMNI_RESPONSE_BASE_CHARS, 4500);
+  const configuredMax = toPositiveInt(env.OMNI_RESPONSE_MAX_CHARS, 30000);
+
+  const floor = Math.max(500, configuredMin);
+  const ceiling = Math.max(floor, configuredMax);
+  const base = clamp(configuredBase, floor, ceiling);
+
+  const userMessages = (messages || []).filter((m) => m?.role === "user");
+  const latestUserText = String(userMessages[userMessages.length - 1]?.content || "");
+  const latestUserChars = latestUserText.trim().length;
+
+  const totalUserChars = userMessages.reduce((sum, m) => {
+    return sum + String(m?.content || "").trim().length;
+  }, 0);
+
+  const userTurns = userMessages.length;
+  const asksForDepth =
+    /\b(detailed|detail|thorough|comprehensive|deep(?:\s+dive)?|step[-\s]?by[-\s]?step|full(?:\s+version)?|long(?:er)?|explain)\b/i.test(
+      latestUserText
+    );
+
+  const effortScore =
+    latestUserChars + Math.floor(totalUserChars * 0.35) + userTurns * 140 + (asksForDepth ? 900 : 0);
+
+  const adaptive = base + Math.floor(effortScore * 3.2);
+  return clamp(adaptive, floor, ceiling);
+}
+
+function isNonProduction(request: Request, env: Env): boolean {
+  const explicitEnv = String(env.OMNI_ENV || "").trim().toLowerCase();
+  if (explicitEnv) {
+    return explicitEnv !== "production";
+  }
+
+  const host = new URL(request.url).hostname.toLowerCase();
+  return host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev");
 }
 
 const CORS_HEADERS = {
@@ -61,7 +120,14 @@ export default {
           }))
         };
 
-        logger.log("incoming_request", ctx);
+        const responseLimit = computeAdaptiveResponseMax(ctx.messages, env);
+        const debugEnabled = isNonProduction(request, env);
+
+        logger.log("incoming_request", {
+          ...ctx,
+          responseCap: responseLimit,
+          debugEnabled
+        });
 
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
@@ -74,12 +140,12 @@ export default {
                   typeof result === "string"
                     ? { response: result }
                     : result;
-                const safe = OmniSafety.safeGuardResponse(parsedResult.response || "");
+                const safe = OmniSafety.safeGuardResponse(parsedResult.response || "", responseLimit);
 
-                for (let i = 0; i < safe.length; i++) {
-                  const token = safe[i];
-                  controller.enqueue(encoder.encode(`data: ${token}\n\n`));
-                  await new Promise((r) => setTimeout(r, 8));
+                const chunkSize = 48;
+                for (let i = 0; i < safe.length; i += chunkSize) {
+                  const token = safe.slice(i, i + chunkSize);
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(token)}\n\n`));
                 }
               }
 
@@ -99,7 +165,13 @@ export default {
             ...CORS_HEADERS,
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
-            "Connection": "keep-alive"
+            "Connection": "keep-alive",
+            ...(debugEnabled
+              ? {
+                  "X-Omni-Response-Cap": String(responseLimit),
+                  "Access-Control-Expose-Headers": "X-Omni-Response-Cap"
+                }
+              : {})
           }
         });
       }

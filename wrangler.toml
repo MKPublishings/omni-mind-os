@@ -12,6 +12,10 @@ binding = "AI"
 # MODEL_GPT_4O = "@cf/openai/gpt-4o"
 # MODEL_GPT_4O_MINI = "@cf/openai/gpt-4o-mini"
 # MODEL_DEEPSEEK = "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
+# OMNI_RESPONSE_MIN_CHARS = "2000"
+# OMNI_RESPONSE_BASE_CHARS = "4500"
+# OMNI_RESPONSE_MAX_CHARS = "30000"
+# OMNI_ENV = "development" # set to "production" to disable debug response headers
 
 [[kv_namespaces]]
 binding = "MIND"

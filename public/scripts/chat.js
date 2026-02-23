@@ -249,48 +249,8 @@
   // =========================
   function appendTokenWithSpacing(currentText, token) {
     const t = typeof token === "string" ? token : String(token ?? "");
-
     if (!t) return currentText;
-
-    if (!currentText) {
-      return t;
-    }
-
-    const prevChar = currentText[currentText.length - 1] || "";
-
-    // Keep explicit whitespace exactly as streamed
-    if (/^\s+$/.test(t)) {
-      return currentText + t;
-    }
-
-    // Punctuation attaches directly
-    if (/^[.,!?;:%)\]}]/.test(t)) {
-      return currentText + t;
-    }
-
-    // Apostrophes/quotes attach to existing word pieces
-    if (/^['’`]/.test(t) && /[A-Za-z0-9]$/.test(currentText)) {
-      return currentText + t;
-    }
-
-    if (/\s$/.test(currentText) || /^\s/.test(t)) {
-      return currentText + t;
-    }
-
-    // Character-stream fallback: keep alphanumeric runs contiguous
-    if (t.length === 1 && /[A-Za-z0-9]/.test(t) && /[A-Za-z0-9]$/.test(currentText)) {
-      return currentText + t;
-    }
-
-    if (/^[\])}]/.test(t)) {
-      return currentText + t;
-    }
-
-    if (/[([{\-\/“"']$/.test(prevChar)) {
-      return currentText + t;
-    }
-
-    return currentText + " " + t;
+    return (currentText || "") + t;
   }
 
   // =========================
@@ -374,9 +334,54 @@
     const decoder = new TextDecoder("utf-8");
     let buffer = "";
 
+    const processSseLine = (line) => {
+      const normalized = line.replace(/\r$/, "");
+      if (!normalized.startsWith("data:")) return false;
+
+      let data = normalized.slice(5);
+
+      if (data.startsWith(" ")) {
+        data = data.slice(1);
+      }
+
+      if (data.trim() === "[DONE]") {
+        return true;
+      }
+
+      if (data.length === 0) return false;
+
+      let token = data;
+      try {
+        const parsed = JSON.parse(data);
+        if (typeof parsed === "string") {
+          token = parsed;
+        } else if (parsed && typeof parsed.token === "string") {
+          token = parsed.token;
+        } else if (parsed && typeof parsed.content === "string") {
+          token = parsed.content;
+        }
+      } catch {
+        // raw token
+      }
+
+      onChunk(token);
+      updateAssistantMessageBody(assistantBodyEl, session._streamingAssistantText);
+      return false;
+    };
+
     while (true) {
       const { value, done } = await reader.read();
-      if (done) break;
+      if (done) {
+        if (buffer) {
+          const trailingLines = buffer.split("\n");
+          for (const trailingLine of trailingLines) {
+            if (processSseLine(trailingLine)) {
+              return;
+            }
+          }
+        }
+        break;
+      }
       if (!value) continue;
 
       const chunk = decoder.decode(value, { stream: true });
@@ -386,39 +391,10 @@
       buffer = lines.pop() || "";
 
       for (const line of lines) {
-        const normalized = line.replace(/\r$/, "");
-        if (!normalized.startsWith("data:")) continue;
-
-        let data = normalized.slice(5);
-
-        // SSE allows a single optional space after ':'
-        if (data.startsWith(" ")) {
-          data = data.slice(1);
-        }
-
-        if (data.trim() === "[DONE]") {
+        if (processSseLine(line)) {
           buffer = "";
           return;
         }
-
-        if (data.length === 0) continue;
-
-        let token = data;
-        try {
-          const parsed = JSON.parse(data);
-          if (typeof parsed === "string") {
-            token = parsed;
-          } else if (parsed && typeof parsed.token === "string") {
-            token = parsed.token;
-          } else if (parsed && typeof parsed.content === "string") {
-            token = parsed.content;
-          }
-        } catch {
-          // raw token
-        }
-
-        onChunk(token);
-        updateAssistantMessageBody(assistantBodyEl, session._streamingAssistantText);
       }
     }
   }
