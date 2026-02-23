@@ -78,15 +78,42 @@
   width: 100%;
 }
 
+/* Docs pages use more horizontal space */
+#main.docs-main {
+  padding: 32px 64px;
+}
+
+@media (min-width: 1600px) {
+  #main.docs-main {
+    padding: 40px 80px;
+  }
+}
+
+@media (min-width: 1920px) {
+  #main.docs-main {
+    padding: 48px 120px;
+  }
+}
+
 @media (min-width: 1400px) {
   #main {
     padding: 40px 64px;
   }
 }
 
+@media (max-width: 1200px) {
+  #main.docs-main {
+    padding: 28px 40px;
+  }
+}
+
 @media (max-width: 768px) {
   #main {
     padding: 24px;
+  }
+  
+  #main.docs-main {
+    padding: 24px 20px;
   }
 }
 
