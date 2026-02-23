@@ -2,9 +2,265 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <title>Omni Mind/OS – Home</title>
   <link rel="stylesheet" href="/styles/base.css" />
   <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/components.css" />
+  <link rel="stylesheet" href="/styles/modes.css" />
+  <style>
+    /* HOME PAGE SPECIFIC STYLES */
+    .home-hero {
+      text-align: center;
+      padding: 80px 32px 60px;
+      margin-bottom: 48px;
+      position: relative;
+    }
+
+    .home-hero h1 {
+      font-size: 56px;
+      font-weight: 700;
+      margin: 0 0 16px 0;
+      background: linear-gradient(135deg, #ff7373, #f4d0a1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 40px rgba(255, 115, 115, 0.3);
+      letter-spacing: 0.02em;
+    }
+
+    .home-hero p {
+      font-size: 20px;
+      color: var(--text-dim);
+      font-style: italic;
+      margin: 0 0 40px 0;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero-btn {
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-btn-primary {
+      background: linear-gradient(135deg, #ff7373, #f4d0a1);
+      color: #0b0d10;
+      box-shadow: 0 4px 16px rgba(255, 115, 115, 0.3);
+    }
+
+    .hero-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(255, 115, 115, 0.4);
+    }
+
+    .hero-btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      border: 1px solid rgba(255, 115, 115, 0.3);
+    }
+
+    .hero-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 115, 115, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .home-section {
+      margin-bottom: 48px;
+    }
+
+    .home-section-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 24px 0;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .home-intro {
+      max-width: 800px;
+      margin: 0 auto 48px;
+      padding: 32px;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid rgba(255, 115, 115, 0.24);
+      border-radius: 16px;
+      text-align: center;
+    }
+
+    .home-intro p {
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .mode-card {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid rgba(255, 115, 115, 0.24);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .mode-card:hover {
+      border-color: rgba(255, 115, 115, 0.42);
+      box-shadow: 0 8px 36px rgba(0, 0, 0, 0.45), 0 0 24px rgba(255, 115, 115, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .mode-card-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 0 12px rgba(255, 115, 115, 0.4));
+    }
+
+    .mode-card-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 8px 0;
+    }
+
+    .mode-card-desc {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .feature-spec {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 115, 115, 0.14);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .feature-spec-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .feature-spec-text {
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 500;
+      margin: 0;
+    }
+
+    .divider {
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 115, 115, 0.4), transparent);
+      margin: 64px 0;
+      border-radius: 2px;
+    }
+
+    .about-mini {
+      max-width: 700px;
+      margin: 0 auto 48px;
+      text-align: center;
+    }
+
+    .about-mini p {
+      color: var(--text-dim);
+      font-size: 15px;
+      line-height: 1.7;
+      margin: 0 0 12px 0;
+    }
+
+    .about-mini p strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .home-footer {
+      text-align: center;
+      padding: 32px;
+      border-top: 1px solid rgba(255, 115, 115, 0.18);
+      margin-top: 64px;
+    }
+
+    .home-footer p {
+      color: var(--text-dim);
+      font-size: 14px;
+      margin: 0 0 8px 0;
+    }
+
+    .home-footer p:last-child {
+      margin-bottom: 0;
+    }
+
+    .home-footer a {
+      color: #ff7373;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .home-footer a:hover {
+      color: #f4d0a1;
+    }
+
+    @media (max-width: 768px) {
+      .home-hero h1 {
+        font-size: 40px;
+      }
+
+      .home-hero p {
+        font-size: 18px;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .hero-btn {
+        width: 100%;
+        max-width: 300px;
+      }
+
+      .modes-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body class="page">
   <div id="layout">
@@ -12,7 +268,7 @@
       <h1 class="logo">Omni Mind/OS</h1>
 
       <nav class="nav">
-        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/index.html" class="nav-link active">Home</a>
         <a href="/chat.html" class="nav-link">Chat</a>
         <a href="/modes.html" class="nav-link">Modes</a>
         <a href="/settings.html" class="nav-link">Settings</a>
@@ -25,73 +281,110 @@
       </div>
     </aside>
 
-    <main id="main">
-      <!-- page-specific content goes here -->
+    <main id="main" class="modes-main">
+      <!-- HERO SECTION -->
+      <section class="home-hero">
+        <h1>Omni Mind/OS</h1>
+        <p>A sovereign intelligence for creation, architecture, and iteration.</p>
+        <div class="hero-buttons">
+          <a href="/chat.html" class="hero-btn hero-btn-primary">Enter Chat</a>
+          <a href="/modes.html" class="hero-btn hero-btn-secondary">Explore Modes</a>
+        </div>
+      </section>
+
+      <!-- WHAT OMNI IS -->
+      <section class="home-section">
+        <div class="home-intro">
+          <p>Omni is the resident intelligence of mkptri.org — built for creative architecture, iteration, and problem-solving. Designed as a modular operating system for thought, it's fast, responsive, and cinematic. Every interaction is optimized for clarity, precision, and creative flow.</p>
+        </div>
+      </section>
+
+      <!-- MODES OVERVIEW -->
+      <section class="home-section">
+        <h2 class="home-section-title">Cognitive Modes</h2>
+        <div class="modes-grid">
+          <div class="mode-card">
+            <div class="mode-card-icon">💬</div>
+            <h3 class="mode-card-title">Chat Mode</h3>
+            <p class="mode-card-desc">Natural conversation, Q&A, and general assistance</p>
+          </div>
+
+          <div class="mode-card">
+            <div class="mode-card-icon">🏗️</div>
+            <h3 class="mode-card-title">Architect Mode</h3>
+            <p class="mode-card-desc">Build systems, structures, and technical logic</p>
+          </div>
+
+          <div class="mode-card">
+            <div class="mode-card-icon">📊</div>
+            <h3 class="mode-card-title">Analyst Mode</h3>
+            <p class="mode-card-desc">Breakdowns, summaries, and data insights</p>
+          </div>
+
+          <div class="mode-card">
+            <div class="mode-card-icon">🎨</div>
+            <h3 class="mode-card-title">Visual Mode</h3>
+            <p class="mode-card-desc">Cinematic scenes, composition, and creative direction</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- FEATURES SNAPSHOT -->
+      <section class="home-section">
+        <h2 class="home-section-title">System Specifications</h2>
+        <div class="features-grid">
+          <div class="feature-spec">
+            <span class="feature-spec-icon">⚡</span>
+            <p class="feature-spec-text">Real-time streaming</p>
+          </div>
+
+          <div class="feature-spec">
+            <span class="feature-spec-icon">💾</span>
+            <p class="feature-spec-text">Multi-session memory</p>
+          </div>
+
+          <div class="feature-spec">
+            <span class="feature-spec-icon">🎨</span>
+            <p class="feature-spec-text">Dark Neapolitan OS UI</p>
+          </div>
+
+          <div class="feature-spec">
+            <span class="feature-spec-icon">🔄</span>
+            <p class="feature-spec-text">Fast iteration</p>
+          </div>
+
+          <div class="feature-spec">
+            <span class="feature-spec-icon">🧩</span>
+            <p class="feature-spec-text">Modular design</p>
+          </div>
+
+          <div class="feature-spec">
+            <span class="feature-spec-icon">🔐</span>
+            <p class="feature-spec-text">Privacy-respecting</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISUAL DIVIDER -->
+      <div class="divider"></div>
+
+      <!-- ABOUT THE PROJECT -->
+      <section class="home-section">
+        <div class="about-mini">
+          <p><strong>Designed and architected by Mirnes Kudić</strong></p>
+          <p>Built as a personal OS for creativity and clarity, inspired by Neapolitan color theory and modern system design. Omni is a living project that evolves with every iteration.</p>
+        </div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="home-footer">
+        <p><strong>Omni Mind/OS v1.0</strong></p>
+        <p>Built with Cloudflare Workers, streaming AI inference, and a modular frontend architecture.</p>
+        <p><a href="/about.html">Learn more about the project →</a></p>
+      </footer>
     </main>
   </div>
 
-  <div class="navbar">
-    <div class="nav-title">MKP TRI</div>
-    <div class="nav-links">
-      <a class="nav-link" href="chat.html">Chat</a>
-      <a class="nav-link" href="docs.html">Docs</a>
-      <a class="nav-link" href="modes.html">Modes</a>
-    </div>
-  </div>
-
-  <div class="page grid">
-    <div class="card">
-      <h2>Welcome</h2>
-      <p>Your sovereign OS begins here.</p>
-    </div>
-
-    <div class="card">
-      <h2>Chat</h2>
-      <p>Enter the OMNI interface.</p>
-      <div class="button">Open Chat</div>
-    </div>
-
-    <div class="card">
-      <h2>Documentation</h2>
-      <p>Explore the system architecture.</p>
-    </div>
-  </div>
-
-  <!-- page-specific scripts go here -->
-  <script>
-(() => {
-  const body = document.body;
-  if (!body) return;
-
-  let navigating = false;
-
-  document.addEventListener("click", (e) => {
-    const link = e.target.closest("a.nav-link");
-    if (!link) return;
-
-    // Ignore special cases
-    const href = link.getAttribute("href");
-    if (!href || href.startsWith("#")) return;
-    if (link.target === "_blank" || link.hasAttribute("download")) return;
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-
-    const url = new URL(link.href, window.location.href);
-    if (url.origin !== window.location.origin) return;
-
-    e.preventDefault();
-    if (navigating) return;
-    navigating = true;
-
-    body.classList.add("page-transition");
-
-    const ms =
-      parseFloat(getComputedStyle(body).getPropertyValue("--page-transition-ms")) || 350;
-
-    window.setTimeout(() => {
-      window.location.assign(url.href);
-    }, ms);
-  });
-})();
-</script>
+  <script src="/scripts/modes.js"></script>
 </body>
 </html>
