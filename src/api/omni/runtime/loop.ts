@@ -22,7 +22,13 @@ export async function omniBrainLoop(
       return { response: "AI binding is not configured." };
     }
 
-    const raw = await env.AI.run(ctx.model, {
+    const requestedModel = String(ctx.model || "omni").trim().toLowerCase();
+    const resolvedModel =
+      requestedModel === "omni"
+        ? "@cf/meta/llama-3.1-8b-instruct"
+        : ctx.model;
+
+    const raw = await env.AI.run(resolvedModel, {
       messages: ctx.messages
     });
 

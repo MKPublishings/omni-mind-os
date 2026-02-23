@@ -82,18 +82,54 @@ async function streamOmniResponse() {
       return;
     }
 
+    if (!response.body) {
+      bubble.textContent = "⚠️ Empty response body.";
+      OmniState.streaming = false;
+      return;
+    }
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    const isSse = contentType.includes("text/event-stream");
     let fullText = "";
+    let sseBuffer = "";
 
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value);
-      fullText += chunk;
-      bubble.textContent = fullText;
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      const chunk = decoder.decode(value, { stream: true });
+
+      if (isSse) {
+        sseBuffer += chunk;
+
+        while (sseBuffer.includes("\n\n")) {
+          const eventEnd = sseBuffer.indexOf("\n\n");
+          const rawEvent = sseBuffer.slice(0, eventEnd);
+          sseBuffer = sseBuffer.slice(eventEnd + 2);
+
+          const dataLines = rawEvent
+            .split("\n")
+            .filter(line => line.startsWith("data:"))
+            .map(line => line.slice(5).trimStart());
+
+          if (!dataLines.length) continue;
+          const payload = dataLines.join("\n");
+
+          if (payload === "[DONE]") {
+            continue;
+          }
+
+          fullText += payload;
+          bubble.textContent = fullText;
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+      } else {
+        fullText += chunk;
+        bubble.textContent = fullText;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
     }
 
     // Save assistant message
