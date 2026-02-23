@@ -24,7 +24,7 @@ const OmniState = {
 // ------------------------------------------------------------
 function appendMessage(role, content) {
   const bubble = document.createElement("div");
-  bubble.className = role === "user" ? "msg user-msg" : "msg omni-msg";
+  bubble.className = role === "user" ? "message user" : "message bot";
   bubble.textContent = content;
   chatContainer.appendChild(bubble);
   chatContainer.scrollTop = chatContainer.scrollHeight;
