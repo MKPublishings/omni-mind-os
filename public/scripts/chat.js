@@ -1,206 +1,212 @@
-console.log("chat.js loaded");
+// omni chat.js
+// Assumptions:
+// - Backend: POST /api/omni  (JSON body: { messages, model, mode })
+// - Response: text/event-stream with lines: "data: { ... }" and "data: [DONE]"
+// - HTML elements:
+//   #chat-messages  (container for messages)
+//   #chat-input     (textarea or input)
+//   #send-btn       (button)
+//   #model-select   (select)   [optional]
+//   #mode-select    (select)   [optional]
 
-// ------------------------------------------------------------
-// ELEMENTS
-// ------------------------------------------------------------
-const chatContainer = document.getElementById("chat-container");
-const inputField = document.getElementById("user-input");
-const sendButton = document.getElementById("send-btn");
-const modeIndicator = document.getElementById("mode-indicator");
-const modelSelector = document.getElementById("model");
-const apiStatus = document.getElementById("api-status");
+(() => {
+  const messagesEl = document.getElementById("chat-messages");
+  const inputEl = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("send-btn");
+  const modelSelect = document.getElementById("model-select");
+  const modeSelect = document.getElementById("mode-select");
 
-// ------------------------------------------------------------
-// OMNI STATE
-// ------------------------------------------------------------
-const OmniState = {
-  mode: "Architect",
-  model: "omni",
-  messages: [],
-  streaming: false
-};
+  let conversation = [];
+  let isStreaming = false;
 
-// ------------------------------------------------------------
-// UI HELPERS
-// ------------------------------------------------------------
-function appendMessage(role, content) {
-  const bubble = document.createElement("div");
-  bubble.className = role === "user" ? "message user" : "message bot";
-  bubble.textContent = content;
-  chatContainer.appendChild(bubble);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-  return bubble;
-}
-
-function setMode(modeName) {
-  OmniState.mode = modeName;
-  modeIndicator.textContent = `Mode: ${modeName}`;
-}
-
-function setModel(modelName) {
-  OmniState.model = modelName;
-}
-
-function setApiStatus(text, connected) {
-  if (!apiStatus) return;
-  apiStatus.textContent = text;
-  apiStatus.style.color = connected ? "var(--success, #4ade80)" : "var(--danger, #f87171)";
-}
-
-async function checkApiConnection() {
-  try {
-    const response = await fetch("/api/omni", { method: "OPTIONS" });
-
-    if (response.ok) {
-      setApiStatus("API: connected", true);
-      return;
-    }
-
-    setApiStatus("API: unavailable", false);
-  } catch {
-    setApiStatus("API: offline", false);
+  // Utility: create message bubble
+  function createMessageElement(role, text) {
+    const el = document.createElement("div");
+    el.className = `message message-${role}`;
+    el.textContent = text;
+    return el;
   }
-}
 
-// ------------------------------------------------------------
-// SEND MESSAGE
-// ------------------------------------------------------------
-async function sendMessage() {
-  const text = inputField.value.trim();
-  if (!text || OmniState.streaming) return;
+  // Utility: scroll to bottom
+  function scrollToBottom() {
+    if (!messagesEl) return;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
 
-  // Add user message
-  OmniState.messages.push({ role: "user", content: text });
-  appendMessage("user", text);
-  inputField.value = "";
+  // Append a full message (user or assistant)
+  function appendMessage(role, text) {
+    if (!messagesEl) return;
+    const el = createMessageElement(role, text);
+    messagesEl.appendChild(el);
+    scrollToBottom();
+    return el;
+  }
 
-  // Stream assistant response
-  await streamOmniResponse();
-}
+  // Update an existing assistant message element
+  function updateAssistantElement(el, text) {
+    if (!el) return;
+    el.textContent = text;
+    scrollToBottom();
+  }
 
-// ------------------------------------------------------------
-// STREAMING RESPONSE
-// ------------------------------------------------------------
-async function streamOmniResponse() {
-  OmniState.streaming = true;
+  // Token spacing logic
+  function appendTokenWithSpacing(currentText, token) {
+    // Trim raw token
+    const t = token;
 
-  // Create assistant bubble
-  const bubble = appendMessage("assistant", "…");
-
-  try {
-    const response = await fetch("/api/omni", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: OmniState.messages,
-        model: OmniState.model,
-        mode: OmniState.mode
-      })
-    });
-
-    if (!response.ok) {
-      bubble.textContent = `Error ${response.status}`;
-      OmniState.streaming = false;
-      return;
+    // If punctuation, attach directly
+    if (/^[.,!?;:]/.test(t)) {
+      return currentText + t;
     }
 
-    if (!response.body) {
-      bubble.textContent = "⚠️ Empty response body.";
-      OmniState.streaming = false;
-      return;
+    // If current text is empty, just add token
+    if (!currentText) {
+      return t;
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    const contentType = (response.headers.get("content-type") || "").toLowerCase();
-    const isSse = contentType.includes("text/event-stream");
-    let fullText = "";
-    let sseBuffer = "";
+    // If current text already ends with space, just add token
+    if (/\s$/.test(currentText)) {
+      return currentText + t;
+    }
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
+    // Default: add a space then token
+    return currentText + " " + t;
+  }
 
-      const chunk = decoder.decode(value, { stream: true });
+  // Main send handler
+  async function handleSend() {
+    if (isStreaming) return;
 
-      if (isSse) {
-        sseBuffer += chunk;
+    const content = (inputEl?.value || "").trim();
+    if (!content) return;
 
-        while (sseBuffer.includes("\n\n")) {
-          const eventEnd = sseBuffer.indexOf("\n\n");
-          const rawEvent = sseBuffer.slice(0, eventEnd);
-          sseBuffer = sseBuffer.slice(eventEnd + 2);
+    // Add user message to UI and history
+    appendMessage("user", content);
+    conversation.push({ role: "user", content });
 
-          const dataLines = rawEvent
-            .split("\n")
-            .filter(line => line.startsWith("data:"))
-            .map(line => {
-              const value = line.slice(5);
-              return value.startsWith(" ") ? value.slice(1) : value;
-            });
+    // Clear input
+    inputEl.value = "";
 
-          if (!dataLines.length) continue;
-          const payload = dataLines.join("\n");
+    // Prepare assistant placeholder
+    let assistantText = "";
+    const assistantEl = appendMessage("assistant", "");
 
-          if (payload === "[DONE]") {
-            continue;
+    // Build payload
+    const payload = {
+      messages: conversation,
+      model: modelSelect ? modelSelect.value : "omni",
+      mode: modeSelect ? modeSelect.value : "chat"
+    };
+
+    isStreaming = true;
+    sendBtn.disabled = true;
+    if (inputEl) inputEl.disabled = true;
+
+    try {
+      const res = await fetch("/api/omni", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok || !res.body) {
+        assistantText = "[Error] Unable to reach Omni backend.";
+        updateAssistantElement(assistantEl, assistantText);
+        isStreaming = false;
+        sendBtn.disabled = false;
+        if (inputEl) inputEl.disabled = false;
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) break;
+        if (!value) continue;
+
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+
+        // Split into lines for SSE-style "data:" frames
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+
+          const data = trimmed.slice(5).trim(); // remove "data:"
+
+          if (!data) continue;
+          if (data === "[DONE]") {
+            // End of stream
+            buffer = "";
+            break;
           }
 
-          fullText += payload;
-          bubble.textContent = fullText;
-          chatContainer.scrollTop = chatContainer.scrollHeight;
+          // Expect data to be either plain text token or JSON with { token: "..." }
+          let token = data;
+          try {
+            const parsed = JSON.parse(data);
+            if (typeof parsed === "string") {
+              token = parsed;
+            } else if (parsed && typeof parsed.token === "string") {
+              token = parsed.token;
+            } else if (parsed && typeof parsed.content === "string") {
+              token = parsed.content;
+            }
+          } catch {
+            // not JSON, treat as raw token
+          }
+
+          // Append token with spacing
+          assistantText = appendTokenWithSpacing(assistantText, token);
+          updateAssistantElement(assistantEl, assistantText);
         }
-      } else {
-        fullText += chunk;
-        bubble.textContent = fullText;
-        chatContainer.scrollTop = chatContainer.scrollHeight;
       }
+
+      // Finalize assistant message
+      if (assistantText.trim().length === 0) {
+        assistantText = "[No response received]";
+        updateAssistantElement(assistantEl, assistantText);
+      }
+
+      // Push assistant message into history
+      conversation.push({ role: "assistant", content: assistantText });
+    } catch (err) {
+      console.error("Omni chat error:", err);
+      const errorText = "[Error] Something went wrong while streaming the response.";
+      updateAssistantElement(assistantEl, errorText);
+    } finally {
+      isStreaming = false;
+      sendBtn.disabled = false;
+      if (inputEl) inputEl.disabled = false;
+      inputEl?.focus();
     }
-
-    // Save assistant message
-    OmniState.messages.push({
-      role: "assistant",
-      content: fullText
-    });
-
-  } catch (err) {
-    console.error(err);
-    bubble.textContent = "⚠️ Network or streaming error.";
   }
 
-  OmniState.streaming = false;
-}
-
-// ------------------------------------------------------------
-// EVENT LISTENERS
-// ------------------------------------------------------------
-sendButton.addEventListener("click", sendMessage);
-
-inputField.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
+  // Enter key to send (Shift+Enter for newline)
+  function handleKeydown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   }
-});
 
-// Mode buttons
-document.querySelectorAll("[data-mode]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    setMode(btn.getAttribute("data-mode"));
-  });
-});
+  // Wire up events
+  if (sendBtn) {
+    sendBtn.addEventListener("click", handleSend);
+  }
+  if (inputEl) {
+    inputEl.addEventListener("keydown", handleKeydown);
+  }
 
-// Model selector
-modelSelector.addEventListener("change", (e) => {
-  setModel(e.target.value);
-});
-
-// ------------------------------------------------------------
-// INITIAL GREETING
-// ------------------------------------------------------------
-appendMessage(
-  "assistant",
-  "Omni Mind/OS online. Cognitive scaffolding initialized."
-);
-
-checkApiConnection();
+  // Optional: initial system message or greeting
+  // conversation.push({ role: "system", content: "You are Omni, the resident mind of mkptri.org." });
+})();
