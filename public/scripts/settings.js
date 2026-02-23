@@ -228,6 +228,8 @@ if (fontSizeDropdown && fontSizeMenu) {
   fontSizeMenu.addEventListener("click", (e) => {
     const item = e.target.closest(".settings-dropdown-item[data-value]");
     if (!item) return;
+    const fontSizeBtn = document.getElementById("font-size-btn");
+    if (fontSizeBtn) fontSizeBtn.textContent = item.textContent.trim();
     setSetting(SETTINGS_KEYS.FONT_SIZE, item.dataset.value);
   });
 }
@@ -269,6 +271,8 @@ if (defaultModelDropdown && defaultModelMenu) {
   defaultModelMenu.addEventListener("click", (e) => {
     const item = e.target.closest(".settings-dropdown-item[data-value]");
     if (!item) return;
+    const defaultModelBtn = document.getElementById("default-model-btn");
+    if (defaultModelBtn) defaultModelBtn.textContent = item.textContent.trim();
     setSetting(SETTINGS_KEYS.DEFAULT_MODEL, item.dataset.value);
   });
 }
@@ -280,6 +284,8 @@ if (modeSelectionDropdown && modeSelectionMenu) {
   modeSelectionMenu.addEventListener("click", (e) => {
     const item = e.target.closest(".settings-dropdown-item[data-value]");
     if (!item) return;
+    const modeSelectionBtn = document.getElementById("mode-selection-btn");
+    if (modeSelectionBtn) modeSelectionBtn.textContent = item.textContent.trim();
     setSetting(SETTINGS_KEYS.MODE_SELECTION, item.dataset.value);
     updateModeSettingVisibility();
   });
@@ -290,6 +296,8 @@ if (defaultModeDropdown && defaultModeMenu) {
   defaultModeMenu.addEventListener("click", (e) => {
     const item = e.target.closest(".settings-dropdown-item[data-value]");
     if (!item) return;
+    const defaultModeBtn = document.getElementById("default-mode-btn");
+    if (defaultModeBtn) defaultModeBtn.textContent = item.textContent.trim();
     setSetting(SETTINGS_KEYS.DEFAULT_MODE, item.dataset.value);
   });
 }
@@ -299,6 +307,8 @@ if (responseLengthDropdown && responseLengthMenu) {
   responseLengthMenu.addEventListener("click", (e) => {
     const item = e.target.closest(".settings-dropdown-item[data-value]");
     if (!item) return;
+    const responseLengthBtn = document.getElementById("response-length-btn");
+    if (responseLengthBtn) responseLengthBtn.textContent = item.textContent.trim();
     setSetting(SETTINGS_KEYS.RESPONSE_LENGTH, item.dataset.value);
   });
 }
@@ -307,6 +317,14 @@ window.addEventListener("storage", (e) => {
   const defaultModelBtn = document.getElementById("default-model-btn");
   const modeSelectionBtn = document.getElementById("mode-selection-btn");
   const defaultModeBtn = document.getElementById("default-mode-btn");
+  const fontSizeBtn = document.getElementById("font-size-btn");
+  const responseLengthBtn = document.getElementById("response-length-btn");
+
+  if (e.key === SETTINGS_KEYS.FONT_SIZE) {
+    const val = getSetting(SETTINGS_KEYS.FONT_SIZE, "medium");
+    if (fontSizeDropdown) fontSizeDropdown.setActive(val);
+    if (fontSizeBtn) fontSizeBtn.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+  }
 
   if (e.key === SETTINGS_KEYS.MODE_SELECTION) {
     const val = getSetting(SETTINGS_KEYS.MODE_SELECTION, "automatic");
@@ -325,6 +343,12 @@ window.addEventListener("storage", (e) => {
     const val = getSetting(SETTINGS_KEYS.DEFAULT_MODEL, "omni");
     if (defaultModelDropdown) defaultModelDropdown.setActive(val);
     if (defaultModelBtn) defaultModelBtn.textContent = val === "gpt-4o-mini" ? "GPT‑4o Mini" : val === "gpt-4o" ? "GPT‑4o" : val === "deepseek" ? "DeepSeek" : "Omni";
+  }
+
+  if (e.key === SETTINGS_KEYS.RESPONSE_LENGTH) {
+    const val = getSetting(SETTINGS_KEYS.RESPONSE_LENGTH, "balanced");
+    if (responseLengthDropdown) responseLengthDropdown.setActive(val);
+    if (responseLengthBtn) responseLengthBtn.textContent = val.charAt(0).toUpperCase() + val.slice(1);
   }
 });
 
