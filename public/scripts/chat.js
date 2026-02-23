@@ -210,11 +210,6 @@
     inner.appendChild(body);
     wrapper.appendChild(inner);
 
-    // Simple fade-in
-    requestAnimationFrame(() => {
-      wrapper.classList.add("message-visible");
-    });
-
     return { wrapper, body };
   }
 
@@ -588,11 +583,7 @@
       item.appendChild(title);
       item.appendChild(meta);
 
-      // Hover preview
-      item.title = session.messages
-        .slice(0, 3)
-        .map(m => `${m.role === "user" ? "You" : "Omni"}: ${m.content.slice(0, 60)}`)
-        .join("\n");
+      item.title = "";
 
       item.addEventListener("click", () => {
         setActiveSession(id);

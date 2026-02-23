@@ -121,30 +121,28 @@
    MESSAGE BUBBLES
 ------------------------------ */
 .message {
-  padding: 14px 18px;
+  padding: 0;
   margin: 12px 0;
-  border-radius: 14px;
-  max-width: 70%;
-  line-height: 1.55;
+  border-radius: 0;
+  max-width: 100%;
+  width: 100%;
+  line-height: 1.6;
   font-size: 15px;
   font-weight: 400;
-  color: var(--text);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  color: #f5f3f0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .message.user {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text);
-  align-self: flex-end;
+  align-self: stretch;
 }
 
 .message.bot {
-  background: rgba(255, 115, 115, 0.08);
-  border: 1px solid rgba(255, 115, 115, 0.22);
-  box-shadow: 0 0 12px rgba(255, 115, 115, 0.24);
-  align-self: flex-start;
+  align-self: stretch;
 }
 
 .message.typing {
@@ -204,6 +202,24 @@
   margin: 4px 0;
 }
 
+.message-user {
+  font-weight: 600;
+}
+
+.message-user .message-role,
+.message-user .message-body {
+  color: #ff6b6b;
+}
+
+.message-assistant {
+  font-weight: 400;
+}
+
+.message-assistant .message-role,
+.message-assistant .message-body {
+  color: #f5f3f0;
+}
+
 /* ------------------------------
    INPUT AREA
 ------------------------------ */
@@ -256,33 +272,6 @@
   cursor: not-allowed;
   opacity: 0.62;
   box-shadow: none;
-}
-/* Bot message typing shimmer */
-.message.bot {
-  position: relative;
-  overflow: hidden;
-}
-
-.message.bot::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -120%;
-  width: 80%;
-    height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255,255,255,0.08),
-    transparent
-  );
-  animation: shimmer 2.2s infinite;
-}
-
-@keyframes shimmer {
-  0% { left: -120%; }
-  50% { left: 120%; }
-  100% { left: 120%; }
 }
 #mode-indicator {
   background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
