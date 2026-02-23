@@ -18,7 +18,7 @@
   const sendBtn = document.getElementById("send-btn");
   const modelSelect = document.getElementById("model-select") || document.getElementById("model");
   const modeSelect = document.getElementById("mode-select");
-  const modeLabelEl = document.getElementById("mode-label") || document.querySelector("#mode-indicator span");
+  const modeLabelEl = document.getElementById("mode-label");
   const apiStatusEl = document.getElementById("api-status");
 
   const sessionsSidebarEl = document.getElementById("sessions-sidebar");
