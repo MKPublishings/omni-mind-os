@@ -5,6 +5,8 @@
   <title>Omni Mind/OS – Modes</title>
   <link rel="stylesheet" href="/styles/base.css" />
   <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/components.css" />
+  <link rel="stylesheet" href="/styles/modes.css" />
 </head>
 <body class="page">
   <div id="layout">
@@ -28,68 +30,364 @@
 
     <main id="main" class="modes-main">
       <header class="page-header">
-        <h2>Modes</h2>
-        <p class="subtitle">Switch cognitive lenses instantly.</p>
+        <h2>Cognitive Modes</h2>
+        <p class="page-subtitle">Switch cognitive lenses instantly. Each mode optimizes reasoning, language, and output for specific domains.</p>
       </header>
 
-      <section class="mode-grid">
-        <div class="mode-card">
-          <h3>Architect</h3>
-          <p>System design, structure, logic, and scaffolding.</p>
+      <!-- MODE: ARCHITECT -->
+      <section class="mode-section" data-mode="architect">
+        <div class="mode-header">
+          <div class="mode-icon">🏗️</div>
+          <div class="mode-title-group">
+            <h3 class="mode-title">Architect</h3>
+            <p class="mode-tagline">System design, structure, logic, and scaffolding</p>
+          </div>
+          <div class="mode-badge">Default</div>
         </div>
 
-        <div class="mode-card">
-          <h3>Lore</h3>
-          <p>Worldbuilding, narrative memory, and character arcs.</p>
-        </div>
+        <div class="mode-content">
+          <div class="mode-description">
+            <h4>Overview</h4>
+            <p>Architect mode thinks in <strong>systems, structures, pipelines, and clarity</strong>. It breaks down complexity into elegant, modular components with precision-focused reasoning. Perfect for technical planning, code architecture, and building robust frameworks.</p>
+          </div>
 
-        <div class="mode-card">
-          <h3>Visual</h3>
-          <p>Cinematic scenes, composition, and symbolic imagery.</p>
-        </div>
+          <div class="mode-features">
+            <h4>Core Features</h4>
+            <ul class="feature-list">
+              <li>
+                <span class="feature-icon">🔧</span>
+                <div>
+                  <strong>Modular Thinking</strong>
+                  <p>Decomposes problems into clean, reusable components</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">📐</span>
+                <div>
+                  <strong>Structural Clarity</strong>
+                  <p>Maps dependencies, hierarchies, and data flow</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">⚡</span>
+                <div>
+                  <strong>Pipeline Optimization</strong>
+                  <p>Streamlines workflows and automation sequences</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">🎯</span>
+                <div>
+                  <strong>Zero Fluff</strong>
+                  <p>Direct, precise communication without embellishment</p>
+                </div>
+              </li>
+            </ul>
+          </div>
 
-        <div class="mode-card">
-          <h3>Analyst</h3>
-          <p>Data clarity, reasoning, and structured breakdowns.</p>
+          <div class="mode-tech">
+            <h4>Technical Stack</h4>
+            <div class="tech-grid">
+              <div class="tech-item">
+                <strong>Reasoning Style</strong>
+                <span>Top-down decomposition</span>
+              </div>
+              <div class="tech-item">
+                <strong>Output Format</strong>
+                <span>Structured diagrams & code</span>
+              </div>
+              <div class="tech-item">
+                <strong>Language Tone</strong>
+                <span>Technical, concise</span>
+              </div>
+              <div class="tech-item">
+                <strong>Best For</strong>
+                <span>Architecture, APIs, systems</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mode-use-cases">
+            <h4>Use Cases</h4>
+            <div class="use-case-tags">
+              <span class="use-case-tag">Code Architecture</span>
+              <span class="use-case-tag">API Design</span>
+              <span class="use-case-tag">System Planning</span>
+              <span class="use-case-tag">Database Schema</span>
+              <span class="use-case-tag">DevOps Pipelines</span>
+              <span class="use-case-tag">Technical Docs</span>
+            </div>
+          </div>
         </div>
       </section>
+
+      <!-- MODE: ANALYST -->
+      <section class="mode-section" data-mode="analyst">
+        <div class="mode-header">
+          <div class="mode-icon">📊</div>
+          <div class="mode-title-group">
+            <h3 class="mode-title">Analyst</h3>
+            <p class="mode-tagline">Data clarity, reasoning, and structured breakdowns</p>
+          </div>
+        </div>
+
+        <div class="mode-content">
+          <div class="mode-description">
+            <h4>Overview</h4>
+            <p>Analyst mode breaks down ideas with <strong>clarity, logic, and structured reasoning</strong>. It explains, simplifies, and reveals hidden patterns in complex information. Ideal for research synthesis, data interpretation, and analytical writing.</p>
+          </div>
+
+          <div class="mode-features">
+            <h4>Core Features</h4>
+            <ul class="feature-list">
+              <li>
+                <span class="feature-icon">🔍</span>
+                <div>
+                  <strong>Pattern Recognition</strong>
+                  <p>Identifies trends, correlations, and insights</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">📈</span>
+                <div>
+                  <strong>Data Synthesis</strong>
+                  <p>Aggregates information into coherent narratives</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">🧩</span>
+                <div>
+                  <strong>Logical Breakdown</strong>
+                  <p>Structures arguments with clear reasoning chains</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">💡</span>
+                <div>
+                  <strong>Insight Extraction</strong>
+                  <p>Surfaces non-obvious conclusions from data</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mode-tech">
+            <h4>Technical Stack</h4>
+            <div class="tech-grid">
+              <div class="tech-item">
+                <strong>Reasoning Style</strong>
+                <span>Deductive & inductive logic</span>
+              </div>
+              <div class="tech-item">
+                <strong>Output Format</strong>
+                <span>Reports, summaries, insights</span>
+              </div>
+              <div class="tech-item">
+                <strong>Language Tone</strong>
+                <span>Analytical, explanatory</span>
+              </div>
+              <div class="tech-item">
+                <strong>Best For</strong>
+                <span>Research, analysis, reports</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mode-use-cases">
+            <h4>Use Cases</h4>
+            <div class="use-case-tags">
+              <span class="use-case-tag">Market Research</span>
+              <span class="use-case-tag">Data Analysis</span>
+              <span class="use-case-tag">Competitive Intel</span>
+              <span class="use-case-tag">Technical Writing</span>
+              <span class="use-case-tag">Strategy Planning</span>
+              <span class="use-case-tag">Problem Solving</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODE: VISUAL -->
+      <section class="mode-section" data-mode="visual">
+        <div class="mode-header">
+          <div class="mode-icon">🎨</div>
+          <div class="mode-title-group">
+            <h3 class="mode-title">Visual</h3>
+            <p class="mode-tagline">Cinematic scenes, composition, and symbolic imagery</p>
+          </div>
+        </div>
+
+        <div class="mode-content">
+          <div class="mode-description">
+            <h4>Overview</h4>
+            <p>Visual mode thinks in <strong>images, cinematography, color, texture, and atmosphere</strong>. Its language evokes scenes, lighting, and motion. Perfect for creative direction, UI/UX design, and immersive storytelling.</p>
+          </div>
+
+          <div class="mode-features">
+            <h4>Core Features</h4>
+            <ul class="feature-list">
+              <li>
+                <span class="feature-icon">🎬</span>
+                <div>
+                  <strong>Cinematic Framing</strong>
+                  <p>Describes scenes with camera angles and movement</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">🌈</span>
+                <div>
+                  <strong>Color Psychology</strong>
+                  <p>Leverages palette, contrast, and mood</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">✨</span>
+                <div>
+                  <strong>Atmospheric Design</strong>
+                  <p>Crafts ambiance through texture and lighting</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">🖼️</span>
+                <div>
+                  <strong>Symbolic Imagery</strong>
+                  <p>Uses visual metaphors to convey meaning</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mode-tech">
+            <h4>Technical Stack</h4>
+            <div class="tech-grid">
+              <div class="tech-item">
+                <strong>Reasoning Style</strong>
+                <span>Spatial & compositional</span>
+              </div>
+              <div class="tech-item">
+                <strong>Output Format</strong>
+                <span>Scene descriptions, mockups</span>
+              </div>
+              <div class="tech-item">
+                <strong>Language Tone</strong>
+                <span>Evocative, sensory</span>
+              </div>
+              <div class="tech-item">
+                <strong>Best For</strong>
+                <span>Design, media, creative work</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mode-use-cases">
+            <h4>Use Cases</h4>
+            <div class="use-case-tags">
+              <span class="use-case-tag">UI/UX Design</span>
+              <span class="use-case-tag">Brand Identity</span>
+              <span class="use-case-tag">Film Concepts</span>
+              <span class="use-case-tag">Art Direction</span>
+              <span class="use-case-tag">Game Design</span>
+              <span class="use-case-tag">Creative Writing</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODE: LORE -->
+      <section class="mode-section" data-mode="lore">
+        <div class="mode-header">
+          <div class="mode-icon">📖</div>
+          <div class="mode-title-group">
+            <h3 class="mode-title">Lore</h3>
+            <p class="mode-tagline">Worldbuilding, narrative memory, and character arcs</p>
+          </div>
+        </div>
+
+        <div class="mode-content">
+          <div class="mode-description">
+            <h4>Overview</h4>
+            <p>Lore mode speaks in <strong>mythic resonance, symbolic language, and narrative arcs</strong>. It weaves meaning into every sentence, creating worlds, histories, and emotional gravity. Ideal for storytelling, game narratives, and cultural worldbuilding.</p>
+          </div>
+
+          <div class="mode-features">
+            <h4>Core Features</h4>
+            <ul class="feature-list">
+              <li>
+                <span class="feature-icon">🌍</span>
+                <div>
+                  <strong>Worldbuilding</strong>
+                  <p>Constructs rich, interconnected universes</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">📜</span>
+                <div>
+                  <strong>Historical Depth</strong>
+                  <p>Creates timelines, legends, and cultural context</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">🎭</span>
+                <div>
+                  <strong>Character Arcs</strong>
+                  <p>Develops motivations, conflicts, and growth</p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-icon">🔮</span>
+                <div>
+                  <strong>Mythic Language</strong>
+                  <p>Uses symbolic, poetic, emotionally charged prose</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mode-tech">
+            <h4>Technical Stack</h4>
+            <div class="tech-grid">
+              <div class="tech-item">
+                <strong>Reasoning Style</strong>
+                <span>Narrative & thematic</span>
+              </div>
+              <div class="tech-item">
+                <strong>Output Format</strong>
+                <span>Stories, lore docs, scripts</span>
+              </div>
+              <div class="tech-item">
+                <strong>Language Tone</strong>
+                <span>Mythic, emotive, poetic</span>
+              </div>
+              <div class="tech-item">
+                <strong>Best For</strong>
+                <span>Storytelling, games, fiction</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mode-use-cases">
+            <h4>Use Cases</h4>
+            <div class="use-case-tags">
+              <span class="use-case-tag">Game Narratives</span>
+              <span class="use-case-tag">Novel Writing</span>
+              <span class="use-case-tag">Character Creation</span>
+              <span class="use-case-tag">World Lore</span>
+              <span class="use-case-tag">Screenplay</span>
+              <span class="use-case-tag">Mythology</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="modes-footer">
+        <div class="footer-content">
+          <p><strong>Switching Modes:</strong> Use the model selector in chat or enable automatic mode detection in settings.</p>
+          <p>Each mode leverages specialized cognitive primers optimized for domain-specific reasoning patterns.</p>
+        </div>
+      </footer>
     </main>
   </div>
 
-  <script>
-(() => {
-  const body = document.body;
-  if (!body) return;
-
-  let navigating = false;
-
-  document.addEventListener("click", (e) => {
-    const link = e.target.closest("a.nav-link");
-    if (!link) return;
-
-    // Ignore special cases
-    const href = link.getAttribute("href");
-    if (!href || href.startsWith("#")) return;
-    if (link.target === "_blank" || link.hasAttribute("download")) return;
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-
-    const url = new URL(link.href, window.location.href);
-    if (url.origin !== window.location.origin) return;
-
-    e.preventDefault();
-    if (navigating) return;
-    navigating = true;
-
-    body.classList.add("page-transition");
-
-    const ms =
-      parseFloat(getComputedStyle(body).getPropertyValue("--page-transition-ms")) || 350;
-
-    window.setTimeout(() => {
-      window.location.assign(url.href);
-    }, ms);
-  });
-})();
-</script>
+  <script src="/scripts/modes.js"></script>
 </body>
 </html>
