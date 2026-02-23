@@ -40,7 +40,7 @@
     DEFAULT_MODE: "omni-default-mode"
   };
   const KNOWN_MODELS = ["omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
-  const KNOWN_MODES = ["architect", "analyst", "visual", "lore"];
+  const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore"];
 
   let state = {
     activeSessionId: null,
@@ -66,27 +66,51 @@
   }
 
   function toModeLabel(mode) {
-    const normalized = normalizeMode(mode) || "architect";
+    const normalized = normalizeMode(mode) || "auto";
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  function detectModeFromContent(content) {
+    if (!content) return null;
+    const lower = content.trim().toLowerCase();
+    
+    const architectKeywords = ["design", "architecture", "structure", "system", "api", "schema", "database", "pipeline", "build", "framework", "component", "module"];
+    const analystKeywords = ["analyze", "analysis", "data", "research", "report", "trend", "pattern", "insight", "breakdown", "summary", "compare", "evaluate"];
+    const visualKeywords = ["image", "visual", "scene", "visual art", "describe", "paint", "draw", "cinematic", "composition", "artistic", "aesthetic"];
+    const loreKeywords = ["story", "lore", "narrative", "fiction", "worldbuild", "character", "background", "history", "mythology", "tales", "legend"];
+    
+    const architectScore = architectKeywords.filter(k => lower.includes(k)).length;
+    const analystScore = analystKeywords.filter(k => lower.includes(k)).length;
+    const visualScore = visualKeywords.filter(k => lower.includes(k)).length;
+    const loreScore = loreKeywords.filter(k => lower.includes(k)).length;
+    
+    const scores = { architect: architectScore, analyst: analystScore, visual: visualScore, lore: loreScore };
+    const maxScore = Math.max(...Object.values(scores));
+    
+    if (maxScore === 0) return null;
+    
+    const detectedMode = Object.keys(scores).find(k => scores[k] === maxScore);
+    return detectedMode || null;
   }
 
   function getSelectedModeFromSettings() {
     try {
-      const fallbackMode = normalizeMode(localStorage.getItem(SETTINGS_KEYS.DEFAULT_MODE)) || "architect";
+      const fallbackMode = normalizeMode(localStorage.getItem(SETTINGS_KEYS.DEFAULT_MODE)) || "auto";
       const selectionMode = (localStorage.getItem(SETTINGS_KEYS.MODE_SELECTION) || "automatic").trim().toLowerCase();
       if (selectionMode === "manual") {
         return fallbackMode;
       }
       return fallbackMode;
     } catch {
-      return "architect";
+      return "auto";
     }
   }
 
   function getActiveMode(session = getActiveSession()) {
     const sessionMode = normalizeMode(session?.mode);
+    if (sessionMode === "auto") return "auto";
     if (sessionMode) return sessionMode;
-    return getSelectedModeFromSettings();
+    return "auto";
   }
 
   function updateModeIndicator(mode) {
@@ -678,7 +702,21 @@
     updateSessionMetaFromMessages(session);
     saveState();
 
-    const activeMode = getActiveMode(session);
+    let activeMode = getActiveMode(session);
+    
+    // Auto-detect mode based on user content
+    if (activeMode === "auto") {
+      const detectedMode = detectModeFromContent(trimmed);
+      if (detectedMode) {
+        activeMode = detectedMode;
+        session.mode = activeMode;
+        saveState();
+        updateModeButton(activeMode);
+        updateModeIndicator(activeMode);
+        setActiveDropdownItem(modeMenu, activeMode);
+      }
+    }
+    
     appendMessage("user", trimmed, {
       model: session.model || "omni",
       mode: activeMode

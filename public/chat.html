@@ -46,8 +46,9 @@
           </div>
           <div class="model-selector dropdown-control" id="mode-dropdown">
             <label for="mode-btn">Mode</label>
-            <button id="mode-btn" type="button" class="chat-control-btn" aria-haspopup="listbox" aria-expanded="false">Architect</button>
+            <button id="mode-btn" type="button" class="chat-control-btn" aria-haspopup="listbox" aria-expanded="false">Auto</button>
             <div id="mode-menu" class="chat-dropdown" role="listbox" aria-label="Mode selection">
+              <button type="button" class="chat-dropdown-item" role="option" data-value="auto">Auto</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="architect">Architect</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="analyst">Analyst</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="visual">Visual</button>
@@ -59,7 +60,7 @@
 
       <section id="chat-area">
         <div id="mode-indicator">
-          <span id="mode-label">Mode: Architect</span>
+          <span id="mode-label">Mode: Auto</span>
           <span id="api-status" aria-live="polite">API: checking…</span>
         </div>
         <div id="chat-container"></div>
