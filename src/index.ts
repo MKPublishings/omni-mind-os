@@ -405,6 +405,7 @@ export default {
                 })
           }
         });
+        }
       }
 
       // Serve static files from Worker assets
