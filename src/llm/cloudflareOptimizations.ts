@@ -78,13 +78,13 @@ export class TokenStreamOptimizer {
     return new ReadableStream({
       async pull(controller) {
         if (index >= chunks.length) {
-          controller.enqueue(encoder.encode("data: [DONE]\\n\\n"));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
           return;
         }
 
         const chunk = chunks[index];
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\\n\\n`));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
         index++;
 
         // Small delay for smooth streaming
