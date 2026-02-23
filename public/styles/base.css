@@ -40,8 +40,8 @@ body {
   --accent-glow: rgba(15, 82, 186, 0.42);
   --accent-secondary: #000000;
   --accent-alert: #ffffff;
-  --gradient-primary: linear-gradient(135deg, #0F52BA 0%, #0b3a84 52%, #000000 100%);
-  --gradient-accent: linear-gradient(135deg, #ffffff 0%, #aab3c4 52%, #000000 100%);
+  --gradient-primary: linear-gradient(135deg, rgba(15, 82, 186, 0.44) 0%, rgba(11, 58, 132, 0.4) 52%, rgba(0, 0, 0, 0.34) 100%);
+  --gradient-accent: linear-gradient(135deg, rgba(255, 255, 255, 0.24) 0%, rgba(170, 179, 196, 0.22) 52%, rgba(0, 0, 0, 0.3) 100%);
 
   --radius: 16px;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.5);

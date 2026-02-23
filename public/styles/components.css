@@ -4,7 +4,7 @@
 .btn {
   padding: 10px 16px;
   border-radius: 8px;
-  background: var(--panel-light);
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.24) 0%, rgba(9, 22, 44, 0.26) 54%, rgba(0, 0, 0, 0.3) 100%);
   border: 1px solid var(--border);
   color: var(--text);
   cursor: pointer;
@@ -12,12 +12,12 @@
 }
 
 .btn:hover {
-  background: var(--accent);
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.3) 0%, rgba(9, 22, 44, 0.32) 54%, rgba(0, 0, 0, 0.34) 100%);
   color: #fff;
 }
 
 .btn.primary {
-  background: var(--accent);
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.44) 0%, rgba(11, 58, 132, 0.4) 52%, rgba(0, 0, 0, 0.34) 100%);
   color: #fff;
 }
 
@@ -119,7 +119,7 @@ input, select {
 /* ---------- BUTTON ---------- */
 .button {
   padding: var(--space-2) var(--space-3);
-  background: var(--accent);
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.44) 0%, rgba(11, 58, 132, 0.4) 52%, rgba(0, 0, 0, 0.34) 100%);
   color: white;
   border-radius: 8px;
   text-align: center;

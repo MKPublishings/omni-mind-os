@@ -50,16 +50,19 @@
   padding: 10px 14px;
   border-radius: 8px;
   color: var(--text-dim);
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.2) 0%, rgba(9, 22, 44, 0.24) 54%, rgba(0, 0, 0, 0.28) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
   transition: 0.2s;
 }
 
 .nav-link:hover {
-  background: var(--panel-light);
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.28) 0%, rgba(9, 22, 44, 0.3) 54%, rgba(0, 0, 0, 0.32) 100%);
   color: var(--text);
 }
 
 .nav-link.active {
-  background: var(--accent);
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.46) 0%, rgba(11, 58, 132, 0.42) 52%, rgba(0, 0, 0, 0.36) 100%);
   color: #fff;
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -152,7 +155,7 @@
 }
 
 .nav-link.active {
-  background: var(--accent);
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.46) 0%, rgba(11, 58, 132, 0.42) 52%, rgba(0, 0, 0, 0.36) 100%);
   color: #fff;
   box-shadow: 0 0 12px var(--accent-glow);
 }
