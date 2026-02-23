@@ -1,6 +1,8 @@
+import type { Fetcher, KVNamespace } from "@cloudflare/workers-types";
+
 type WorkerEnv = {
-  ASSETS?: { fetch: (request: Request) => Promise<Response> };
-  MEMORY?: { get: (key: string, type?: "json" | "text") => Promise<any>; put: (key: string, value: string) => Promise<void>; delete: (key: string) => Promise<void> };
+  ASSETS?: Fetcher;
+  MEMORY?: KVNamespace;
   MODEL_OMNI?: string;
   MODEL_GPT_4O?: string;
   MODEL_DEEPSEEK?: string;
@@ -40,7 +42,7 @@ async function fetchAssetText(env: WorkerEnv, request: Request, path: string): P
   if (!env.ASSETS?.fetch) return "";
 
   const assetUrl = new URL(path, request.url);
-  const assetRes = await env.ASSETS.fetch(new Request(assetUrl.toString(), { method: "GET" }));
+  const assetRes = await env.ASSETS.fetch(assetUrl.toString());
   if (!assetRes.ok) {
     return "";
   }

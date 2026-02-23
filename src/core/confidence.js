@@ -1,7 +1,19 @@
+// @ts-check
+
+/** @param {number} value @param {number} min @param {number} max */
 function bounded(value, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
 
+/**
+ * @param {{
+ *  userInput?: string,
+ *  routeTask?: string,
+ *  retrievalCount?: number,
+ *  reasoningValid?: boolean,
+ *  uncertaintySignals?: string[]
+ * }} [options]
+ */
 export function scoreConfidence({ userInput = "", routeTask = "default", retrievalCount = 0, reasoningValid = true, uncertaintySignals = [] } = {}) {
   const text = String(userInput || "").toLowerCase();
 

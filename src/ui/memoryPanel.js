@@ -1,5 +1,7 @@
+// @ts-check
 import { get, set, clear } from "../memory/memoryManager.js";
 
+/** @param {HTMLElement | null} containerEl */
 export function mountMemoryPanel(containerEl) {
   if (!containerEl) return;
 
@@ -32,7 +34,10 @@ export function mountMemoryPanel(containerEl) {
   render();
 
   containerEl.querySelector("[data-action=save]")?.addEventListener("click", () => {
-    const memoryInfluenceLevel = containerEl.querySelector("[data-key=memoryInfluenceLevel]")?.value || "medium";
+    const selectEl = /** @type {HTMLSelectElement | null} */ (
+      containerEl.querySelector("[data-key=memoryInfluenceLevel]")
+    );
+    const memoryInfluenceLevel = selectEl?.value || "medium";
     set("memoryInfluenceLevel", memoryInfluenceLevel);
     set("lastUsedSettings", {
       ...(get("lastUsedSettings", {}) || {}),

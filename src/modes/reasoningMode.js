@@ -1,3 +1,5 @@
+// @ts-check
+
 export const reasoningTemplate = [
   "Reasoning Mode Active.",
   "Think step-by-step internally.",
@@ -5,11 +7,13 @@ export const reasoningTemplate = [
   "Output only the final answer."
 ].join("\n");
 
+/** @param {string} userInput */
 export function wrapReasoningPrompt(userInput) {
   const clean = String(userInput || "").trim();
   return `${reasoningTemplate}\n\nUser Input:\n${clean}`;
 }
 
+/** @param {unknown} payload */
 export function reasoningFallback(payload) {
   return {
     fallbackMode: "architect",

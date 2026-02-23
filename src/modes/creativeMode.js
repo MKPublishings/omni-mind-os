@@ -1,3 +1,5 @@
+// @ts-check
+
 export const creativeMode = {
   id: "creative",
   label: "Creative Mode",
@@ -8,6 +10,7 @@ export const creativeMode = {
   ].join("\n")
 };
 
+/** @param {string} userInput */
 export function runCreativeMode(userInput) {
   return `${creativeMode.primer}\n\nCreative Prompt:\n${String(userInput || "").trim()}`;
 }

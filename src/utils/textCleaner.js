@@ -1,3 +1,6 @@
+// @ts-check
+
+/** @param {string} value */
 export function cleanText(value) {
   return String(value || "")
     .replace(/<script.*?>.*?<\/script>/gi, "")
@@ -5,6 +8,7 @@ export function cleanText(value) {
     .trim();
 }
 
+/** @param {string} value */
 export function normalizeWhitespace(value) {
   return cleanText(value).replace(/\s+/g, " ").trim();
 }

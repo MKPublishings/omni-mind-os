@@ -1,3 +1,4 @@
+// @ts-check
 import { cleanText } from "./textCleaner.js";
 import { runArchitectMode } from "../modes/architectMode.js";
 import { wrapReasoningPrompt } from "../modes/reasoningMode.js";
@@ -5,6 +6,12 @@ import { wrapCodingPrompt } from "../modes/codingMode.js";
 import { runCreativeMode } from "../modes/creativeMode.js";
 import { runOsMode } from "../modes/osMode.js";
 
+/** @typedef {import("../types/omni").OmniMode} OmniMode */
+/** @typedef {import("../types/omni").MemoryState} MemoryState */
+/** @typedef {import("../types/omni").RetrievalChunk} RetrievalChunk */
+/** @typedef {import("../types/omni").MemoryInfluenceLevel} MemoryInfluenceLevel */
+
+/** @param {string} header @param {unknown} value */
 function withContext(header, value) {
   if (!value) return "";
   const body = typeof value === "string" ? value : JSON.stringify(value, null, 2);
@@ -18,6 +25,7 @@ function toInfluenceWeight(level = "medium") {
   return 0.7;
 }
 
+/** @param {MemoryState} memory @param {MemoryInfluenceLevel} memoryInfluenceLevel */
 function buildMemoryBlock(memory = {}, memoryInfluenceLevel = "medium") {
   const weight = toInfluenceWeight(memoryInfluenceLevel);
   if (weight <= 0.4) {
@@ -32,6 +40,7 @@ function buildMemoryBlock(memory = {}, memoryInfluenceLevel = "medium") {
   return memory;
 }
 
+/** @param {RetrievalChunk[]} retrievalChunks @param {boolean} deepKnowledgeMode */
 function selectTopRetrieval(retrievalChunks = [], deepKnowledgeMode = false) {
   const maxItems = deepKnowledgeMode ? 3 : 1;
   return retrievalChunks
@@ -40,11 +49,22 @@ function selectTopRetrieval(retrievalChunks = [], deepKnowledgeMode = false) {
     .slice(0, maxItems);
 }
 
+/**
+ * @param {{
+ *  mode?: OmniMode,
+ *  userInput?: string,
+ *  memory?: MemoryState,
+ *  retrievalChunks?: RetrievalChunk[],
+ *  moduleText?: string,
+ *  deepKnowledgeMode?: boolean,
+ *  memoryInfluenceLevel?: MemoryInfluenceLevel
+ * }} [options]
+ */
 export function buildPrompt({
   mode = "architect",
   userInput = "",
-  memory = {},
-  retrievalChunks = [],
+  memory = /** @type {MemoryState} */ ({}),
+  retrievalChunks = /** @type {RetrievalChunk[]} */ ([]),
   moduleText = "",
   deepKnowledgeMode = false,
   memoryInfluenceLevel = "medium"

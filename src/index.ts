@@ -33,9 +33,17 @@ export interface Env {
   OMNI_ENV?: string;
 }
 
+type OmniRole = "system" | "user" | "assistant";
+
 type OmniMessage = {
-  role?: string;
-  content?: string;
+  role: OmniRole;
+  content: string;
+};
+
+type OmniRequestBody = {
+  mode?: string;
+  model?: string;
+  messages?: Array<{ role?: string; content?: string }>;
 };
 
 function toPositiveInt(value: unknown, fallback: number): number {
@@ -202,9 +210,9 @@ export default {
       }
 
       if (url.pathname === "/api/omni" && request.method === "POST") {
-        const body = await request.json();
+        const body = (await request.json()) as OmniRequestBody;
 
-        if (!OmniSafety.validateMessages(body.messages)) {
+        if (!body.messages || !OmniSafety.validateMessages(body.messages)) {
           logger.error("invalid_messages", body);
           return new Response("Invalid message format", { status: 400 });
         }
@@ -213,9 +221,9 @@ export default {
         const ctx = {
           mode: normalizedMode,
           model: body.model || "auto",
-          messages: body.messages.map((m: any) => ({
-            role: m.role,
-            content: OmniSafety.sanitizeInput(m.content)
+          messages: (body.messages || []).map((m) => ({
+            role: (m?.role || "user") as OmniRole,
+            content: OmniSafety.sanitizeInput(m?.content || "")
           }))
         };
 
@@ -347,7 +355,7 @@ export default {
       }
 
       // Serve static files from Worker assets
-      return env.ASSETS.fetch(request) as unknown as Response;
+      return env.ASSETS.fetch(request.url) as unknown as Response;
     } catch (err: any) {
       logger.error("fatal_error", err);
       return new Response("Omni crashed but recovered", { status: 500 });

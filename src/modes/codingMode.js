@@ -1,3 +1,5 @@
+// @ts-check
+
 export const codingTemplate = [
   "Coding Mode Active.",
   "Explain logic first.",
@@ -5,6 +7,7 @@ export const codingTemplate = [
   "Run a self-review before final answer."
 ].join("\n");
 
+/** @param {string} userInput */
 export function wrapCodingPrompt(userInput) {
   const clean = String(userInput || "").trim();
   return `${codingTemplate}\n\nTask:\n${clean}`;

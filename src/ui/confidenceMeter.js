@@ -1,5 +1,7 @@
+// @ts-check
 const CONFIDENCE_KEY = "omni-last-confidence";
 
+/** @param {{ score?: number, band?: string, model?: string }} payload */
 export function setLastConfidence(payload) {
   localStorage.setItem(CONFIDENCE_KEY, JSON.stringify(payload || {}));
 }
@@ -12,6 +14,7 @@ export function getLastConfidence() {
   }
 }
 
+/** @param {HTMLElement | null} containerEl */
 export function mountConfidenceMeter(containerEl) {
   if (!containerEl) return;
   const confidence = getLastConfidence();

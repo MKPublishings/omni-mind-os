@@ -1,3 +1,6 @@
+// @ts-check
+
+/** @type {Record<string, string>} */
 export const cotTemplates = {
   wholePartsSynthesis: [
     "Analyze the whole problem first.",
@@ -16,6 +19,7 @@ export const cotTemplates = {
   ].join("\n")
 };
 
+/** @param {string} name */
 export function getTemplate(name = "wholePartsSynthesis") {
   return cotTemplates[name] || cotTemplates.wholePartsSynthesis;
 }

@@ -1,3 +1,4 @@
+// @ts-check
 import fs from "node:fs";
 import path from "node:path";
 import { buildPrompt } from "../utils/promptBuilder.js";
@@ -11,6 +12,11 @@ import { runOmniEngine } from "../core/omniEngine.js";
 import { scoreConfidence } from "../core/confidence.js";
 import { selectModelByConfidence } from "../router/confidenceRouter.js";
 
+/** @typedef {import("../types/omni").OmniMode} OmniMode */
+/** @typedef {import("../types/omni").OmniResponse} OmniResponse */
+/** @typedef {{ model: string, text: string, routeFallback?: string }} ModelResponse */
+
+/** @param {string} name */
 function readModuleFile(name) {
   try {
     const filePath = path.resolve(process.cwd(), `src/modules/${name}`);
@@ -20,6 +26,7 @@ function readModuleFile(name) {
   }
 }
 
+/** @param {string} userInput @param {string} mode */
 function selectModuleByQuery(userInput = "", mode = "") {
   const text = `${userInput} ${mode}`.toLowerCase();
   if (/\b(identity|who are you|omni)\b/.test(text)) return "identity_layer.md";
@@ -28,6 +35,10 @@ function selectModuleByQuery(userInput = "", mode = "") {
   return "omni_philosophy.md";
 }
 
+/**
+ * @param {{ model: string, prompt: string, env?: any }} options
+ * @returns {Promise<ModelResponse>}
+ */
 async function runModel({ model, prompt, env }) {
   if (model === "gpt-4o") return openaiHandler({ prompt, model, env });
   if (model === "deepseek") return deepseekHandler({ prompt, model, env });
@@ -38,8 +49,12 @@ async function runModel({ model, prompt, env }) {
   };
 }
 
+/**
+ * @param {{ userInput?: string, mode?: OmniMode, env?: any, complexity?: number }} [options]
+ * @returns {Promise<OmniResponse>}
+ */
 export async function omniHandler({ userInput = "", mode = "architect", env, complexity = 0 } = {}) {
-  const memory = getMemory(null, {});
+  const memory = /** @type {import("../types/omni").MemoryState} */ (getMemory(null, {}));
   const influenceLevel = memory?.memoryInfluenceLevel || "medium";
   const modeFlags = memory?.lastUsedSettings || {};
   const deepKnowledgeMode = Boolean(modeFlags.deepKnowledgeMode);
@@ -68,7 +83,7 @@ export async function omniHandler({ userInput = "", mode = "architect", env, com
   const moduleText = readModuleFile(moduleFile);
 
   const prompt = buildPrompt({
-    mode: finalMode,
+    mode: /** @type {import("../types/omni").OmniMode} */ (finalMode),
     userInput: processedInput,
     memory,
     retrievalChunks,
@@ -79,12 +94,15 @@ export async function omniHandler({ userInput = "", mode = "architect", env, com
 
   const route = routeModel({ userInput: processedInput, mode: finalMode, complexity });
 
+  const verification = /** @type {{ issues?: string[] } | undefined} */ (engine?.reasoning?.verification);
+  const uncertaintyIssues = Array.isArray(verification?.issues) ? verification.issues : [];
+
   const confidence = scoreConfidence({
     userInput: processedInput,
     routeTask: route.task,
     retrievalCount: retrievalChunks.length,
     reasoningValid: engine?.reasoning?.verification?.valid !== false,
-    uncertaintySignals: engine?.reasoning?.verification?.issues || []
+    uncertaintySignals: uncertaintyIssues
   });
 
   const confidenceRoute = selectModelByConfidence({
@@ -104,7 +122,7 @@ export async function omniHandler({ userInput = "", mode = "architect", env, com
 
   pushTopic(userInput);
 
-  return {
+  return /** @type {OmniResponse} */ ({
     mode: finalMode,
     route: {
       ...route,
@@ -122,12 +140,12 @@ export async function omniHandler({ userInput = "", mode = "architect", env, com
     routeFallback: response?.routeFallback || null,
     confidence: {
       score: confidence.score,
-      band: confidence.confidenceBand,
+      band: /** @type {"low" | "medium" | "high"} */ (confidence.confidenceBand),
       threshold: confidenceRoute.threshold,
       escalated: confidenceRoute.escalated
     },
     reasoning: engine?.reasoning || null,
     drift: engine?.drift || { drifted: false },
     sourcePriority: retrievalResult?.sourcePriority || []
-  };
+  });
 }

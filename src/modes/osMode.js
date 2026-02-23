@@ -1,3 +1,5 @@
+// @ts-check
+
 export const osMode = {
   id: "system-knowledge",
   label: "OS Mode",
@@ -8,6 +10,7 @@ export const osMode = {
   ].join("\n")
 };
 
+/** @param {string} userInput */
 export function runOsMode(userInput) {
   return `${osMode.primer}\n\nSystem Request:\n${String(userInput || "").trim()}`;
 }

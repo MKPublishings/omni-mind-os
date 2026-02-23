@@ -4,6 +4,7 @@ import { openaiAdapter } from "./openaiAdapter";
 import { deepseekAdapter } from "./deepseekAdapter";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+type ModelAdapter = { generate: (env: any, messages: ChatMessage[]) => Promise<{ text: string }> };
 
 function isValidMessage(m: any): m is ChatMessage {
   return (
@@ -23,20 +24,37 @@ export async function routeModel(body: any, env: any) {
     throw new Error("Invalid message format");
   }
 
-  switch (model) {
+  const adapter = selectModel(model, mode);
+  return adapter.generate(env, messages);
+}
+
+export function selectModel(modelId: string, mode = "Architect"): ModelAdapter {
+  const normalized = String(modelId || "omni").toLowerCase();
+
+  switch (normalized) {
     case "omni":
-      return omniAdapter(messages, mode, env);
+      return {
+        generate: (env, messages) => omniAdapter(messages, mode, env)
+      };
 
     case "gpt-4o":
-      return openaiAdapter(messages, "gpt-4o", env);
+      return {
+        generate: (env, messages) => openaiAdapter(messages, "gpt-4o", env)
+      };
 
     case "gpt-4o-mini":
-      return openaiAdapter(messages, "gpt-4o-mini", env);
+      return {
+        generate: (env, messages) => openaiAdapter(messages, "gpt-4o-mini", env)
+      };
 
     case "deepseek":
-      return deepseekAdapter(messages, env);
+      return {
+        generate: (env, messages) => deepseekAdapter(messages, env)
+      };
 
     default:
-      throw new Error("Unknown model: " + model);
+      return {
+        generate: (env, messages) => omniAdapter(messages, mode, env)
+      };
   }
 }

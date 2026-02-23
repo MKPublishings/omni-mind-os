@@ -1,3 +1,6 @@
+// @ts-check
+
+/** @param {string} text */
 function ensureFencedCode(text) {
   if (!/```[\s\S]*?```/.test(text)) {
     return `${text}\n\n\`\`\`txt\n(no code block provided)\n\`\`\``;
@@ -5,6 +8,7 @@ function ensureFencedCode(text) {
   return text;
 }
 
+/** @param {string} text @param {{ maxSections?: number, maxParagraphsPerSection?: number }} [options] */
 function enforceStability(text, options = {}) {
   const maxSections = Number.isFinite(options.maxSections) ? options.maxSections : 4;
   const maxParagraphsPerSection = Number.isFinite(options.maxParagraphsPerSection)
@@ -25,6 +29,7 @@ function enforceStability(text, options = {}) {
   return clipped.join("\n\n").trim();
 }
 
+/** @param {string} text @param {{ mode?: string, stabilityMode?: boolean }} [options] */
 export function formatResponse(text, options = {}) {
   const raw = String(text || "").trim();
   if (!raw) return "No response generated.";
@@ -45,6 +50,7 @@ export function formatResponse(text, options = {}) {
   return output;
 }
 
+/** @param {string} text */
 export function toHtmlWithBasicHighlight(text) {
   return String(text || "")
     .replace(/&/g, "&amp;")

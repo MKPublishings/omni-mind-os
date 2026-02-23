@@ -1,3 +1,4 @@
+// @ts-check
 import { get as getMemory, set as setMemory } from "../memory/memoryManager.js";
 
 const MODE_STATE_KEY = "omni-ui-modes";
@@ -10,6 +11,7 @@ export function getModesState() {
   }
 }
 
+/** @param {string} name @param {boolean} enabled */
 export function setModeState(name, enabled) {
   const state = getModesState();
   state[name] = !!enabled;
@@ -18,6 +20,7 @@ export function setModeState(name, enabled) {
   return state;
 }
 
+/** @param {Record<string, boolean>} state */
 function syncMemorySettings(state) {
   const current = getMemory("lastUsedSettings", {}) || {};
   setMemory("lastUsedSettings", {
@@ -31,6 +34,7 @@ function syncMemorySettings(state) {
   });
 }
 
+/** @param {HTMLElement | null} containerEl */
 export function mountModesPanel(containerEl) {
   if (!containerEl) return;
   containerEl.innerHTML = `
@@ -47,8 +51,10 @@ export function mountModesPanel(containerEl) {
 
   const current = getModesState();
   containerEl.querySelectorAll("input[data-mode]").forEach((input) => {
-    const mode = input.getAttribute("data-mode");
-    input.checked = !!current[mode];
-    input.addEventListener("change", () => setModeState(mode, input.checked));
+    const checkbox = /** @type {HTMLInputElement} */ (input);
+    const mode = checkbox.getAttribute("data-mode");
+    if (!mode) return;
+    checkbox.checked = Boolean(current[mode]);
+    checkbox.addEventListener("change", () => setModeState(mode, checkbox.checked));
   });
 }

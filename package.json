@@ -7,10 +7,12 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "preview": "wrangler dev --local",
-    "build": "echo \"No build step required\""
+    "build": "echo \"No build step required\"",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260227.0",
+    "@types/node": "^22.13.4",
     "typescript": "^5.3.3"
   }
 }

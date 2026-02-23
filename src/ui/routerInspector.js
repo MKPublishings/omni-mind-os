@@ -1,5 +1,7 @@
+// @ts-check
 const LAST_ROUTE_KEY = "omni-last-route";
 
+/** @param {{ task?: string, model?: string, reason?: string }} routeInfo */
 export function setLastRoute(routeInfo) {
   localStorage.setItem(LAST_ROUTE_KEY, JSON.stringify(routeInfo || {}));
 }
@@ -12,6 +14,7 @@ export function getLastRoute() {
   }
 }
 
+/** @param {HTMLElement | null} containerEl */
 export function mountRouterInspector(containerEl) {
   if (!containerEl) return;
   const route = getLastRoute();

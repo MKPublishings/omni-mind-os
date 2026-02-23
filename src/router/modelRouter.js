@@ -1,3 +1,4 @@
+// @ts-check
 import rules from "./rules.json";
 
 export function getRoutingThresholds() {
@@ -32,6 +33,7 @@ export function routeModel({ userInput = "", mode = "architect", complexity = 0 
   };
 }
 
+/** @param {string} currentModel */
 export function fallbackModel(currentModel) {
   const order = Array.isArray(rules?.fallbackOrder) ? rules.fallbackOrder : ["omni"];
   const index = order.indexOf(currentModel);

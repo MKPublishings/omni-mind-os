@@ -1,5 +1,7 @@
+// @ts-check
 import searchIndex from "./searchIndex.json";
 
+/** @param {string} query @param {string} chunkText */
 function scoreChunk(query, chunkText) {
   const terms = String(query || "").toLowerCase().split(/\s+/).filter((t) => t.length > 2);
   const body = String(chunkText || "").toLowerCase();
@@ -12,7 +14,12 @@ function scoreChunk(query, chunkText) {
   return score;
 }
 
+/**
+ * @param {string} query
+ * @param {{ topK?: number }} [options]
+ */
 export function searchKnowledge(query, { topK = 4 } = {}) {
+  /** @type {Array<{ text: string, source?: string }>} */
   const chunks = Array.isArray(searchIndex?.chunks) ? searchIndex.chunks : [];
 
   const ranked = chunks
@@ -29,6 +36,7 @@ export function searchKnowledge(query, { topK = 4 } = {}) {
   return ranked;
 }
 
+/** @param {Request} request */
 export async function handleRagRequest(request) {
   const url = new URL(request.url);
   const query = url.searchParams.get("q") || "";
@@ -42,6 +50,7 @@ export async function handleRagRequest(request) {
 }
 
 export default {
+  /** @param {Request} request */
   async fetch(request) {
     if (request.method === "OPTIONS") {
       return new Response(null, {

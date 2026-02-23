@@ -1,3 +1,4 @@
+// @ts-check
 const SETTINGS_KEY = "omni-ui-settings";
 
 export function getSettings() {
@@ -14,6 +15,7 @@ export function saveSettings(nextSettings = {}) {
   return merged;
 }
 
+/** @param {HTMLElement | null} containerEl */
 export function mountSettingsPanel(containerEl) {
   if (!containerEl) return;
 
@@ -28,8 +30,10 @@ export function mountSettingsPanel(containerEl) {
   `;
 
   containerEl.querySelector("[data-action=save]")?.addEventListener("click", () => {
-    const tone = containerEl.querySelector("[data-key=tone]")?.value || "concise";
-    const structure = containerEl.querySelector("[data-key=structure]")?.value || "sectioned";
+    const toneInput = /** @type {HTMLInputElement | null} */ (containerEl.querySelector("[data-key=tone]"));
+    const structureInput = /** @type {HTMLInputElement | null} */ (containerEl.querySelector("[data-key=structure]"));
+    const tone = toneInput?.value || "concise";
+    const structure = structureInput?.value || "sectioned";
     saveSettings({ tone, structure });
   });
 }

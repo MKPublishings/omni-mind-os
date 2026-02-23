@@ -26,7 +26,8 @@ export default {
       }
 
       // Route to correct model adapter
-      const stream = await routeModel(body, env);
+      const result = await routeModel(body, env);
+      const stream = typeof result === "string" ? result : result?.text || "";
 
       // Stream back to frontend
       return new Response(stream, {

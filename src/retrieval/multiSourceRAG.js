@@ -1,11 +1,14 @@
+// @ts-check
 import fs from "node:fs";
 import path from "node:path";
 import { searchKnowledge } from "./ragWorker.js";
 import { get as getMemory } from "../memory/memoryManager.js";
 
+/** @type {Array<{ query: string, at: number, results: Array<{ source: string, text: string, score?: number }> }>} */
 const retrievalCache = [];
 const MAX_CACHE_ITEMS = 10;
 
+/** @param {string} name */
 function readModule(name) {
   try {
     const filePath = path.resolve(process.cwd(), `src/modules/${name}`);
@@ -15,6 +18,7 @@ function readModule(name) {
   }
 }
 
+/** @param {string} query */
 function moduleCandidates(query = "") {
   const text = String(query || "").toLowerCase();
   const picks = [];
@@ -27,6 +31,7 @@ function moduleCandidates(query = "") {
   return picks;
 }
 
+/** @param {string} query @param {Array<{ source: string, text: string }>} sources */
 function rankSources(query = "", sources = []) {
   const q = String(query || "").toLowerCase();
 
@@ -42,6 +47,9 @@ function rankSources(query = "", sources = []) {
     .sort((a, b) => b.score - a.score);
 }
 
+/**
+ * @param {{ query?: string, deepKnowledgeMode?: boolean }} [options]
+ */
 export function runTieredRetrieval({ query = "", deepKnowledgeMode = false } = {}) {
   const moduleSource = moduleCandidates(query)
     .map((name) => ({ source: `module:${name}`, text: readModule(name) }))

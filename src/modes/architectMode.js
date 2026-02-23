@@ -1,3 +1,5 @@
+// @ts-check
+
 export const architectMode = {
   id: "architect",
   label: "Architect Mode",
@@ -9,6 +11,7 @@ export const architectMode = {
   scaffold: ["Goal", "System Breakdown", "Implementation Plan", "Risks"]
 };
 
+/** @param {string} userInput */
 export function runArchitectMode(userInput) {
   return {
     mode: architectMode.id,
