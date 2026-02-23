@@ -248,20 +248,45 @@
   // 5. TOKEN ENGINE
   // =========================
   function appendTokenWithSpacing(currentText, token) {
-    const t = token;
+    const t = typeof token === "string" ? token : String(token ?? "");
 
     if (!t) return currentText;
-
-    // Punctuation attaches directly
-    if (/^[.,!?;:]/.test(t)) {
-      return currentText + t;
-    }
 
     if (!currentText) {
       return t;
     }
 
-    if (/\s$/.test(currentText)) {
+    const prevChar = currentText[currentText.length - 1] || "";
+
+    // Keep explicit whitespace exactly as streamed
+    if (/^\s+$/.test(t)) {
+      return currentText + t;
+    }
+
+    // Punctuation attaches directly
+    if (/^[.,!?;:%)\]}]/.test(t)) {
+      return currentText + t;
+    }
+
+    // Apostrophes/quotes attach to existing word pieces
+    if (/^['’`]/.test(t) && /[A-Za-z0-9]$/.test(currentText)) {
+      return currentText + t;
+    }
+
+    if (/\s$/.test(currentText) || /^\s/.test(t)) {
+      return currentText + t;
+    }
+
+    // Character-stream fallback: keep alphanumeric runs contiguous
+    if (t.length === 1 && /[A-Za-z0-9]/.test(t) && /[A-Za-z0-9]$/.test(currentText)) {
+      return currentText + t;
+    }
+
+    if (/^[\])}]/.test(t)) {
+      return currentText + t;
+    }
+
+    if (/[([{\-\/“"']$/.test(prevChar)) {
       return currentText + t;
     }
 
@@ -361,16 +386,22 @@
       buffer = lines.pop() || "";
 
       for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data:")) continue;
+        const normalized = line.replace(/\r$/, "");
+        if (!normalized.startsWith("data:")) continue;
 
-        const data = trimmed.slice(5).trim();
-        if (!data) continue;
+        let data = normalized.slice(5);
 
-        if (data === "[DONE]") {
+        // SSE allows a single optional space after ':'
+        if (data.startsWith(" ")) {
+          data = data.slice(1);
+        }
+
+        if (data.trim() === "[DONE]") {
           buffer = "";
           return;
         }
+
+        if (data.length === 0) continue;
 
         let token = data;
         try {
