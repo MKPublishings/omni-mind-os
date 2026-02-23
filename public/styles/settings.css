@@ -30,12 +30,12 @@
 ------------------------------ */
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 800px) {
   .settings-grid {
     grid-template-columns: 1fr;
   }
@@ -85,7 +85,7 @@
   align-items: center;
   padding: 16px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  gap: 16px;
+  gap: 12px;
 }
 
 .setting-item:last-child {
@@ -99,6 +99,7 @@
 
 .setting-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -180,7 +181,8 @@
 ------------------------------ */
 .setting-select,
 .setting-input {
-  min-width: 160px;
+  min-width: 120px;
+  max-width: 200px;
   height: 38px;
   padding: 8px 12px;
   border-radius: 10px;
@@ -192,7 +194,7 @@
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-  flex-shrink: 0;
+  flex-shrink: 1;
 }
 
 .setting-select {
@@ -230,7 +232,8 @@
 .btn-secondary,
 .btn-danger {
   height: 38px;
-  padding: 0 20px;
+  padding: 0 16px;
+  min-width: 80px;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 700;
@@ -239,7 +242,8 @@
   transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.2s ease;
   border: none;
   outline: none;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -294,16 +298,17 @@
   align-items: center;
   justify-content: center;
   height: 38px;
-  min-width: 80px;
-  padding: 0 16px;
+  min-width: 60px;
+  padding: 0 12px;
   border-radius: 10px;
   background: rgba(255, 115, 115, 0.12);
   border: 1px solid rgba(255, 115, 115, 0.32);
   color: #ff7373;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  white-space: nowrap;
 }
 
 /* ------------------------------
@@ -321,4 +326,41 @@
   font-size: 13px;
   margin: 0;
   font-style: italic;
+}
+
+/* ------------------------------
+   RESPONSIVE ADJUSTMENTS
+------------------------------ */
+@media (max-width: 600px) {
+  .settings-section {
+    padding: 18px;
+  }
+  
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .setting-select,
+  .setting-input,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .storage-badge {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .toggle {
+    align-self: flex-start;
+  }
+  
+  .settings-grid {
+    gap: 16px;
+  }
+  
+  .page-header h2 {
+    font-size: 26px;
+  }
 }
