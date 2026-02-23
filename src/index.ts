@@ -36,7 +36,7 @@ function clamp(value: number, min: number, max: number): number {
 function computeAdaptiveResponseMax(messages: OmniMessage[], env: Env): number {
   const configuredMin = toPositiveInt(env.OMNI_RESPONSE_MIN_CHARS, 2000);
   const configuredBase = toPositiveInt(env.OMNI_RESPONSE_BASE_CHARS, 4500);
-  const configuredMax = toPositiveInt(env.OMNI_RESPONSE_MAX_CHARS, 30000);
+  const configuredMax = toPositiveInt(env.OMNI_RESPONSE_MAX_CHARS, 50000);
 
   const floor = Math.max(500, configuredMin);
   const ceiling = Math.max(floor, configuredMax);

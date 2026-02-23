@@ -1,5 +1,5 @@
 export class OmniSafety {
-  static readonly DEFAULT_MAX_RESPONSE_CHARS = 20000;
+  static readonly DEFAULT_MAX_RESPONSE_CHARS = 50000;
 
   static sanitizeInput(text: string): string {
     return text.replace(/<script.*?>.*?<\/script>/gi, "[blocked]");
