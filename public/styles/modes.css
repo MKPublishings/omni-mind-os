@@ -17,7 +17,7 @@
   font-size: 36px;
   font-weight: 700;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, #ff7373, #f4d0a1);
+  background: linear-gradient(135deg, #22C55E, #0C1120);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -37,7 +37,7 @@
 .mode-section {
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255, 115, 115, 0.24);
+  border: 1px solid rgba(34, 197, 94, 0.24);
   border-radius: 20px;
   padding: 0;
   margin-bottom: 32px;
@@ -47,8 +47,8 @@
 }
 
 .mode-section:hover {
-  border-color: rgba(255, 115, 115, 0.42);
-  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.45), 0 0 24px rgba(255, 115, 115, 0.12);
+  border-color: rgba(34, 197, 94, 0.42);
+  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.45), 0 0 24px rgba(34, 197, 94, 0.12);
   transform: translateY(-2px);
 }
 
@@ -69,8 +69,8 @@
 }
 
 .mode-section[data-mode="lore"]:hover {
-  border-color: rgba(244, 208, 161, 0.5);
-  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.45), 0 0 24px rgba(244, 208, 161, 0.12);
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.45), 0 0 24px rgba(251, 191, 36, 0.12);
 }
 
 /* ------------------------------
@@ -81,14 +81,14 @@
   align-items: center;
   gap: 20px;
   padding: 32px 36px;
-  background: linear-gradient(135deg, rgba(255, 115, 115, 0.08), rgba(244, 208, 161, 0.06));
-  border-bottom: 1px solid rgba(255, 115, 115, 0.18);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(12, 17, 32, 0.12));
+  border-bottom: 1px solid rgba(34, 197, 94, 0.18);
 }
 
 .mode-icon {
   font-size: 48px;
   line-height: 1;
-  filter: drop-shadow(0 0 12px rgba(255, 115, 115, 0.4));
+  filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.4));
   flex-shrink: 0;
 }
 
@@ -115,13 +115,13 @@
 .mode-badge {
   padding: 8px 16px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(255, 115, 115, 0.9), rgba(244, 208, 161, 0.88));
-  color: #130f12;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(12, 17, 32, 0.88));
+  color: #fff;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  box-shadow: 0 0 12px rgba(255, 115, 115, 0.3);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
   flex-shrink: 0;
   animation: rainbow-shift 50s linear infinite;
 }

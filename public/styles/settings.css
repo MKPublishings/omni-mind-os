@@ -39,23 +39,23 @@
   font-weight: 600;
   padding: 10px 24px;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(255, 115, 115, 0.9), rgba(244, 208, 161, 0.88));
-  border: 1px solid rgba(255, 115, 115, 0.48);
-  color: #0b0d10;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(12, 17, 32, 0.88));
+  border: 1px solid rgba(34, 197, 94, 0.48);
+  color: #fff;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(255, 115, 115, 0.3);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
 .save-settings-btn:hover {
-  background: linear-gradient(135deg, rgba(255, 115, 115, 1), rgba(244, 208, 161, 1));
-  box-shadow: 0 6px 20px rgba(255, 115, 115, 0.5);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 1), rgba(12, 17, 32, 1));
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
   transform: translateY(-1px);
 }
 
 .save-settings-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(255, 115, 115, 0.4);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
 }
 
 .save-settings-btn .btn-icon {
@@ -84,7 +84,7 @@
 .settings-section {
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(255, 115, 115, 0.24);
+  border: 1px solid rgba(34, 197, 94, 0.24);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
@@ -92,8 +92,8 @@
 }
 
 .settings-section:hover {
-  border-color: rgba(255, 115, 115, 0.36);
-  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 115, 115, 0.08);
+  border-color: rgba(34, 197, 94, 0.36);
+  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(34, 197, 94, 0.08);
 }
 
 .section-title {
@@ -105,12 +105,12 @@
   color: var(--text);
   margin: 0 0 20px 0;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 115, 115, 0.18);
+  border-bottom: 1px solid rgba(34, 197, 94, 0.18);
 }
 
 .section-icon {
   font-size: 20px;
-  filter: drop-shadow(0 0 6px rgba(255, 115, 115, 0.4));
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.4));
 }
 
 /* ------------------------------
@@ -199,9 +199,9 @@
 }
 
 .toggle input:checked + .toggle-slider {
-  background: linear-gradient(135deg, rgba(255, 115, 115, 0.85), rgba(244, 208, 161, 0.75));
-  border-color: rgba(255, 115, 115, 0.6);
-  box-shadow: 0 0 12px rgba(255, 115, 115, 0.3);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.85), rgba(12, 17, 32, 0.75));
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
 }
 
 .toggle input:checked + .toggle-slider:before {
@@ -210,7 +210,7 @@
 }
 
 .toggle:hover .toggle-slider {
-  border-color: rgba(255, 115, 115, 0.4);
+  border-color: rgba(34, 197, 94, 0.4);
 }
 
 /* ------------------------------
@@ -223,7 +223,7 @@
   height: 38px;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 115, 115, 0.28);
+  border: 1px solid rgba(34, 197, 94, 0.28);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
   font-size: 14px;
@@ -239,7 +239,7 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ff7373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2322C55E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 34px;
@@ -251,7 +251,7 @@
 
 .setting-select:hover,
 .setting-input:hover {
-  border-color: rgba(255, 115, 115, 0.45);
+  border-color: rgba(34, 197, 94, 0.45);
   background: rgba(255, 255, 255, 0.07);
 }
 
@@ -262,14 +262,14 @@
 .setting-select:focus,
 .setting-input:focus {
   outline: none;
-  border-color: rgba(255, 115, 115, 0.72);
+  border-color: rgba(34, 197, 94, 0.72);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(255, 115, 115, 0.18), 0 0 12px rgba(255, 115, 115, 0.2);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18), 0 0 12px rgba(34, 197, 94, 0.2);
 }
 
 .setting-select option,
 .setting-select optgroup {
-  background: rgba(11, 13, 16, 0.98);
+  background: rgba(14, 14, 14, 0.98);
   color: var(--text);
 }
 
@@ -295,25 +295,25 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, rgba(255, 115, 115, 0.9), rgba(244, 208, 161, 0.88));
-  color: #130f12;
-  border: 1px solid rgba(255, 115, 115, 0.48);
-  box-shadow: 0 0 14px rgba(255, 115, 115, 0.26);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(12, 17, 32, 0.88));
+  color: #fff;
+  border: 1px solid rgba(34, 197, 94, 0.48);
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.26);
   animation: rainbow-shift 50s linear infinite;
 }
 
 .btn-secondary {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
-  border: 1px solid rgba(255, 115, 115, 0.32);
+  border: 1px solid rgba(34, 197, 94, 0.32);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, rgba(255, 76, 76, 0.9), rgba(220, 38, 38, 0.88));
+  background: linear-gradient(135deg, rgba(131, 25, 20, 0.9), rgba(220, 38, 38, 0.88));
   color: #fff;
-  border: 1px solid rgba(255, 76, 76, 0.48);
-  box-shadow: 0 0 14px rgba(255, 76, 76, 0.26);
+  border: 1px solid rgba(131, 25, 20, 0.48);
+  box-shadow: 0 0 14px rgba(131, 25, 20, 0.26);
   animation: rainbow-shift 50s linear infinite;
 }
 
@@ -392,7 +392,7 @@
   padding: 0 12px;
   padding-right: 38px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 115, 115, 0.32);
+  border: 1px solid rgba(34, 197, 94, 0.32);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
   font-size: 14px;
@@ -412,8 +412,8 @@
   top: 50%;
   width: 8px;
   height: 8px;
-  border-right: 2px solid rgba(255, 115, 115, 0.86);
-  border-bottom: 2px solid rgba(255, 115, 115, 0.86);
+  border-right: 2px solid rgba(34, 197, 94, 0.86);
+  border-bottom: 2px solid rgba(34, 197, 94, 0.86);
   transform: translateY(-60%) rotate(45deg);
   transition: transform 0.16s ease;
 }
@@ -423,15 +423,15 @@
 }
 
 .settings-dropdown-btn:hover {
-  border-color: rgba(255, 115, 115, 0.45);
+  border-color: rgba(34, 197, 94, 0.45);
   background: rgba(255, 255, 255, 0.07);
 }
 
 .settings-dropdown-btn:focus {
   outline: none;
-  border-color: rgba(255, 115, 115, 0.72);
+  border-color: rgba(34, 197, 94, 0.72);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(255, 115, 115, 0.18), 0 0 12px rgba(255, 115, 115, 0.2);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18), 0 0 12px rgba(34, 197, 94, 0.2);
 }
 
 .settings-dropdown-menu {
@@ -441,9 +441,9 @@
   min-width: 100%;
   padding: 6px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 115, 115, 0.32);
-  background: rgba(11, 13, 16, 0.96);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.42), 0 0 12px rgba(255, 115, 115, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.32);
+  background: rgba(14, 14, 14, 0.96);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.42), 0 0 12px rgba(34, 197, 94, 0.12);
   backdrop-filter: blur(14px) saturate(140%);
   z-index: 20;
   display: none;
@@ -472,12 +472,12 @@
 .settings-dropdown-item:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 115, 115, 0.4);
+  border-color: rgba(34, 197, 94, 0.4);
 }
 
 .settings-dropdown-item.is-active {
-  background: rgba(255, 115, 115, 0.16);
-  border-color: rgba(255, 115, 115, 0.48);
+  background: rgba(34, 197, 94, 0.16);
+  border-color: rgba(34, 197, 94, 0.48);
   color: #fff;
 }
 
@@ -492,7 +492,7 @@
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #0b0d10;
+  color: #fff;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   z-index: 10000;
   opacity: 0;
@@ -513,8 +513,8 @@
 }
 
 .settings-toast-error {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(248, 113, 113, 0.9));
-  border: 1px solid rgba(239, 68, 68, 0.6);
+  background: linear-gradient(135deg, rgba(131, 25, 20, 0.95), rgba(220, 38, 38, 0.9));
+  border: 1px solid rgba(131, 25, 20, 0.6);
 }
 
 .settings-toast-info {

@@ -68,7 +68,7 @@
 .status-dot {
   width: 10px;
   height: 10px;
-  background: #4cff4c;
+  background: #22C55E;
   border-radius: 50%;
   animation: rainbow-shift 50s linear infinite;
 }
