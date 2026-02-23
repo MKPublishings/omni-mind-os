@@ -157,6 +157,11 @@ const defaultModeSelect = document.getElementById("default-mode");
 const defaultModeSetting = document.getElementById("default-mode-setting");
 const responseLengthSelect = document.getElementById("response-length");
 
+function updateModeSettingVisibility() {
+  if (!modeSelectionSelect || !defaultModeSetting) return;
+  defaultModeSetting.style.display = modeSelectionSelect.value === "manual" ? "flex" : "none";
+}
+
 if (defaultModelSelect) {
   defaultModelSelect.value = getSetting(SETTINGS_KEYS.DEFAULT_MODEL, "omni");
   defaultModelSelect.addEventListener("change", () => {
@@ -166,17 +171,9 @@ if (defaultModelSelect) {
 
 if (modeSelectionSelect) {
   modeSelectionSelect.value = getSetting(SETTINGS_KEYS.MODE_SELECTION, "automatic");
-  
-  // Show/hide default mode setting based on selection
-  function updateModeSettingVisibility() {
-    if (defaultModeSetting) {
-      defaultModeSetting.style.display = 
-        modeSelectionSelect.value === "manual" ? "flex" : "none";
-    }
-  }
-  
+
   updateModeSettingVisibility();
-  
+
   modeSelectionSelect.addEventListener("change", () => {
     setSetting(SETTINGS_KEYS.MODE_SELECTION, modeSelectionSelect.value);
     updateModeSettingVisibility();
@@ -189,6 +186,19 @@ if (defaultModeSelect) {
     setSetting(SETTINGS_KEYS.DEFAULT_MODE, defaultModeSelect.value);
   });
 }
+
+window.addEventListener("storage", (e) => {
+  if (!modeSelectionSelect || !defaultModeSelect) return;
+
+  if (e.key === SETTINGS_KEYS.MODE_SELECTION) {
+    modeSelectionSelect.value = getSetting(SETTINGS_KEYS.MODE_SELECTION, "automatic");
+    updateModeSettingVisibility();
+  }
+
+  if (e.key === SETTINGS_KEYS.DEFAULT_MODE) {
+    defaultModeSelect.value = getSetting(SETTINGS_KEYS.DEFAULT_MODE, "architect");
+  }
+});
 
 if (responseLengthSelect) {
   responseLengthSelect.value = getSetting(SETTINGS_KEYS.RESPONSE_LENGTH, "balanced");

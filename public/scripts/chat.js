@@ -826,6 +826,12 @@
         const session = getActiveSession();
         if (!session) return;
         session.mode = normalizeMode(optionBtn.dataset.value) || getSelectedModeFromSettings();
+        try {
+          localStorage.setItem(SETTINGS_KEYS.MODE_SELECTION, "manual");
+          localStorage.setItem(SETTINGS_KEYS.DEFAULT_MODE, session.mode);
+        } catch {
+          // ignore
+        }
         session.updatedAt = Date.now();
         saveState();
         updateModeButton(session.mode);
