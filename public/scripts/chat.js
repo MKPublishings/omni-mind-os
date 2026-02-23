@@ -260,7 +260,15 @@
     if (role === "assistant" && (meta.model || meta.mode)) {
       const badge = document.createElement("span");
       badge.className = "message-badge";
-      badge.textContent = [meta.model, meta.mode].filter(Boolean).join(" • ");
+      
+      // Format model name (capitalize first letter)
+      const modelName = meta.model ? 
+        meta.model.charAt(0).toUpperCase() + meta.model.slice(1) : null;
+      
+      // Format mode name using toModeLabel for consistent capitalization
+      const modeName = meta.mode ? toModeLabel(meta.mode) : null;
+      
+      badge.textContent = [modelName, modeName].filter(Boolean).join(" • ");
       header.appendChild(badge);
     }
 
@@ -294,9 +302,10 @@
     const session = getActiveSession();
     if (!session) return;
     for (const msg of session.messages) {
+      const activeMode = getActiveMode(session);
       appendMessage(msg.role, msg.content, {
-        model: session.model,
-        mode: session.mode
+        model: session.model || "omni",
+        mode: activeMode
       });
     }
   }
@@ -367,10 +376,11 @@
   }
 
   async function streamOmniResponse(session, assistantBodyEl, onChunk) {
+    const activeMode = getActiveMode(session);
     const payload = {
       messages: session.messages,
       model: session.model || (modelSelect ? modelSelect.value : "omni"),
-      mode: session.mode || (modeSelect ? modeSelect.value : "chat")
+      mode: activeMode
     };
 
     const controller = new AbortController();
@@ -466,12 +476,13 @@
 
     const isApiOnline = await checkApiStatus();
     if (!isApiOnline) {
+      const activeMode = getActiveMode(session);
       appendMessage(
         "assistant",
         "[Connection] API is offline right now. Please try again in a moment.",
         {
-          model: session.model,
-          mode: session.mode
+          model: session.model || "omni",
+          mode: activeMode
         }
       );
       return;
@@ -482,9 +493,10 @@
     updateSessionMetaFromMessages(session);
     saveState();
 
+    const activeMode = getActiveMode(session);
     appendMessage("user", trimmed, {
-      model: session.model,
-      mode: session.mode
+      model: session.model || "omni",
+      mode: activeMode
     });
 
     // Clear input
@@ -492,8 +504,8 @@
 
     // Prepare assistant placeholder
     const assistantMessage = appendMessage("assistant", "", {
-      model: session.model,
-      mode: session.mode
+      model: session.model || "omni",
+      mode: activeMode
     });
     const assistantBodyEl = assistantMessage ? assistantMessage.body : null;
 
