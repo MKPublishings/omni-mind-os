@@ -5,8 +5,10 @@ module.exports = function negativePrompting(promptData) {
     const userPrompt = promptData.userPrompt.toLowerCase();
     const negativeTags = [...(promptData.negativeTags || [])];
 
+    // Base negatives
     negativeTags.push(...negativeConfig.base);
 
+    // Conditional moon/ocean suppression
     if (!userPrompt.includes("moon")) {
         negativeTags.push(...negativeConfig.noMoon);
     }
@@ -15,13 +17,6 @@ module.exports = function negativePrompting(promptData) {
     }
 
     promptData.negativeTags = negativeTags;
-
-    const finalPrompt = [
-        promptData.finalPrompt,
-        negativeTags.length ? `negative: ${negativeTags.join(", ")}` : ""
-    ].filter(Boolean).join(", ");
-
-    promptData.finalPrompt = finalPrompt;
 
     logger.info("Negative tags applied:", negativeTags);
     return promptData;

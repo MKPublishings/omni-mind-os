@@ -10,8 +10,8 @@ module.exports = function sceneEnforcer(promptData) {
     }
 
     const envString = `environment: ${envKeywords.join(", ")}`;
-    promptData.finalPrompt = [
-        promptData.finalPrompt,
+    promptData.semanticExpansion = [
+        promptData.semanticExpansion,
         envString
     ].filter(Boolean).join(", ");
 

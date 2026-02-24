@@ -1,5 +1,10 @@
 {
   "default": [
+    "high resolution",
+    "sharp focus",
+    "detailed textures"
+  ],
+  "high": [
     "8k resolution",
     "ultra detailed",
     "sharp focus",
@@ -8,5 +13,14 @@
     "film grain",
     "depth of field",
     "HDR"
+  ],
+  "ultra": [
+    "16k resolution",
+    "hyper realistic",
+    "extreme detail",
+    "cinematic lighting",
+    "advanced global illumination",
+    "complex reflections",
+    "perfect sharpness"
   ]
 }

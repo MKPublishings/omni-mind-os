@@ -10,7 +10,7 @@ async function codexMode(prompt, options = {}) {
         styleTags: result.refined.styleTags,
         negativeTags: result.refined.negativeTags,
         finalPrompt: result.refined.finalPrompt,
-        rawResult: result.result
+        filePath: result.filePath
     };
 }
 

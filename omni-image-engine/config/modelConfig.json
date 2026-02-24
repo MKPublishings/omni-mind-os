@@ -1,10 +1,30 @@
 {
+  "defaultModel": "omni_openai",
   "models": {
-    "slizzai_v2_1": {
-      "name": "slizzai-imagegen.v2.1",
+    "omni_openai": {
+      "name": "Omni OpenAI Image Generator",
       "type": "image",
-      "supportsNegative": true,
-      "defaultQuality": "high"
+      "provider": "openai",
+      "providerModel": "gpt-image-1",
+      "endpoint": "https://api.openai.com/v1/images/generations",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "fallbackModel": "omni_stability",
+      "defaultWidth": 1024,
+      "defaultHeight": 1024,
+      "defaultSteps": 30,
+      "defaultCfgScale": 7.5
+    },
+    "omni_stability": {
+      "name": "Omni Stability Image Generator",
+      "type": "image",
+      "provider": "stability",
+      "providerModel": "stable-image-core",
+      "endpoint": "https://api.stability.ai/v2beta/stable-image/generate/core",
+      "apiKeyEnv": "STABILITY_API_KEY",
+      "defaultWidth": 1024,
+      "defaultHeight": 1024,
+      "defaultSteps": 30,
+      "defaultCfgScale": 7.5
     }
   }
 }

@@ -9,6 +9,8 @@ module.exports = {
             description = "dense trees, atmospheric fog, grounded natural lighting";
         } else if (lower.includes("city")) {
             description = "urban environment, buildings, street lights, depth and perspective";
+        } else if (lower.includes("cathedral")) {
+            description = "grand architecture, stained glass, dramatic light shafts";
         } else {
             description = "coherent environment matching the subject and mood";
         }
