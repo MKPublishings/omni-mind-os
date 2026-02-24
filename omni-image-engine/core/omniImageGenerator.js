@@ -9,7 +9,10 @@ async function generate(userPrompt, options = {}) {
     const { data, finalOptions } = multiPassRefiner(orchestrated, options);
 
     // Call the underlying model (you plug in your provider here)
-    const imageBuffer = await modelRouter.generateImage(data.finalPrompt, finalOptions);
+    const imageBuffer = await modelRouter.generateImage(data.finalPrompt, {
+        ...finalOptions,
+        negativePrompt: Array.isArray(data.negativeTags) ? data.negativeTags.join(", ") : ""
+    });
 
     // Export to disk with omni_image_(date&time).ext
     const filePath = await fileExporter.exportImage(imageBuffer, finalOptions.format || "png");

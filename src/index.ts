@@ -311,6 +311,19 @@ function buildStrictPromptDirective(): string {
   return "strict prompt fidelity: include only elements explicitly requested by the user; do not add extra subjects, characters, objects, text, logos, or overlays";
 }
 
+function promptRequestsMoonOrNight(prompt: string): boolean {
+  const lower = String(prompt || "").toLowerCase();
+  return /\b(moon|moonlight|lunar|night|nighttime|midnight|starry|stars|crescent)\b/.test(lower);
+}
+
+function buildNoMoonHardConstraint(prompt: string): string {
+  if (promptRequestsMoonOrNight(prompt)) {
+    return "";
+  }
+
+  return "hard constraints: absolutely no moon, no moonlight, no lunar objects, no stars, no starry sky, and no nighttime atmosphere";
+}
+
 function applyPromptFreshness(options: OmniImageOptions): OmniImageOptions {
   return {
     ...options,
@@ -330,9 +343,10 @@ function orchestrateOmniImagePrompt(userPrompt: string, options: OmniImageOption
   const timeIntent = inferTimeIntent(userPrompt);
   const timeDirective = buildTimeDirective(timeIntent);
   const strictDirective = buildStrictPromptDirective();
+  const noMoonConstraint = buildNoMoonHardConstraint(userPrompt);
   const selectedStylePack = getStylePack(options.stylePack || "");
 
-  const semanticExpansion = [userPrompt, sceneDescription, timeDirective, strictDirective].join(", ");
+  const semanticExpansion = [userPrompt, sceneDescription, timeDirective, strictDirective, noMoonConstraint].filter(Boolean).join(", ");
   const styleTags = selectedStylePack.tags || [];
   const technicalTags: string[] = [];
 
@@ -361,10 +375,12 @@ function refineOmniImagePrompt(promptData: OmniImagePromptData, options: OmniIma
   const lowerPrompt = data.userPrompt.toLowerCase();
   const timeIntent = inferTimeIntent(data.userPrompt);
   const explicitlyRequestsNight = timeIntent === "night";
+  const requestsMoonOrNight = promptRequestsMoonOrNight(data.userPrompt);
   const includesPeople = promptRequestsPeople(data.userPrompt);
   const negativeTags = [...(data.negativeTags || []), ...OMNI_NEGATIVE_BASE];
-  if (!lowerPrompt.includes("moon") && !explicitlyRequestsNight) {
+  if (!lowerPrompt.includes("moon") && !explicitlyRequestsNight && !requestsMoonOrNight) {
     negativeTags.push(...OMNI_NEGATIVE_NO_MOON);
+    negativeTags.push("no moonlight", "no lunar glow", "no crescent moon", "no stars", "no star field");
   }
   if (!lowerPrompt.includes("ocean") && !lowerPrompt.includes("sea") && !lowerPrompt.includes("beach")) {
     negativeTags.push(...OMNI_NEGATIVE_NO_OCEAN);
@@ -383,7 +399,7 @@ function refineOmniImagePrompt(promptData: OmniImagePromptData, options: OmniIma
       "no crowd"
     );
   }
-  data.negativeTags = negativeTags;
+  data.negativeTags = [...new Set(negativeTags)];
 
   const tags = [
     data.semanticExpansion,

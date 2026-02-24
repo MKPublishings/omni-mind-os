@@ -45,6 +45,19 @@ function buildStrictPromptDirective() {
     return "strict prompt fidelity: include only elements explicitly requested by the user; do not add extra subjects, characters, objects, text, logos, or overlays";
 }
 
+function promptRequestsMoonOrNight(prompt) {
+    const lower = String(prompt || "").toLowerCase();
+    return /\b(moon|moonlight|lunar|night|nighttime|midnight|starry|stars|crescent)\b/.test(lower);
+}
+
+function buildNoMoonHardConstraint(prompt) {
+    if (promptRequestsMoonOrNight(prompt)) {
+        return "";
+    }
+
+    return "hard constraints: absolutely no moon, no moonlight, no lunar objects, no stars, no starry sky, and no nighttime atmosphere";
+}
+
 module.exports = function promptOrchestrator(userPrompt, options = {}) {
     const tokens = tokenizer(userPrompt);
 
@@ -62,6 +75,7 @@ module.exports = function promptOrchestrator(userPrompt, options = {}) {
     const sceneDescription = inferSceneDescription(userPrompt) || sceneInsights.description;
     const timeDirective = buildTimeDirective(inferTimeIntent(userPrompt));
     const strictDirective = buildStrictPromptDirective();
+    const noMoonConstraint = buildNoMoonHardConstraint(userPrompt);
     const stylePackName = options.stylePack || "";
     const stylePack = stylePacks.getStylePack(stylePackName);
 
@@ -69,7 +83,8 @@ module.exports = function promptOrchestrator(userPrompt, options = {}) {
         userPrompt,
         sceneDescription,
         timeDirective,
-        strictDirective
+        strictDirective,
+        noMoonConstraint
     ].join(", ");
 
     const styleTags = stylePack.tags || [];

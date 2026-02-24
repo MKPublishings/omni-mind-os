@@ -21,14 +21,21 @@ function promptRequestsPeople(prompt) {
     return /\b(person|people|character|characters|man|woman|boy|girl|child|children|human|humans|crowd|portrait|selfie|face|worker|hiker|runner|couple|family)\b/.test(lower);
 }
 
+function promptRequestsMoonOrNight(prompt) {
+    const lower = String(prompt || "").toLowerCase();
+    return /\b(moon|moonlight|lunar|night|nighttime|midnight|starry|stars|crescent)\b/.test(lower);
+}
+
 function applyStrictFidelityNegatives(data) {
     const prompt = String(data.userPrompt || "").toLowerCase();
     const negativeTags = [...(data.negativeTags || [])];
     const timeIntent = inferTimeIntent(prompt);
     const explicitlyRequestsNight = timeIntent === "night";
+    const requestsMoonOrNight = promptRequestsMoonOrNight(prompt);
 
-    if (!prompt.includes("moon") && !explicitlyRequestsNight) {
+    if (!prompt.includes("moon") && !explicitlyRequestsNight && !requestsMoonOrNight) {
         negativeTags.push(...(negativeConfig.noMoon || []));
+        negativeTags.push("no moonlight", "no lunar glow", "no crescent moon", "no stars", "no star field");
     }
 
     if (!explicitlyRequestsNight && !prompt.includes("night") && !prompt.includes("moonlight")) {
