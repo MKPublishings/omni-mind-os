@@ -219,7 +219,6 @@ const OMNI_NEGATIVE_BASE = [
   "no deformed anatomy"
 ];
 
-const OMNI_NEGATIVE_NO_MOON = ["no moon", "no full moon", "no night sky with moon"];
 const OMNI_NEGATIVE_NO_OCEAN = ["no ocean", "no beach", "no water horizon"];
 
 const OMNI_ENVIRONMENTS = [
@@ -260,7 +259,7 @@ function inferTimeIntent(prompt: string): TimeIntent {
     return "indoor";
   }
 
-  if (/(night|midnight|moon|moonlight|starlight|starry|nighttime)/.test(lower)) {
+  if (/(night|midnight|starlight|starry|nighttime)/.test(lower)) {
     return "night";
   }
 
@@ -281,18 +280,18 @@ function buildTimeDirective(intent: TimeIntent): string {
   }
 
   if (intent === "sunset") {
-    return "sunset lighting, warm sky tones, no moon unless requested";
+    return "sunset lighting, warm sky tones";
   }
 
   if (intent === "day") {
-    return "daytime lighting, natural sunlight, clear atmosphere, no moon";
+    return "daytime lighting, natural sunlight, clear atmosphere";
   }
 
   if (intent === "indoor") {
     return "interior lighting setup, practical lights, no night sky elements unless requested";
   }
 
-  return "neutral natural lighting, balanced exposure, avoid moon and night sky unless explicitly requested";
+  return "neutral natural lighting, balanced exposure";
 }
 
 function getStylePack(name: string): { name: string; tags: string[] } {
@@ -309,19 +308,6 @@ function promptRequestsPeople(prompt: string): boolean {
 
 function buildStrictPromptDirective(): string {
   return "strict prompt fidelity: include only elements explicitly requested by the user; do not add extra subjects, characters, objects, text, logos, or overlays";
-}
-
-function promptRequestsMoonOrNight(prompt: string): boolean {
-  const lower = String(prompt || "").toLowerCase();
-  return /\b(moon|moonlight|lunar|night|nighttime|midnight|starry|stars|crescent)\b/.test(lower);
-}
-
-function buildNoMoonHardConstraint(prompt: string): string {
-  if (promptRequestsMoonOrNight(prompt)) {
-    return "";
-  }
-
-  return "hard constraints: absolutely no moon, no moonlight, no lunar objects, no stars, no starry sky, and no nighttime atmosphere";
 }
 
 function applyPromptFreshness(options: OmniImageOptions): OmniImageOptions {
@@ -343,10 +329,9 @@ function orchestrateOmniImagePrompt(userPrompt: string, options: OmniImageOption
   const timeIntent = inferTimeIntent(userPrompt);
   const timeDirective = buildTimeDirective(timeIntent);
   const strictDirective = buildStrictPromptDirective();
-  const noMoonConstraint = buildNoMoonHardConstraint(userPrompt);
   const selectedStylePack = getStylePack(options.stylePack || "");
 
-  const semanticExpansion = [userPrompt, sceneDescription, timeDirective, strictDirective, noMoonConstraint].filter(Boolean).join(", ");
+  const semanticExpansion = [userPrompt, sceneDescription, timeDirective, strictDirective].filter(Boolean).join(", ");
   const styleTags = selectedStylePack.tags || [];
   const technicalTags: string[] = [];
 
@@ -375,18 +360,13 @@ function refineOmniImagePrompt(promptData: OmniImagePromptData, options: OmniIma
   const lowerPrompt = data.userPrompt.toLowerCase();
   const timeIntent = inferTimeIntent(data.userPrompt);
   const explicitlyRequestsNight = timeIntent === "night";
-  const requestsMoonOrNight = promptRequestsMoonOrNight(data.userPrompt);
   const includesPeople = promptRequestsPeople(data.userPrompt);
   const negativeTags = [...(data.negativeTags || []), ...OMNI_NEGATIVE_BASE];
-  if (!lowerPrompt.includes("moon") && !explicitlyRequestsNight && !requestsMoonOrNight) {
-    negativeTags.push(...OMNI_NEGATIVE_NO_MOON);
-    negativeTags.push("no moonlight", "no lunar glow", "no crescent moon", "no stars", "no star field");
-  }
   if (!lowerPrompt.includes("ocean") && !lowerPrompt.includes("sea") && !lowerPrompt.includes("beach")) {
     negativeTags.push(...OMNI_NEGATIVE_NO_OCEAN);
   }
 
-  if (!explicitlyRequestsNight && !lowerPrompt.includes("night") && !lowerPrompt.includes("moonlight")) {
+  if (!explicitlyRequestsNight && !lowerPrompt.includes("night")) {
     negativeTags.push("no starry sky", "no nighttime atmosphere unless requested");
   }
 

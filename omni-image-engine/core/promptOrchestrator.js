@@ -26,7 +26,7 @@ function inferTimeIntent(prompt) {
     const lower = String(prompt || "").toLowerCase();
 
     if (/(bedroom|room|office|studio|kitchen|indoor|interior)/.test(lower)) return "indoor";
-    if (/(night|midnight|moon|moonlight|starlight|starry|nighttime)/.test(lower)) return "night";
+    if (/(night|midnight|starlight|starry|nighttime)/.test(lower)) return "night";
     if (/(sunset|golden hour|dusk|twilight)/.test(lower)) return "sunset";
     if (/(day|daytime|sunlight|morning|noon|afternoon)/.test(lower)) return "day";
 
@@ -35,27 +35,14 @@ function inferTimeIntent(prompt) {
 
 function buildTimeDirective(intent) {
     if (intent === "night") return "nighttime scene when appropriate, coherent low-light rendering";
-    if (intent === "sunset") return "sunset lighting, warm sky tones, no moon unless requested";
-    if (intent === "day") return "daytime lighting, natural sunlight, clear atmosphere, no moon";
+    if (intent === "sunset") return "sunset lighting, warm sky tones";
+    if (intent === "day") return "daytime lighting, natural sunlight, clear atmosphere";
     if (intent === "indoor") return "interior lighting setup, practical lights, no night sky elements unless requested";
-    return "neutral natural lighting, balanced exposure, avoid moon and night sky unless explicitly requested";
+    return "neutral natural lighting, balanced exposure";
 }
 
 function buildStrictPromptDirective() {
     return "strict prompt fidelity: include only elements explicitly requested by the user; do not add extra subjects, characters, objects, text, logos, or overlays";
-}
-
-function promptRequestsMoonOrNight(prompt) {
-    const lower = String(prompt || "").toLowerCase();
-    return /\b(moon|moonlight|lunar|night|nighttime|midnight|starry|stars|crescent)\b/.test(lower);
-}
-
-function buildNoMoonHardConstraint(prompt) {
-    if (promptRequestsMoonOrNight(prompt)) {
-        return "";
-    }
-
-    return "hard constraints: absolutely no moon, no moonlight, no lunar objects, no stars, no starry sky, and no nighttime atmosphere";
 }
 
 module.exports = function promptOrchestrator(userPrompt, options = {}) {
@@ -75,7 +62,6 @@ module.exports = function promptOrchestrator(userPrompt, options = {}) {
     const sceneDescription = inferSceneDescription(userPrompt) || sceneInsights.description;
     const timeDirective = buildTimeDirective(inferTimeIntent(userPrompt));
     const strictDirective = buildStrictPromptDirective();
-    const noMoonConstraint = buildNoMoonHardConstraint(userPrompt);
     const stylePackName = options.stylePack || "";
     const stylePack = stylePacks.getStylePack(stylePackName);
 
@@ -83,9 +69,8 @@ module.exports = function promptOrchestrator(userPrompt, options = {}) {
         userPrompt,
         sceneDescription,
         timeDirective,
-        strictDirective,
-        noMoonConstraint
-    ].join(", ");
+        strictDirective
+    ].filter(Boolean).join(", ");
 
     const styleTags = stylePack.tags || [];
     const technicalTags = [];

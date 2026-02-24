@@ -8,10 +8,7 @@ module.exports = function negativePrompting(promptData) {
     // Base negatives
     negativeTags.push(...negativeConfig.base);
 
-    // Conditional moon/ocean suppression
-    if (!userPrompt.includes("moon")) {
-        negativeTags.push(...negativeConfig.noMoon);
-    }
+    // Conditional environment suppression
     if (!userPrompt.includes("ocean") && !userPrompt.includes("sea") && !userPrompt.includes("beach")) {
         negativeTags.push(...negativeConfig.noOcean);
     }
