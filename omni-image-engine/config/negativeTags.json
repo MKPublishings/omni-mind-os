@@ -1,11 +1,20 @@
 {
-  "negativeTags": [
+  "base": [
     "no distortion",
     "no extra limbs",
     "no artifacts",
     "no watermark",
     "no blurry details",
-    "no malformed hands",
-    "no text overlay"
+    "no deformed anatomy"
+  ],
+  "noMoon": [
+    "no moon",
+    "no full moon",
+    "no night sky with moon"
+  ],
+  "noOcean": [
+    "no ocean",
+    "no beach",
+    "no water horizon"
   ]
 }

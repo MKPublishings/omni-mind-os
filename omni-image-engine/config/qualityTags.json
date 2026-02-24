@@ -1,27 +1,12 @@
 {
-  "levels": {
-    "high": [
-      "high quality",
-      "fine detail",
-      "cinematic lighting",
-      "depth of field"
-    ],
-    "ultra": [
-      "8k",
-      "ultra-detailed",
-      "volumetric lighting",
-      "global illumination",
-      "film grain",
-      "depth of field",
-      "HDR"
-    ],
-    "insane": [
-      "8k master",
-      "hyper-detailed textures",
-      "advanced global illumination",
-      "volumetric atmospheric effects",
-      "cinematic dynamic range",
-      "precision depth map"
-    ]
-  }
+  "default": [
+    "8k resolution",
+    "ultra detailed",
+    "sharp focus",
+    "global illumination",
+    "subsurface scattering",
+    "film grain",
+    "depth of field",
+    "HDR"
+  ]
 }

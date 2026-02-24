@@ -1,15 +1,17 @@
-function buildCodexView({ userPrompt, pass1, pass2, pass3, pass4 }) {
-  return {
-    mode: "codex",
-    userPrompt,
-    semanticExpansion: pass1?.semanticExpansion || "",
-    technicalTags: pass2?.technicalTags || [],
-    styleTags: pass2?.styleTags || [],
-    negativeTags: pass3?.negativeTags || [],
-    finalPrompt: pass4?.finalPrompt || ""
-  };
+const { omniImageGenerate } = require("../index");
+
+async function codexMode(prompt, options = {}) {
+    const result = await omniImageGenerate(prompt, { ...options, mode: "codex" });
+
+    return {
+        userPrompt: result.orchestrated.userPrompt,
+        semanticExpansion: result.orchestrated.semanticExpansion,
+        technicalTags: result.refined.technicalTags,
+        styleTags: result.refined.styleTags,
+        negativeTags: result.refined.negativeTags,
+        finalPrompt: result.refined.finalPrompt,
+        rawResult: result.result
+    };
 }
 
-module.exports = {
-  buildCodexView
-};
+module.exports = codexMode;

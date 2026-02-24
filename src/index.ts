@@ -52,28 +52,11 @@ type ImageRequestBody = {
   prompt?: string;
   userId?: string;
   feedback?: string;
-};
-
-type StyleVector = {
-  palette: string[];
-  texture: string;
-  emotion: string;
-  composition: string;
-  lighting: string;
-  hair_color: string;
-  signature_elements: string[];
-};
-
-type SceneGraph = {
-  subject: string;
-  environment: string;
-  lighting: string;
-  fx: string[];
-  color_palette: string[];
-  composition: string;
-  hair_color: string;
-  timestamp: string;
-  prompt_text: string;
+  stylePack?: string;
+  quality?: string;
+  mode?: string;
+  seed?: number;
+  debug?: boolean;
 };
 
 type ImageModelConfig = {
@@ -81,6 +64,26 @@ type ImageModelConfig = {
   styleId: string;
   width: number;
   height: number;
+};
+
+type OmniImagePromptData = {
+  userPrompt: string;
+  tokens: string[];
+  semanticExpansion: string;
+  technicalTags: string[];
+  styleTags: string[];
+  negativeTags: string[];
+  finalPrompt: string;
+  model?: string;
+};
+
+type OmniImageOptions = {
+  mode?: string;
+  stylePack?: string;
+  feedback?: string;
+  quality?: string;
+  seed?: number;
+  fresh?: boolean;
 };
 
 function toPositiveInt(value: unknown, fallback: number): number {
@@ -175,96 +178,156 @@ function sanitizePromptText(prompt: string): string {
     .trim();
 }
 
-function buildDefaultStyleVector(): StyleVector {
+const OMNI_STYLE_PACKS: Record<string, { name: string; tags: string[] }> = {
+  mythic_cinematic: {
+    name: "Mythic Cinematic",
+    tags: ["cinematic lighting", "dramatic contrast", "symbolic composition", "high detail", "emotional depth"]
+  },
+  anime_realism: {
+    name: "Anime Realism",
+    tags: ["anime style", "realistic shading", "soft lighting", "vibrant colors"]
+  },
+  os_cinematic: {
+    name: "OS Cinematic",
+    tags: ["futuristic UI", "holographic overlays", "clean interface", "glowing panels"]
+  },
+  noir_tech: {
+    name: "Noir Tech",
+    tags: ["high contrast", "dark palette", "moody lighting", "cyberpunk atmosphere"]
+  }
+};
+
+const OMNI_QUALITY_DEFAULT = [
+  "8k resolution",
+  "ultra detailed",
+  "sharp focus",
+  "global illumination",
+  "subsurface scattering",
+  "film grain",
+  "depth of field",
+  "HDR"
+];
+
+const OMNI_NEGATIVE_BASE = [
+  "no distortion",
+  "no extra limbs",
+  "no artifacts",
+  "no watermark",
+  "no blurry details",
+  "no deformed anatomy"
+];
+
+const OMNI_NEGATIVE_NO_MOON = ["no moon", "no full moon", "no night sky with moon"];
+const OMNI_NEGATIVE_NO_OCEAN = ["no ocean", "no beach", "no water horizon"];
+
+const OMNI_ENVIRONMENTS = [
+  "bedroom", "room", "forest", "city", "street", "cafe", "office",
+  "studio", "kitchen", "mountains", "desert", "classroom",
+  "library", "garage", "basement", "attic", "garden", "cathedral"
+];
+
+function tokenizePrompt(text: string): string[] {
+  if (!text) return [];
+  return String(text)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function inferSceneDescription(prompt: string): string {
+  const lower = String(prompt || "").toLowerCase();
+  if (lower.includes("bedroom") || lower.includes("room")) {
+    return "cozy interior, detailed furniture, realistic lighting";
+  }
+  if (lower.includes("forest")) {
+    return "dense trees, atmospheric fog, grounded natural lighting";
+  }
+  if (lower.includes("city")) {
+    return "urban environment, buildings, street lights, depth and perspective";
+  }
+  return "coherent environment matching the subject and mood";
+}
+
+function getStylePack(name: string): { name: string; tags: string[] } {
+  return OMNI_STYLE_PACKS[name] || OMNI_STYLE_PACKS.mythic_cinematic;
+}
+
+function applyPromptFreshness(options: OmniImageOptions): OmniImageOptions {
   return {
-    palette: ["#FF4EFF", "#1AB8F5", "#0D0D0F"],
-    texture: "grainy + VHS scanlines",
-    emotion: "solitude + introspection",
-    composition: "centered subject",
-    lighting: "moonlight + neon haze",
-    hair_color: "henna-red",
-    signature_elements: ["glitch shards", "floating text", "rain reversal"]
+    ...options,
+    seed: Number.isFinite(options.seed) ? Number(options.seed) : Math.floor(Math.random() * 999999999),
+    fresh: true
   };
 }
 
-function evolveStyleVector(style: StyleVector, feedback: string): StyleVector {
-  const next = { ...style };
-  const lower = String(feedback || "").toLowerCase();
+function extractEnvironmentKeywords(prompt: string): string[] {
+  const lower = String(prompt || "").toLowerCase();
+  return OMNI_ENVIRONMENTS.filter((value) => lower.includes(value));
+}
 
-  if (lower.includes("happy")) {
-    next.emotion = "joy + vibrance";
-  } else if (lower.includes("dark")) {
-    next.emotion = "darkness + mystery";
-  } else if (lower.includes("glitch")) {
-    next.texture = "heavy glitch + pixel drift";
+function orchestrateOmniImagePrompt(userPrompt: string, options: OmniImageOptions): OmniImagePromptData {
+  const tokens = tokenizePrompt(userPrompt);
+  const sceneDescription = inferSceneDescription(userPrompt);
+  const selectedStylePack = getStylePack(options.stylePack || "mythic_cinematic");
+
+  const semanticExpansion = [userPrompt, sceneDescription].join(", ");
+  const styleTags = selectedStylePack.tags || [];
+  const technicalTags: string[] = [];
+
+  const finalPrompt = [
+    semanticExpansion,
+    styleTags.join(", "),
+    technicalTags.join(", ")
+  ].filter(Boolean).join(", ");
+
+  return {
+    userPrompt,
+    tokens,
+    semanticExpansion,
+    technicalTags,
+    styleTags,
+    negativeTags: [],
+    finalPrompt
+  };
+}
+
+function refineOmniImagePrompt(promptData: OmniImagePromptData, options: OmniImageOptions): { data: OmniImagePromptData; finalOptions: OmniImageOptions } {
+  const data: OmniImagePromptData = { ...promptData };
+
+  data.technicalTags = [...(data.technicalTags || []), ...OMNI_QUALITY_DEFAULT];
+
+  const lowerPrompt = data.userPrompt.toLowerCase();
+  const negativeTags = [...(data.negativeTags || []), ...OMNI_NEGATIVE_BASE];
+  if (!lowerPrompt.includes("moon")) {
+    negativeTags.push(...OMNI_NEGATIVE_NO_MOON);
+  }
+  if (!lowerPrompt.includes("ocean") && !lowerPrompt.includes("sea") && !lowerPrompt.includes("beach")) {
+    negativeTags.push(...OMNI_NEGATIVE_NO_OCEAN);
+  }
+  data.negativeTags = negativeTags;
+
+  const tags = [
+    data.semanticExpansion,
+    data.styleTags.join(", "),
+    data.technicalTags.join(", ")
+  ].filter(Boolean).join(", ");
+
+  let finalPrompt = tags;
+  if (data.negativeTags.length) {
+    finalPrompt += `, negative: ${data.negativeTags.join(", ")}`;
   }
 
-  return next;
-}
-
-function scorePromptAttribute(prompt: string, words: string[], min = 4, max = 10): number {
-  const lower = prompt.toLowerCase();
-  const hits = words.reduce((sum, word) => (lower.includes(word) ? sum + 1 : sum), 0);
-  return clamp(min + hits, min, max);
-}
-
-function analyzePromptNarration(prompt: string): { attributes: Record<string, number>; pnqi: number } {
-  const attributes = {
-    entities: scorePromptAttribute(prompt, ["person", "character", "subject", "city", "forest", "object"], 5, 10),
-    actions: scorePromptAttribute(prompt, ["running", "walking", "floating", "flying", "dancing", "looking"], 4, 9),
-    art_style: scorePromptAttribute(prompt, ["cinematic", "anime", "photorealistic", "painting", "illustration", "digital art"], 6, 10),
-    mood: scorePromptAttribute(prompt, ["mood", "emotional", "dramatic", "serene", "dark", "vibrant"], 5, 9),
-    framing: scorePromptAttribute(prompt, ["close-up", "wide", "portrait", "composition", "angle"], 4, 8),
-    lighting: scorePromptAttribute(prompt, ["lighting", "sunset", "neon", "moonlight", "glow", "shadows"], 6, 10),
-    detail: scorePromptAttribute(prompt, ["detailed", "intricate", "8k", "ultra", "texture", "sharp"], 6, 9),
-    fx: scorePromptAttribute(prompt, ["particles", "glitch", "mist", "rain", "bloom", "volumetric"], 5, 9)
-  };
-
-  const weights: Record<string, number> = {
-    entities: 0.2,
-    actions: 0.15,
-    art_style: 0.15,
-    mood: 0.1,
-    framing: 0.1,
-    lighting: 0.1,
-    detail: 0.1,
-    fx: 0.1
-  };
-
-  const pnqi = Number(
-    Object.entries(attributes)
-      .reduce((sum, [key, value]) => sum + value * (weights[key] || 0), 0)
-      .toFixed(2)
-  );
-
-  return { attributes, pnqi };
-}
-
-function extractEnvironmentFromPrompt(prompt: string): string {
-  const keywords = ["ocean", "forest", "city", "desert", "mountain", "space", "garden", "room"];
-  const lower = prompt.toLowerCase();
-  for (const keyword of keywords) {
-    if (lower.includes(keyword)) return keyword;
+  const envKeywords = extractEnvironmentKeywords(data.userPrompt);
+  if (envKeywords.length) {
+    finalPrompt = `${finalPrompt}, environment: ${envKeywords.join(", ")}`;
   }
-  return "glowing ocean";
-}
 
-function extractSubjectFromPrompt(prompt: string): string {
-  const match = prompt.match(/\b[A-Z][a-zA-Z0-9_-]{1,}\b/);
-  return match?.[0] || "Mikky";
-}
+  data.model = "slizzai-imagegen.v2.1";
+  data.finalPrompt = finalPrompt;
 
-function composeSceneGraph(prompt: string, style: StyleVector): SceneGraph {
   return {
-    subject: extractSubjectFromPrompt(prompt),
-    environment: extractEnvironmentFromPrompt(prompt),
-    lighting: style.lighting || "ambient",
-    fx: style.signature_elements || [],
-    color_palette: style.palette || [],
-    composition: style.composition || "centered",
-    hair_color: style.hair_color || "unknown",
-    timestamp: String(new Date().toISOString()),
-    prompt_text: sanitizePromptText(prompt)
+    data,
+    finalOptions: applyPromptFreshness(options)
   };
 }
 
@@ -277,44 +340,15 @@ function parseResolution(value: string): { width: number; height: number } {
   };
 }
 
-function selectImageModelConfig(pnqi: number, style: StyleVector, env: Env): ImageModelConfig {
-  let styleId = "default_gen";
-  let resolution = "768x768";
-
-  if (pnqi > 8) {
-    styleId = "hyperreal_v2";
-    resolution = "1024x1024";
-  } else if (style.emotion.includes("solitude")) {
-    styleId = "dreamcore_v1";
-    resolution = "768x768";
-  }
-
+function selectImageModelConfig(styleId: string, quality: string | undefined, env: Env): ImageModelConfig {
+  const resolution = quality === "high" ? "768x768" : quality === "ultra" ? "1024x1024" : "1024x1024";
   const parsed = parseResolution(resolution);
   return {
     model: env.MODEL_IMAGE || "@cf/black-forest-labs/flux-1-schnell",
-    styleId,
+    styleId: styleId || "mythic_cinematic",
     width: parsed.width,
     height: parsed.height
   };
-}
-
-function buildFinalImagePrompt(scene: SceneGraph, style: StyleVector): string {
-  const fx = Array.isArray(scene.fx) ? scene.fx.join(", ") : "";
-  const palette = Array.isArray(scene.color_palette) ? scene.color_palette.join(", ") : "";
-
-  return [
-    `Subject: ${scene.subject}`,
-    `Environment: ${scene.environment}`,
-    `Composition: ${scene.composition}`,
-    `Lighting: ${scene.lighting}`,
-    `Mood: ${style.emotion}`,
-    `Texture: ${style.texture}`,
-    `Hair color: ${scene.hair_color}`,
-    `Color palette: ${palette}`,
-    `Signature effects: ${fx}`,
-    `Prompt intent: ${scene.prompt_text}`,
-    "High quality cinematic digital artwork, coherent composition, no text watermark"
-  ].join(". ");
 }
 
 function isReadableByteStream(value: unknown): value is ReadableStream {
@@ -510,6 +544,13 @@ export default {
           const userId = sanitizePromptText(String(body?.userId || "anonymous"));
           const promptText = sanitizePromptText(String(body?.prompt || ""));
           const feedback = sanitizePromptText(String(body?.feedback || ""));
+          const requestedStylePack = sanitizePromptText(String(body?.stylePack || "mythic_cinematic")).toLowerCase() || "mythic_cinematic";
+          const requestedQuality = sanitizePromptText(String(body?.quality || "ultra")).toLowerCase() || "ultra";
+          const requestedMode = sanitizePromptText(String(body?.mode || "simple")).toLowerCase() || "simple";
+          const parsedSeed = Number(body?.seed);
+          const debugRequested =
+            body?.debug === true ||
+            String(url.searchParams.get("debug") || "").toLowerCase() === "true";
 
           if (!promptText) {
             return new Response(JSON.stringify({ error: "Prompt is required" }), {
@@ -521,40 +562,91 @@ export default {
             });
           }
 
-          let style = buildDefaultStyleVector();
-          if (feedback) {
-            style = evolveStyleVector(style, feedback);
-          }
+          const orchestrated = orchestrateOmniImagePrompt(promptText, {
+            mode: requestedMode,
+            stylePack: requestedStylePack,
+            quality: requestedQuality,
+            feedback,
+            seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined
+          });
 
-          const narration = analyzePromptNarration(promptText);
-          const scene = composeSceneGraph(promptText, style);
-          const modelConfig = selectImageModelConfig(narration.pnqi, style, env);
-          const composedPrompt = buildFinalImagePrompt(scene, style);
+          const refined = refineOmniImagePrompt(orchestrated, {
+            mode: requestedMode,
+            stylePack: requestedStylePack,
+            quality: requestedQuality,
+            feedback,
+            seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined
+          });
+
+          const modelConfig = selectImageModelConfig(requestedStylePack, requestedQuality, env);
 
           const rawImage = await env.AI.run(modelConfig.model, {
-            prompt: composedPrompt,
+            prompt: refined.data.finalPrompt,
             width: modelConfig.width,
-            height: modelConfig.height
+            height: modelConfig.height,
+            seed: refined.finalOptions.seed
           });
 
           const normalized = await normalizeImageOutput(rawImage);
           const imageDataUrl = `data:${normalized.mimeType};base64,${bytesToBase64(normalized.bytes)}`;
           const filename = makeImageFilename(modelConfig.styleId);
 
-          return new Response(
-            JSON.stringify({
-              user_id: userId,
-              imageDataUrl,
-              filename,
-              metadata: {
-                style_id: modelConfig.styleId,
-                model: modelConfig.model,
-                resolution: `${modelConfig.width}x${modelConfig.height}`,
-                pnqi: narration.pnqi,
-                scene,
-                export_location: "chat-download"
+          const responsePayload: Record<string, unknown> = {
+            user_id: userId,
+            imageDataUrl,
+            filename,
+            metadata: {
+              style_id: modelConfig.styleId,
+              model: modelConfig.model,
+              resolution: `${modelConfig.width}x${modelConfig.height}`,
+              mode: requestedMode,
+              quality: requestedQuality,
+              seed: refined.finalOptions.seed,
+              feedbackApplied: Boolean(feedback),
+              prompt: {
+                userPrompt: orchestrated.userPrompt,
+                semanticExpansion: orchestrated.semanticExpansion,
+                technicalTags: refined.data.technicalTags,
+                styleTags: refined.data.styleTags,
+                negativeTags: refined.data.negativeTags,
+                finalPrompt: refined.data.finalPrompt
+              },
+              export_location: "chat-download"
+            }
+          };
+
+          if (debugRequested) {
+            responsePayload.debug = {
+              requested: {
+                mode: requestedMode,
+                stylePack: requestedStylePack,
+                quality: requestedQuality,
+                seed: Number.isFinite(parsedSeed) ? parsedSeed : null
+              },
+              pass1_orchestrated: {
+                userPrompt: orchestrated.userPrompt,
+                tokens: orchestrated.tokens,
+                semanticExpansion: orchestrated.semanticExpansion,
+                styleTags: orchestrated.styleTags
+              },
+              pass2_technicalEnhancement: {
+                technicalTags: refined.data.technicalTags
+              },
+              pass3_negativePrompting: {
+                negativeTags: refined.data.negativeTags
+              },
+              pass4_sceneEnforcer: {
+                environmentKeywords: extractEnvironmentKeywords(orchestrated.userPrompt)
+              },
+              pass5_modelAdapter: {
+                targetModel: refined.data.model,
+                finalPrompt: refined.data.finalPrompt
               }
-            }),
+            };
+          }
+
+          return new Response(
+            JSON.stringify(responsePayload),
             {
               headers: {
                 ...CORS_HEADERS,

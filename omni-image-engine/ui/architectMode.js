@@ -1,26 +1,12 @@
-function buildArchitectModePayload({
-  userPrompt,
-  lighting,
-  camera,
-  stylePack,
-  qualityLevel,
-  negativeTags,
-  overrides = {}
-}) {
-  return {
-    mode: "architect",
-    userPrompt,
-    controls: {
-      lighting: lighting || "auto",
-      camera: camera || "auto",
-      stylePack: stylePack || "OS-Cinematic",
-      qualityLevel: qualityLevel || "ultra",
-      negativeTags: negativeTags || []
-    },
-    overrides
-  };
+const { omniImageGenerate } = require("../index");
+
+async function architectMode(prompt, options = {}) {
+    const merged = {
+        mode: "architect",
+        stylePack: options.stylePack || "mythic_cinematic",
+        ...options
+    };
+    return omniImageGenerate(prompt, merged);
 }
 
-module.exports = {
-  buildArchitectModePayload
-};
+module.exports = architectMode;

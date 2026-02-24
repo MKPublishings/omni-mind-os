@@ -1,14 +1,7 @@
-function buildSimpleModePayload(userPrompt) {
-  return {
-    mode: "simple",
-    userPrompt,
-    options: {
-      autoOrchestration: true,
-      exposeControls: false
-    }
-  };
+const { omniImageGenerate } = require("../index");
+
+async function simpleMode(prompt) {
+    return omniImageGenerate(prompt, { mode: "simple" });
 }
 
-module.exports = {
-  buildSimpleModePayload
-};
+module.exports = simpleMode;
