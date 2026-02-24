@@ -77,6 +77,8 @@ type OmniImagePromptData = {
   model?: string;
 };
 
+type TimeIntent = "day" | "night" | "sunset" | "indoor" | "neutral";
+
 type OmniImageOptions = {
   mode?: string;
   stylePack?: string;
@@ -236,6 +238,9 @@ function tokenizePrompt(text: string): string[] {
 
 function inferSceneDescription(prompt: string): string {
   const lower = String(prompt || "").toLowerCase();
+  if (lower.includes("park")) {
+    return "park environment matching the prompt, natural landscape continuity";
+  }
   if (lower.includes("bedroom") || lower.includes("room")) {
     return "cozy interior, detailed furniture, realistic lighting";
   }
@@ -243,13 +248,67 @@ function inferSceneDescription(prompt: string): string {
     return "dense trees, atmospheric fog, grounded natural lighting";
   }
   if (lower.includes("city")) {
-    return "urban environment, buildings, street lights, depth and perspective";
+    return "urban environment, buildings, grounded textures, depth and perspective";
   }
   return "coherent environment matching the subject and mood";
 }
 
+function inferTimeIntent(prompt: string): TimeIntent {
+  const lower = String(prompt || "").toLowerCase();
+
+  if (/(bedroom|room|office|studio|kitchen|indoor|interior)/.test(lower)) {
+    return "indoor";
+  }
+
+  if (/(night|midnight|moon|moonlight|starlight|starry|nighttime)/.test(lower)) {
+    return "night";
+  }
+
+  if (/(sunset|golden hour|dusk|twilight)/.test(lower)) {
+    return "sunset";
+  }
+
+  if (/(day|daytime|sunlight|morning|noon|afternoon)/.test(lower)) {
+    return "day";
+  }
+
+  return "neutral";
+}
+
+function buildTimeDirective(intent: TimeIntent): string {
+  if (intent === "night") {
+    return "nighttime scene when appropriate, coherent low-light rendering";
+  }
+
+  if (intent === "sunset") {
+    return "sunset lighting, warm sky tones, no moon unless requested";
+  }
+
+  if (intent === "day") {
+    return "daytime lighting, natural sunlight, clear atmosphere, no moon";
+  }
+
+  if (intent === "indoor") {
+    return "interior lighting setup, practical lights, no night sky elements unless requested";
+  }
+
+  return "neutral natural lighting, balanced exposure, avoid moon and night sky unless explicitly requested";
+}
+
 function getStylePack(name: string): { name: string; tags: string[] } {
-  return OMNI_STYLE_PACKS[name] || OMNI_STYLE_PACKS.mythic_cinematic;
+  if (!name) {
+    return { name: "none", tags: [] };
+  }
+  return OMNI_STYLE_PACKS[name] || { name: "none", tags: [] };
+}
+
+function promptRequestsPeople(prompt: string): boolean {
+  const lower = String(prompt || "").toLowerCase();
+  return /\b(person|people|character|characters|man|woman|boy|girl|child|children|human|humans|crowd|portrait|selfie|face|worker|hiker|runner|couple|family)\b/.test(lower);
+}
+
+function buildStrictPromptDirective(): string {
+  return "strict prompt fidelity: include only elements explicitly requested by the user; do not add extra subjects, characters, objects, text, logos, or overlays";
 }
 
 function applyPromptFreshness(options: OmniImageOptions): OmniImageOptions {
@@ -268,9 +327,12 @@ function extractEnvironmentKeywords(prompt: string): string[] {
 function orchestrateOmniImagePrompt(userPrompt: string, options: OmniImageOptions): OmniImagePromptData {
   const tokens = tokenizePrompt(userPrompt);
   const sceneDescription = inferSceneDescription(userPrompt);
-  const selectedStylePack = getStylePack(options.stylePack || "mythic_cinematic");
+  const timeIntent = inferTimeIntent(userPrompt);
+  const timeDirective = buildTimeDirective(timeIntent);
+  const strictDirective = buildStrictPromptDirective();
+  const selectedStylePack = getStylePack(options.stylePack || "");
 
-  const semanticExpansion = [userPrompt, sceneDescription].join(", ");
+  const semanticExpansion = [userPrompt, sceneDescription, timeDirective, strictDirective].join(", ");
   const styleTags = selectedStylePack.tags || [];
   const technicalTags: string[] = [];
 
@@ -297,12 +359,29 @@ function refineOmniImagePrompt(promptData: OmniImagePromptData, options: OmniIma
   data.technicalTags = [...(data.technicalTags || []), ...OMNI_QUALITY_DEFAULT];
 
   const lowerPrompt = data.userPrompt.toLowerCase();
+  const timeIntent = inferTimeIntent(data.userPrompt);
+  const explicitlyRequestsNight = timeIntent === "night";
+  const includesPeople = promptRequestsPeople(data.userPrompt);
   const negativeTags = [...(data.negativeTags || []), ...OMNI_NEGATIVE_BASE];
-  if (!lowerPrompt.includes("moon")) {
+  if (!lowerPrompt.includes("moon") && !explicitlyRequestsNight) {
     negativeTags.push(...OMNI_NEGATIVE_NO_MOON);
   }
   if (!lowerPrompt.includes("ocean") && !lowerPrompt.includes("sea") && !lowerPrompt.includes("beach")) {
     negativeTags.push(...OMNI_NEGATIVE_NO_OCEAN);
+  }
+
+  if (!explicitlyRequestsNight && !lowerPrompt.includes("night") && !lowerPrompt.includes("moonlight")) {
+    negativeTags.push("no starry sky", "no nighttime atmosphere unless requested");
+  }
+
+  if (!includesPeople) {
+    negativeTags.push(
+      "no people",
+      "no characters",
+      "no human subjects",
+      "no portraits",
+      "no crowd"
+    );
   }
   data.negativeTags = negativeTags;
 
@@ -544,7 +623,7 @@ export default {
           const userId = sanitizePromptText(String(body?.userId || "anonymous"));
           const promptText = sanitizePromptText(String(body?.prompt || ""));
           const feedback = sanitizePromptText(String(body?.feedback || ""));
-          const requestedStylePack = sanitizePromptText(String(body?.stylePack || "mythic_cinematic")).toLowerCase() || "mythic_cinematic";
+          const requestedStylePack = sanitizePromptText(String(body?.stylePack || "")).toLowerCase();
           const requestedQuality = sanitizePromptText(String(body?.quality || "ultra")).toLowerCase() || "ultra";
           const requestedMode = sanitizePromptText(String(body?.mode || "simple")).toLowerCase() || "simple";
           const parsedSeed = Number(body?.seed);
