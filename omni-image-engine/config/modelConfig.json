@@ -1,0 +1,37 @@
+{
+  "defaultModel": "slizzai-imagegen-v2.1",
+  "models": {
+    "slizzai-imagegen-v2.1": {
+      "endpoint": "local://slizzai-imagegen",
+      "maxTokens": 2048,
+      "supportedTags": ["*"]
+    },
+    "sdxl": {
+      "endpoint": "provider://sdxl",
+      "maxTokens": 2048,
+      "supportedTags": [
+        "8k",
+        "ultra-detailed",
+        "global-illumination",
+        "depth-of-field",
+        "volumetric-lighting",
+        "film-grain"
+      ]
+    },
+    "flux": {
+      "endpoint": "provider://flux",
+      "maxTokens": 2048,
+      "supportedTags": ["*"]
+    },
+    "playground": {
+      "endpoint": "provider://playground",
+      "maxTokens": 2048,
+      "supportedTags": ["8k", "ultra-detailed", "hdr", "cinematic", "film-grain"]
+    },
+    "custom-lora": {
+      "endpoint": "provider://custom-lora",
+      "maxTokens": 4096,
+      "supportedTags": ["*"]
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Omni Image Engine",
+      "type": "shell",
+      "command": "npm run lint --if-present; npm run test --if-present; npm run typecheck --if-present; node ./omni-image-engine/utils/validator.js; Write-Output 'Core modules are JS and do not require bundling in current setup.'",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev Mode",
+      "type": "shell",
+      "command": "Write-Output 'Dev mode started: edit core/style configs for hot updates in your app runtime.'; Write-Output 'Use promptDiffViewer.js from UI integration to inspect prompt evolution.'",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

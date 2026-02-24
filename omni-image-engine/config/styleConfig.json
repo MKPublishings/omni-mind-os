@@ -1,0 +1,34 @@
+{
+  "defaultStyle": "OS-Cinematic",
+  "defaultDialect": "mythic-cinematic",
+  "stylePacks": {
+    "Mythic Cinematic": {
+      "lightingRules": ["mythic rim light", "volumetric god rays", "sacred contrast"],
+      "colorRules": ["gold-blue contrast", "regal highlights", "deep shadow control"],
+      "compositionRules": ["hero-centered frame", "epic depth layering"],
+      "textureRules": ["filmic grain", "micro-texture detail"],
+      "emotionalSignatures": ["legendary awe", "sacred intensity"]
+    },
+    "Anime Realism": {
+      "lightingRules": ["clean key light", "soft bloom", "controlled highlights"],
+      "colorRules": ["vibrant palette", "harmonized saturation"],
+      "compositionRules": ["dynamic angle", "character-forward focus"],
+      "textureRules": ["sharp line integrity", "subtle painterly blend"],
+      "emotionalSignatures": ["expressive clarity", "kinetic mood"]
+    },
+    "OS-Cinematic": {
+      "lightingRules": ["neon haze", "moonlit edge light", "cinematic practicals"],
+      "colorRules": ["electric cyan-magenta split", "deep blacks"],
+      "compositionRules": ["balanced center mass", "screenplay framing"],
+      "textureRules": ["grainy VHS texture", "clean subject separation"],
+      "emotionalSignatures": ["introspective futurism", "commanding focus"]
+    },
+    "Noir Tech": {
+      "lightingRules": ["high-contrast noir key", "hard edge shadow", "specular neon accents"],
+      "colorRules": ["monochrome with selective cyan", "cold highlights"],
+      "compositionRules": ["asymmetrical tension", "negative-space storytelling"],
+      "textureRules": ["analog grain", "matte-metal detail"],
+      "emotionalSignatures": ["mystery tension", "detached precision"]
+    }
+  }
+}
