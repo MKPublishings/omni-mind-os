@@ -458,6 +458,51 @@
     messagesEl.innerHTML = "";
   }
 
+  function createGeneratedImageCard(meta = {}) {
+    const imageDataUrl = String(meta.imageDataUrl || "").trim();
+    if (!imageDataUrl.startsWith("data:image/")) {
+      return null;
+    }
+
+    const filename = String(meta.imageFilename || "generated-image.png").trim() || "generated-image.png";
+    const prompt = String(meta.imagePrompt || "Generated image").trim() || "Generated image";
+    const resolution = String(meta.imageResolution || "").trim();
+    const styleId = String(meta.imageStyleId || "").trim();
+
+    const card = document.createElement("div");
+    card.className = "generated-image-card";
+
+    const img = document.createElement("img");
+    img.className = "generated-image-preview";
+    img.src = imageDataUrl;
+    img.alt = prompt;
+    img.loading = "lazy";
+
+    const actions = document.createElement("div");
+    actions.className = "generated-image-actions";
+
+    const download = document.createElement("a");
+    download.className = "generated-image-download";
+    download.href = imageDataUrl;
+    download.download = filename;
+    download.textContent = "Download image";
+    download.setAttribute("aria-label", `Download generated image ${filename}`);
+
+    actions.appendChild(download);
+
+    if (resolution || styleId) {
+      const info = document.createElement("div");
+      info.className = "generated-image-meta";
+      info.textContent = [resolution, styleId].filter(Boolean).join(" • ");
+      actions.appendChild(info);
+    }
+
+    card.appendChild(img);
+    card.appendChild(actions);
+
+    return card;
+  }
+
   function createMessageElement(role, content, meta = {}) {
     const wrapper = document.createElement("div");
     wrapper.className = `message ${role === "user" ? "user" : "bot"} message-${role}`;
@@ -500,6 +545,16 @@
     body.className = "message-body";
     body.innerHTML = renderMarkdown(content || "");
 
+    const imageCard = createGeneratedImageCard(meta);
+    if (imageCard) {
+      if ((content || "").trim()) {
+        const spacer = document.createElement("div");
+        spacer.className = "generated-image-spacer";
+        body.appendChild(spacer);
+      }
+      body.appendChild(imageCard);
+    }
+
     inner.appendChild(header);
     inner.appendChild(body);
     wrapper.appendChild(inner);
@@ -539,7 +594,12 @@
       appendMessage(msg.role, msg.content, {
         model: session.model || "auto",
         mode: activeMode,
-        timestamp: msg.timestamp || msg.ts || null
+        timestamp: msg.timestamp || msg.ts || null,
+        imageDataUrl: msg.imageDataUrl || "",
+        imageFilename: msg.imageFilename || "",
+        imagePrompt: msg.imagePrompt || "",
+        imageResolution: msg.imageResolution || "",
+        imageStyleId: msg.imageStyleId || ""
       });
     }
   }
@@ -672,6 +732,88 @@
     } catch {
       return "/api/omni";
     }
+  }
+
+  function getImageEndpoint() {
+    const chatEndpoint = getApiEndpoint();
+    try {
+      const url = new URL(chatEndpoint, window.location.origin);
+      if (/\/api\/omni$/i.test(url.pathname)) {
+        url.pathname = url.pathname.replace(/\/api\/omni$/i, "/api/image");
+      } else {
+        url.pathname = "/api/image";
+      }
+      url.search = "";
+
+      if (url.origin === window.location.origin) {
+        return url.pathname;
+      }
+
+      return url.toString();
+    } catch {
+      return "/api/image";
+    }
+  }
+
+  function isImageGenerationRequest(text) {
+    const value = String(text || "").trim().toLowerCase();
+    if (!value) return false;
+    if (value.startsWith("/image ") || value === "/image") return true;
+
+    const directIntent = /\b(generate|create|make|render|draw|imagine|design)\b[\s\S]{0,80}\b(image|picture|illustration|art|photo|logo|poster|wallpaper)\b/i;
+    const quickIntent = /\b(image of|picture of|illustration of|art of)\b/i;
+    return directIntent.test(value) || quickIntent.test(value);
+  }
+
+  function extractImagePrompt(text) {
+    const raw = String(text || "").trim();
+    if (!raw) return "";
+
+    if (raw.toLowerCase().startsWith("/image")) {
+      return raw.slice(6).trim();
+    }
+
+    return raw
+      .replace(/^\s*(please\s+)?(generate|create|make|render|draw|imagine|design)\s+(an?\s+)?(image|picture|illustration|art|photo|logo|poster|wallpaper)\s*(of|for)?\s*/i, "")
+      .trim() || raw;
+  }
+
+  async function requestGeneratedImage(session, prompt) {
+    const payload = {
+      userId: session?.id || `session-${Date.now()}`,
+      prompt,
+      feedback: ""
+    };
+
+    const res = await fetch(getImageEndpoint(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+
+    if (!res.ok) {
+      const reason = data?.error || "Image backend returned an error";
+      throw new Error(reason);
+    }
+
+    const imageDataUrl = String(data?.imageDataUrl || "").trim();
+    if (!imageDataUrl.startsWith("data:image/")) {
+      throw new Error("Image response did not include a valid image payload");
+    }
+
+    return {
+      imageDataUrl,
+      filename: String(data?.filename || "generated-image.png").trim() || "generated-image.png",
+      metadata: data?.metadata || {},
+      modelUsed: String(res.headers.get("X-Omni-Image-Model") || data?.metadata?.model || "").trim()
+    };
   }
 
   function setApiStatus(state) {
@@ -874,6 +1016,82 @@
 
     // Clear input
     if (inputEl) inputEl.value = "";
+
+    const shouldGenerateImage = isImageGenerationRequest(trimmed);
+    if (shouldGenerateImage) {
+      const assistantMessage = appendMessage("assistant", "Generating image...", {
+        model: session.model || "auto",
+        mode: activeMode
+      });
+      const assistantBodyEl = assistantMessage ? assistantMessage.body : null;
+
+      isStreaming = true;
+      if (sendBtn) sendBtn.disabled = true;
+      if (inputEl) inputEl.disabled = true;
+      if (typingIndicatorEl) typingIndicatorEl.style.display = "block";
+
+      try {
+        const imagePrompt = extractImagePrompt(trimmed) || trimmed;
+        const imageResult = await requestGeneratedImage(session, imagePrompt);
+        const resolution = String(imageResult?.metadata?.resolution || "").trim();
+        const styleId = String(imageResult?.metadata?.style_id || "").trim();
+
+        updateModelInspector(imageResult.modelUsed || session.model || "auto", "image-generated");
+
+        if (assistantBodyEl) {
+          assistantBodyEl.innerHTML = renderMarkdown(`Generated image for: **${imagePrompt}**`);
+          const imageCard = createGeneratedImageCard({
+            imageDataUrl: imageResult.imageDataUrl,
+            imageFilename: imageResult.filename,
+            imagePrompt,
+            imageResolution: resolution,
+            imageStyleId: styleId
+          });
+          if (imageCard) {
+            const spacer = document.createElement("div");
+            spacer.className = "generated-image-spacer";
+            assistantBodyEl.appendChild(spacer);
+            assistantBodyEl.appendChild(imageCard);
+          }
+          smoothScrollToBottom(true);
+        }
+
+        session.messages.push({
+          role: "assistant",
+          content: `Generated image for: ${imagePrompt}`,
+          type: "image",
+          imageDataUrl: imageResult.imageDataUrl,
+          imageFilename: imageResult.filename,
+          imagePrompt,
+          imageResolution: resolution,
+          imageStyleId: styleId,
+          timestamp: Date.now()
+        });
+        updateSessionMetaFromMessages(session);
+        saveState();
+        playNotificationSound("assistant");
+
+        if (runtimeSettings.showTimestamps || runtimeSettings.compactMode) {
+          renderActiveSessionMessages();
+        }
+      } catch (err) {
+        console.error("Omni image generation error:", err);
+        updateAssistantMessageBody(
+          assistantBodyEl,
+          "[Error] Image generation failed. Try a different image prompt."
+        );
+        playNotificationSound("error");
+      } finally {
+        isStreaming = false;
+        updateJumpToLatestVisibility();
+        if (sendBtn) sendBtn.disabled = false;
+        if (inputEl) inputEl.disabled = false;
+        if (typingIndicatorEl) typingIndicatorEl.style.display = "none";
+        if (inputEl) inputEl.focus();
+      }
+
+      return;
+    }
 
     // Prepare assistant placeholder
     const assistantMessage = appendMessage("assistant", "", {

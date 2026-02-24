@@ -24,6 +24,7 @@ export interface Env {
   MODEL_GPT_4O?: string;
   MODEL_GPT_4O_MINI?: string;
   MODEL_DEEPSEEK?: string;
+  MODEL_IMAGE?: string;
   OPENAI_API_KEY?: string;
   DEEPSEEK_API_KEY?: string;
   OMNI_RESPONSE_MIN_CHARS?: string;
@@ -45,6 +46,41 @@ type OmniRequestBody = {
   mode?: string;
   model?: string;
   messages?: Array<{ role?: string; content?: string }>;
+};
+
+type ImageRequestBody = {
+  prompt?: string;
+  userId?: string;
+  feedback?: string;
+};
+
+type StyleVector = {
+  palette: string[];
+  texture: string;
+  emotion: string;
+  composition: string;
+  lighting: string;
+  hair_color: string;
+  signature_elements: string[];
+};
+
+type SceneGraph = {
+  subject: string;
+  environment: string;
+  lighting: string;
+  fx: string[];
+  color_palette: string[];
+  composition: string;
+  hair_color: string;
+  timestamp: string;
+  prompt_text: string;
+};
+
+type ImageModelConfig = {
+  model: string;
+  styleId: string;
+  width: number;
+  height: number;
 };
 
 function toPositiveInt(value: unknown, fallback: number): number {
@@ -132,6 +168,230 @@ function makeContextSystemMessage(label: string, content: string): OmniMessage {
   };
 }
 
+function sanitizePromptText(prompt: string): string {
+  return String(prompt || "")
+    .replace(/[\x00-\x1F\x7F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildDefaultStyleVector(): StyleVector {
+  return {
+    palette: ["#FF4EFF", "#1AB8F5", "#0D0D0F"],
+    texture: "grainy + VHS scanlines",
+    emotion: "solitude + introspection",
+    composition: "centered subject",
+    lighting: "moonlight + neon haze",
+    hair_color: "henna-red",
+    signature_elements: ["glitch shards", "floating text", "rain reversal"]
+  };
+}
+
+function evolveStyleVector(style: StyleVector, feedback: string): StyleVector {
+  const next = { ...style };
+  const lower = String(feedback || "").toLowerCase();
+
+  if (lower.includes("happy")) {
+    next.emotion = "joy + vibrance";
+  } else if (lower.includes("dark")) {
+    next.emotion = "darkness + mystery";
+  } else if (lower.includes("glitch")) {
+    next.texture = "heavy glitch + pixel drift";
+  }
+
+  return next;
+}
+
+function scorePromptAttribute(prompt: string, words: string[], min = 4, max = 10): number {
+  const lower = prompt.toLowerCase();
+  const hits = words.reduce((sum, word) => (lower.includes(word) ? sum + 1 : sum), 0);
+  return clamp(min + hits, min, max);
+}
+
+function analyzePromptNarration(prompt: string): { attributes: Record<string, number>; pnqi: number } {
+  const attributes = {
+    entities: scorePromptAttribute(prompt, ["person", "character", "subject", "city", "forest", "object"], 5, 10),
+    actions: scorePromptAttribute(prompt, ["running", "walking", "floating", "flying", "dancing", "looking"], 4, 9),
+    art_style: scorePromptAttribute(prompt, ["cinematic", "anime", "photorealistic", "painting", "illustration", "digital art"], 6, 10),
+    mood: scorePromptAttribute(prompt, ["mood", "emotional", "dramatic", "serene", "dark", "vibrant"], 5, 9),
+    framing: scorePromptAttribute(prompt, ["close-up", "wide", "portrait", "composition", "angle"], 4, 8),
+    lighting: scorePromptAttribute(prompt, ["lighting", "sunset", "neon", "moonlight", "glow", "shadows"], 6, 10),
+    detail: scorePromptAttribute(prompt, ["detailed", "intricate", "8k", "ultra", "texture", "sharp"], 6, 9),
+    fx: scorePromptAttribute(prompt, ["particles", "glitch", "mist", "rain", "bloom", "volumetric"], 5, 9)
+  };
+
+  const weights: Record<string, number> = {
+    entities: 0.2,
+    actions: 0.15,
+    art_style: 0.15,
+    mood: 0.1,
+    framing: 0.1,
+    lighting: 0.1,
+    detail: 0.1,
+    fx: 0.1
+  };
+
+  const pnqi = Number(
+    Object.entries(attributes)
+      .reduce((sum, [key, value]) => sum + value * (weights[key] || 0), 0)
+      .toFixed(2)
+  );
+
+  return { attributes, pnqi };
+}
+
+function extractEnvironmentFromPrompt(prompt: string): string {
+  const keywords = ["ocean", "forest", "city", "desert", "mountain", "space", "garden", "room"];
+  const lower = prompt.toLowerCase();
+  for (const keyword of keywords) {
+    if (lower.includes(keyword)) return keyword;
+  }
+  return "glowing ocean";
+}
+
+function extractSubjectFromPrompt(prompt: string): string {
+  const match = prompt.match(/\b[A-Z][a-zA-Z0-9_-]{1,}\b/);
+  return match?.[0] || "Mikky";
+}
+
+function composeSceneGraph(prompt: string, style: StyleVector): SceneGraph {
+  return {
+    subject: extractSubjectFromPrompt(prompt),
+    environment: extractEnvironmentFromPrompt(prompt),
+    lighting: style.lighting || "ambient",
+    fx: style.signature_elements || [],
+    color_palette: style.palette || [],
+    composition: style.composition || "centered",
+    hair_color: style.hair_color || "unknown",
+    timestamp: String(new Date().toISOString()),
+    prompt_text: sanitizePromptText(prompt)
+  };
+}
+
+function parseResolution(value: string): { width: number; height: number } {
+  const match = String(value || "").match(/^(\d+)x(\d+)$/i);
+  if (!match) return { width: 1024, height: 1024 };
+  return {
+    width: clamp(Number(match[1]), 256, 1536),
+    height: clamp(Number(match[2]), 256, 1536)
+  };
+}
+
+function selectImageModelConfig(pnqi: number, style: StyleVector, env: Env): ImageModelConfig {
+  let styleId = "default_gen";
+  let resolution = "768x768";
+
+  if (pnqi > 8) {
+    styleId = "hyperreal_v2";
+    resolution = "1024x1024";
+  } else if (style.emotion.includes("solitude")) {
+    styleId = "dreamcore_v1";
+    resolution = "768x768";
+  }
+
+  const parsed = parseResolution(resolution);
+  return {
+    model: env.MODEL_IMAGE || "@cf/black-forest-labs/flux-1-schnell",
+    styleId,
+    width: parsed.width,
+    height: parsed.height
+  };
+}
+
+function buildFinalImagePrompt(scene: SceneGraph, style: StyleVector): string {
+  const fx = Array.isArray(scene.fx) ? scene.fx.join(", ") : "";
+  const palette = Array.isArray(scene.color_palette) ? scene.color_palette.join(", ") : "";
+
+  return [
+    `Subject: ${scene.subject}`,
+    `Environment: ${scene.environment}`,
+    `Composition: ${scene.composition}`,
+    `Lighting: ${scene.lighting}`,
+    `Mood: ${style.emotion}`,
+    `Texture: ${style.texture}`,
+    `Hair color: ${scene.hair_color}`,
+    `Color palette: ${palette}`,
+    `Signature effects: ${fx}`,
+    `Prompt intent: ${scene.prompt_text}`,
+    "High quality cinematic digital artwork, coherent composition, no text watermark"
+  ].join(". ");
+}
+
+function isReadableByteStream(value: unknown): value is ReadableStream {
+  return !!value && typeof (value as any).getReader === "function";
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+  const normalized = String(base64 || "").replace(/\s+/g, "");
+  const binary = atob(normalized);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+async function normalizeImageOutput(raw: unknown): Promise<{ bytes: Uint8Array; mimeType: string }> {
+  if (!raw) {
+    throw new Error("Empty image response");
+  }
+
+  if (raw instanceof ArrayBuffer) {
+    return { bytes: new Uint8Array(raw), mimeType: "image/png" };
+  }
+
+  if (ArrayBuffer.isView(raw)) {
+    return { bytes: new Uint8Array(raw.buffer), mimeType: "image/png" };
+  }
+
+  if (isReadableByteStream(raw)) {
+    const buffer = await new Response(raw as ReadableStream).arrayBuffer();
+    return { bytes: new Uint8Array(buffer), mimeType: "image/png" };
+  }
+
+  const candidate =
+    (raw as any)?.image ??
+    (raw as any)?.result?.image ??
+    (raw as any)?.data?.[0]?.b64_json ??
+    (raw as any)?.output?.[0]?.image;
+
+  if (typeof candidate === "string") {
+    if (candidate.startsWith("data:image/")) {
+      const commaIndex = candidate.indexOf(",");
+      const header = candidate.slice(5, commaIndex);
+      const payload = candidate.slice(commaIndex + 1);
+      const mimeType = header.split(";")[0] || "image/png";
+      return { bytes: base64ToBytes(payload), mimeType };
+    }
+
+    const mimeType =
+      (raw as any)?.mimeType ||
+      (raw as any)?.contentType ||
+      (raw as any)?.content_type ||
+      "image/png";
+
+    return { bytes: base64ToBytes(candidate), mimeType };
+  }
+
+  throw new Error("Unsupported image response format");
+}
+
+function makeImageFilename(styleId: string): string {
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const safeStyle = String(styleId || "image").replace(/[^a-zA-Z0-9_-]/g, "_");
+  return `slizzai_${safeStyle}_${ts}.png`;
+}
+
 // Warmup connections on first request (non-blocking)
 let connectionsWarmedUp = false;
 
@@ -147,7 +407,12 @@ export default {
 
     try {
       const url = new URL(request.url);
-      const isApiRoute = url.pathname === "/api/omni" || url.pathname === "/api/search" || url.pathname === "/api/preferences" || url.pathname === "/api/stats";
+      const isApiRoute =
+        url.pathname === "/api/omni" ||
+        url.pathname === "/api/image" ||
+        url.pathname === "/api/search" ||
+        url.pathname === "/api/preferences" ||
+        url.pathname === "/api/stats";
 
       if (isApiRoute && request.method === "OPTIONS") {
         return new Response(null, {
@@ -227,6 +492,88 @@ export default {
             "Allow": "POST, OPTIONS"
           }
         });
+      }
+
+      if (url.pathname === "/api/image" && request.method !== "POST") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/image" && request.method === "POST") {
+        try {
+          const body = (await request.json()) as ImageRequestBody;
+          const userId = sanitizePromptText(String(body?.userId || "anonymous"));
+          const promptText = sanitizePromptText(String(body?.prompt || ""));
+          const feedback = sanitizePromptText(String(body?.feedback || ""));
+
+          if (!promptText) {
+            return new Response(JSON.stringify({ error: "Prompt is required" }), {
+              status: 400,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            });
+          }
+
+          let style = buildDefaultStyleVector();
+          if (feedback) {
+            style = evolveStyleVector(style, feedback);
+          }
+
+          const narration = analyzePromptNarration(promptText);
+          const scene = composeSceneGraph(promptText, style);
+          const modelConfig = selectImageModelConfig(narration.pnqi, style, env);
+          const composedPrompt = buildFinalImagePrompt(scene, style);
+
+          const rawImage = await env.AI.run(modelConfig.model, {
+            prompt: composedPrompt,
+            width: modelConfig.width,
+            height: modelConfig.height
+          });
+
+          const normalized = await normalizeImageOutput(rawImage);
+          const imageDataUrl = `data:${normalized.mimeType};base64,${bytesToBase64(normalized.bytes)}`;
+          const filename = makeImageFilename(modelConfig.styleId);
+
+          return new Response(
+            JSON.stringify({
+              user_id: userId,
+              imageDataUrl,
+              filename,
+              metadata: {
+                style_id: modelConfig.styleId,
+                model: modelConfig.model,
+                resolution: `${modelConfig.width}x${modelConfig.height}`,
+                pnqi: narration.pnqi,
+                scene,
+                export_location: "chat-download"
+              }
+            }),
+            {
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json",
+                "X-Omni-Image-Model": modelConfig.model,
+                "Access-Control-Expose-Headers": "X-Omni-Image-Model"
+              }
+            }
+          );
+        } catch (imageErr: any) {
+          logger.error("image_generation_error", imageErr);
+          return new Response(JSON.stringify({ error: "Image generation failed" }), {
+            status: 500,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
       }
 
       if (url.pathname === "/api/omni" && request.method === "POST") {
