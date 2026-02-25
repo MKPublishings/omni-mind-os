@@ -71,6 +71,7 @@ module.exports = function multiPassRefiner(promptData, options = {}) {
     // Build final prompt string
     let finalPrompt = [
         data.semanticExpansion,
+        (data.lawTags || []).join(", "),
         data.styleTags.join(", "),
         data.technicalTags.join(", ")
     ].filter(Boolean).join(", ");

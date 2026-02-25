@@ -1,5 +1,6 @@
 const stylePacks = require("./stylePacks");
 const visualIntelligence = require("./visualIntelligence");
+const { buildLawPromptDirectives, applyLawsToVisualInfluence } = require("./imageLawBridge");
 const tokenizer = require("../utils/tokenizer");
 const logger = require("../utils/logger");
 
@@ -54,6 +55,14 @@ module.exports = function promptOrchestrator(userPrompt, options = {}) {
         semanticExpansion: "",
         technicalTags: [],
         styleTags: [],
+        lawTags: [],
+        lawInfluence: {
+            ids: [],
+            palette: [],
+            geometry: [],
+            motion: [],
+            symbols: []
+        },
         negativeTags: [],
         finalPrompt: ""
     };
@@ -72,11 +81,14 @@ module.exports = function promptOrchestrator(userPrompt, options = {}) {
         strictDirective
     ].filter(Boolean).join(", ");
 
+    const lawTags = buildLawPromptDirectives(options.laws);
+    const lawInfluence = applyLawsToVisualInfluence(options.laws);
     const styleTags = stylePack.tags || [];
     const technicalTags = [];
 
     const finalPrompt = [
         semanticExpansion,
+        lawTags.join(", "),
         styleTags.join(", "),
         technicalTags.join(", ")
     ].filter(Boolean).join(", ");
@@ -86,6 +98,8 @@ module.exports = function promptOrchestrator(userPrompt, options = {}) {
         semanticExpansion,
         technicalTags,
         styleTags,
+        lawTags,
+        lawInfluence,
         negativeTags: [],
         finalPrompt
     };

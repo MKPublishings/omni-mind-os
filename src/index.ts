@@ -14,6 +14,8 @@ import {
 } from "./omni/enhancements";
 import { assemblePrompt } from "./omni/rendering/engine/promptAssembler";
 import { listAvailableStyles, resolveStyleName } from "./omni/rendering/styles/styleRegistry";
+import { buildLawPromptDirectives, applyLawsToVisualInfluence, type LawReference } from "./omni/laws/imageLawBridge";
+import { Laws, type LawDomain } from "./omni/laws/lawRegistry";
 import { warmupConnections, getConnectionStats } from "./llm/cloudflareOptimizations";
 import type { KVNamespace, Fetcher } from "@cloudflare/workers-types";
 
@@ -55,6 +57,7 @@ type ImageRequestBody = {
   userId?: string;
   feedback?: string;
   stylePack?: string;
+  laws?: LawReference[];
   quality?: string;
   mode?: string;
   seed?: number;
@@ -81,6 +84,14 @@ type OmniImagePromptData = {
   userPrompt: string;
   tokens: string[];
   semanticExpansion: string;
+  lawTags: string[];
+  lawInfluence: {
+    ids: string[];
+    palette: string[];
+    geometry: string[];
+    motion: string[];
+    symbols: string[];
+  };
   technicalTags: string[];
   styleTags: string[];
   negativeTags: string[];
@@ -93,6 +104,7 @@ type TimeIntent = "day" | "night" | "sunset" | "indoor" | "neutral";
 type OmniImageOptions = {
   mode?: string;
   stylePack?: string;
+  laws?: LawReference[];
   feedback?: string;
   quality?: string;
   seed?: number;
@@ -410,11 +422,14 @@ function orchestrateOmniImagePrompt(userPrompt: string, options: OmniImageOption
   });
 
   const semanticExpansion = [styleAwarePrompt, sceneDescription, timeDirective, strictDirective].filter(Boolean).join(", ");
+  const lawTags = buildLawPromptDirectives(options.laws);
+  const lawInfluence = applyLawsToVisualInfluence(options.laws);
   const styleTags = selectedStylePack.tags || [];
   const technicalTags: string[] = [];
 
   const finalPrompt = [
     semanticExpansion,
+    lawTags.join(", "),
     styleTags.join(", "),
     technicalTags.join(", ")
   ].filter(Boolean).join(", ");
@@ -423,6 +438,8 @@ function orchestrateOmniImagePrompt(userPrompt: string, options: OmniImageOption
     userPrompt,
     tokens,
     semanticExpansion,
+    lawTags,
+    lawInfluence,
     technicalTags,
     styleTags,
     negativeTags: [],
@@ -461,6 +478,7 @@ function refineOmniImagePrompt(promptData: OmniImagePromptData, options: OmniIma
 
   const tags = [
     data.semanticExpansion,
+    data.lawTags.join(", "),
     data.styleTags.join(", "),
     data.technicalTags.join(", ")
   ].filter(Boolean).join(", ");
@@ -687,6 +705,7 @@ export default {
       const isApiRoute =
         url.pathname === "/api/omni" ||
         url.pathname === "/api/image" ||
+        url.pathname === "/api/laws" ||
         url.pathname === "/api/search" ||
         url.pathname === "/api/preferences" ||
         url.pathname === "/api/stats";
@@ -713,6 +732,42 @@ export default {
 
         const hits = await searchKnowledge(env, request, query, limit);
         return new Response(JSON.stringify({ query, hits }), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/laws" && request.method === "GET") {
+        const id = String(url.searchParams.get("id") || "").trim().toUpperCase();
+        const tag = String(url.searchParams.get("tag") || "").trim().toLowerCase();
+        const domainRaw = String(url.searchParams.get("domain") || "").trim().toLowerCase();
+
+        const validDomain = domainRaw === "quantum" || domainRaw === "cognitive" || domainRaw === "physiological"
+          ? (domainRaw as LawDomain)
+          : null;
+
+        const result = id
+          ? Laws.getById(id)
+            ? [Laws.getById(id)]
+            : []
+          : tag
+            ? Laws.getByTag(tag)
+            : validDomain
+              ? Laws.getByDomain(validDomain)
+              : Laws.listAll();
+
+        return new Response(JSON.stringify({
+          filters: {
+            id: id || null,
+            tag: tag || null,
+            domain: validDomain || null
+          },
+          count: result.length,
+          stats: Laws.stats(),
+          laws: result
+        }), {
           headers: {
             ...CORS_HEADERS,
             "Content-Type": "application/json"
@@ -781,6 +836,16 @@ export default {
         });
       }
 
+      if (url.pathname === "/api/laws" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
       if (url.pathname === "/api/image" && request.method === "POST") {
         try {
           const body = (await request.json()) as ImageRequestBody;
@@ -788,6 +853,24 @@ export default {
           const promptText = sanitizePromptText(String(body?.prompt || ""));
           const feedback = sanitizePromptText(String(body?.feedback || ""));
           const requestedStylePack = sanitizePromptText(String(body?.stylePack || "")).toLowerCase();
+          const requestedLaws = Array.isArray(body?.laws)
+            ? body.laws
+                .map((law) => {
+                  const id = sanitizePromptText(String(law?.id || "")).toUpperCase();
+                  const mode = sanitizePromptText(String(law?.mode || "")).toLowerCase();
+                  const weight = Number(law?.weight);
+                  const normalizedMode: LawReference["mode"] =
+                    mode === "symbolic" || mode === "structural" || mode === "color" || mode === "motion"
+                      ? mode
+                      : undefined;
+                  return {
+                    id,
+                    mode: normalizedMode,
+                    weight: Number.isFinite(weight) ? Math.min(1, Math.max(0, weight)) : undefined
+                  };
+                })
+                .filter((law) => Boolean(law.id))
+            : [];
           const requestedQuality = sanitizePromptText(String(body?.quality || "ultra")).toLowerCase() || "ultra";
           const requestedMode = sanitizePromptText(String(body?.mode || "simple")).toLowerCase() || "simple";
           const promptInferredStyle = resolveStyleName(inferStyleFromPrompt(promptText));
@@ -832,6 +915,7 @@ export default {
           const orchestrated = orchestrateOmniImagePrompt(promptText, {
             mode: requestedMode,
             stylePack: effectiveStylePack,
+            laws: requestedLaws,
             quality: requestedQuality,
             feedback,
             seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined,
@@ -843,6 +927,7 @@ export default {
           const refined = refineOmniImagePrompt(orchestrated, {
             mode: requestedMode,
             stylePack: effectiveStylePack,
+            laws: requestedLaws,
             quality: requestedQuality,
             feedback,
             seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined,
@@ -896,6 +981,8 @@ export default {
               prompt: {
                 userPrompt: orchestrated.userPrompt,
                 semanticExpansion: orchestrated.semanticExpansion,
+                lawTags: refined.data.lawTags,
+                lawInfluence: refined.data.lawInfluence,
                 technicalTags: refined.data.technicalTags,
                 styleTags: refined.data.styleTags,
                 negativeTags: refined.data.negativeTags,

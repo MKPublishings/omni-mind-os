@@ -1,0 +1,734 @@
+{
+  "meta": {
+    "version": "2026-02-25",
+    "expected_total": 103,
+    "quantum_expected": 21,
+    "cognitive_physiological_expected": 82,
+    "notes": "Full scaffold dataset. Replace scaffold equations with canonical formulations as laws are finalized."
+  },
+  "quantum_laws": [
+    {
+      "id": "Q1",
+      "name": "Core Energy Principle",
+      "equation": "E = m c^2",
+      "domain": "quantum",
+      "tags": ["energy", "mass", "coherence"]
+    },
+    {
+      "id": "Q2",
+      "name": "Wave-Particle Duality",
+      "equation": "lambda = h / p",
+      "domain": "quantum",
+      "tags": ["duality", "wave", "particle", "observation"]
+    },
+    {
+      "id": "Q3",
+      "name": "Uncertainty Bound",
+      "equation": "Delta x * Delta p >= hbar / 2",
+      "domain": "quantum",
+      "tags": ["uncertainty", "measurement", "momentum", "position"]
+    },
+    {
+      "id": "Q4",
+      "name": "Time-Energy Dynamics",
+      "equation": "Delta E * Delta t >= hbar / 2",
+      "domain": "quantum",
+      "tags": ["time", "energy", "dynamics", "stability"]
+    },
+    {
+      "id": "Q5",
+      "name": "Quantum Superposition",
+      "equation": "|psi> = sum(c_n |n>)",
+      "domain": "quantum",
+      "tags": ["superposition", "state", "probability", "coherence"]
+    },
+    {
+      "id": "Q6",
+      "name": "Entanglement Correlation",
+      "equation": "rho_AB != rho_A ⊗ rho_B",
+      "domain": "quantum",
+      "tags": ["entanglement", "correlation", "nonlocal", "sync"]
+    },
+    {
+      "id": "Q7",
+      "name": "Quantum Phase Coherence",
+      "equation": "phi_total = sum(phi_i)",
+      "domain": "quantum",
+      "tags": ["phase", "coherence", "interference"]
+    },
+    {
+      "id": "Q8",
+      "name": "Decoherence Drift",
+      "equation": "D_rate = coupling_env * noise",
+      "domain": "quantum",
+      "tags": ["decoherence", "noise", "stability"]
+    },
+    {
+      "id": "Q9",
+      "name": "Tunneling Transition",
+      "equation": "P_tunnel ~ exp(-2 * kappa * d)",
+      "domain": "quantum",
+      "tags": ["tunneling", "transition", "barrier"]
+    },
+    {
+      "id": "Q10",
+      "name": "Eigenstate Selection",
+      "equation": "H|n> = E_n|n>",
+      "domain": "quantum",
+      "tags": ["eigenstate", "energy", "selection"]
+    },
+    {
+      "id": "Q11",
+      "name": "Action Quantization",
+      "equation": "S = n*h",
+      "domain": "quantum",
+      "tags": ["action", "quantization", "discrete"]
+    },
+    {
+      "id": "Q12",
+      "name": "Spectral Emission Rule",
+      "equation": "E_photon = h*nu",
+      "domain": "quantum",
+      "tags": ["spectrum", "photon", "emission"]
+    },
+    {
+      "id": "Q13",
+      "name": "Vacuum Fluctuation Baseline",
+      "equation": "E_0 > 0",
+      "domain": "quantum",
+      "tags": ["vacuum", "fluctuation", "baseline"]
+    },
+    {
+      "id": "Q14",
+      "name": "Spin Coupling Constraint",
+      "equation": "S_total = S1 + S2",
+      "domain": "quantum",
+      "tags": ["spin", "coupling", "alignment"]
+    },
+    {
+      "id": "Q15",
+      "name": "Probability Normalization",
+      "equation": "integral |psi|^2 dV = 1",
+      "domain": "quantum",
+      "tags": ["probability", "normalization", "state"]
+    },
+    {
+      "id": "Q16",
+      "name": "Operator Commutation Window",
+      "equation": "[A,B] = AB - BA",
+      "domain": "quantum",
+      "tags": ["operator", "commutation", "constraint"]
+    },
+    {
+      "id": "Q17",
+      "name": "Measurement Projection",
+      "equation": "|psi'> = P|psi>/||P|psi>||",
+      "domain": "quantum",
+      "tags": ["measurement", "projection", "collapse"]
+    },
+    {
+      "id": "Q18",
+      "name": "Field Resonance Alignment",
+      "equation": "R = f_drive / f_natural",
+      "domain": "quantum",
+      "tags": ["resonance", "field", "alignment"]
+    },
+    {
+      "id": "Q19",
+      "name": "Path Integral Weighting",
+      "equation": "A_path = exp(i*S/hbar)",
+      "domain": "quantum",
+      "tags": ["path", "integral", "weighting"]
+    },
+    {
+      "id": "Q20",
+      "name": "Symmetry Conservation Pair",
+      "equation": "dQ/dt = 0",
+      "domain": "quantum",
+      "tags": ["symmetry", "conservation", "invariance"]
+    },
+    {
+      "id": "Q21",
+      "name": "Ground-State Stability",
+      "equation": "E_ground = min(E_n)",
+      "domain": "quantum",
+      "tags": ["ground-state", "stability", "minimum"]
+    }
+  ],
+  "cognitive_physiological_laws": [
+    {
+      "id": "C22",
+      "name": "Memory Encoding",
+      "equation": "M_enc = (E_stim * A_focus) / t_short_term",
+      "domain": "cognitive",
+      "tags": ["memory", "encoding", "attention"]
+    },
+    {
+      "id": "C23",
+      "name": "Memory Consolidation",
+      "equation": "M_cons = M_enc * S_sleep * R_recall",
+      "domain": "cognitive",
+      "tags": ["memory", "consolidation", "sleep", "recall"]
+    },
+    {
+      "id": "C24",
+      "name": "Attention Gating",
+      "equation": "A_gate = signal / distraction",
+      "domain": "cognitive",
+      "tags": ["attention", "gating", "focus"]
+    },
+    {
+      "id": "C25",
+      "name": "Working Memory Load",
+      "equation": "WM_load = items / capacity",
+      "domain": "cognitive",
+      "tags": ["working-memory", "load", "capacity"]
+    },
+    {
+      "id": "C26",
+      "name": "Retrieval Cue Match",
+      "equation": "R_match = cue_overlap * context_similarity",
+      "domain": "cognitive",
+      "tags": ["retrieval", "cue", "context"]
+    },
+    {
+      "id": "C27",
+      "name": "Forgetting Decay",
+      "equation": "F_decay = exp(-lambda*t)",
+      "domain": "cognitive",
+      "tags": ["forgetting", "decay", "retention"]
+    },
+    {
+      "id": "C28",
+      "name": "Pattern Abstraction",
+      "equation": "P_abs = examples * structure / noise",
+      "domain": "cognitive",
+      "tags": ["pattern", "abstraction", "learning"]
+    },
+    {
+      "id": "C29",
+      "name": "Prediction Error Update",
+      "equation": "Delta model = alpha*(target - prediction)",
+      "domain": "cognitive",
+      "tags": ["prediction", "error", "update"]
+    },
+    {
+      "id": "C30",
+      "name": "Context Binding",
+      "equation": "C_bind = item * context_strength",
+      "domain": "cognitive",
+      "tags": ["context", "binding", "memory"]
+    },
+    {
+      "id": "C31",
+      "name": "Goal Prioritization",
+      "equation": "G_priority = value * urgency / effort",
+      "domain": "cognitive",
+      "tags": ["goal", "priority", "planning"]
+    },
+    {
+      "id": "C32",
+      "name": "Decision Confidence",
+      "equation": "D_conf = evidence / uncertainty",
+      "domain": "cognitive",
+      "tags": ["decision", "confidence", "evidence"]
+    },
+    {
+      "id": "C33",
+      "name": "Learning Adaptation",
+      "equation": "L_adapt = (feedback * plasticity) / friction",
+      "domain": "cognitive",
+      "tags": ["learning", "adaptation", "plasticity", "feedback"]
+    },
+    {
+      "id": "C34",
+      "name": "Error Recovery",
+      "equation": "E_rec = correction_speed * resilience",
+      "domain": "cognitive",
+      "tags": ["error", "recovery", "resilience"]
+    },
+    {
+      "id": "C35",
+      "name": "Cognitive Flexibility",
+      "equation": "C_flex = shift_ability * inhibition_control",
+      "domain": "cognitive",
+      "tags": ["flexibility", "switching", "control"]
+    },
+    {
+      "id": "C36",
+      "name": "Stress Response",
+      "equation": "S_resp = (load * threat) / recovery",
+      "domain": "physiological",
+      "tags": ["stress", "resilience", "homeostasis", "recovery"]
+    },
+    {
+      "id": "C37",
+      "name": "Arousal Regulation",
+      "equation": "A_reg = activation - calming",
+      "domain": "physiological",
+      "tags": ["arousal", "regulation", "balance"]
+    },
+    {
+      "id": "C38",
+      "name": "Autonomic Balance",
+      "equation": "ANS_balance = parasympathetic / sympathetic",
+      "domain": "physiological",
+      "tags": ["autonomic", "balance", "nervous-system"]
+    },
+    {
+      "id": "C39",
+      "name": "Circadian Alignment",
+      "equation": "C_sync = zeitgeber_strength * rhythm_stability",
+      "domain": "physiological",
+      "tags": ["circadian", "rhythm", "sleep"]
+    },
+    {
+      "id": "C40",
+      "name": "Sleep Pressure Recovery",
+      "equation": "SP_rec = wake_load - sleep_clearance",
+      "domain": "physiological",
+      "tags": ["sleep", "recovery", "pressure"]
+    },
+    {
+      "id": "C41",
+      "name": "Neurochemical Modulation",
+      "equation": "N_mod = release - reuptake",
+      "domain": "physiological",
+      "tags": ["neurochemistry", "modulation", "signal"]
+    },
+    {
+      "id": "C42",
+      "name": "Motivation Drive",
+      "equation": "M_drive = reward_expectancy * agency",
+      "domain": "cognitive",
+      "tags": ["motivation", "drive", "reward"]
+    },
+    {
+      "id": "C43",
+      "name": "Reward Prediction",
+      "equation": "R_pred = expected_value - actual_value",
+      "domain": "cognitive",
+      "tags": ["reward", "prediction", "valuation"]
+    },
+    {
+      "id": "C44",
+      "name": "Habit Formation",
+      "equation": "H_form = repetition * cue_consistency",
+      "domain": "cognitive",
+      "tags": ["habit", "repetition", "cue"]
+    },
+    {
+      "id": "C45",
+      "name": "Inhibitory Control",
+      "equation": "I_ctrl = restraint / impulse",
+      "domain": "cognitive",
+      "tags": ["inhibition", "control", "impulse"]
+    },
+    {
+      "id": "C46",
+      "name": "Impulse Containment",
+      "equation": "I_contain = pause_window * awareness",
+      "domain": "cognitive",
+      "tags": ["impulse", "containment", "self-control"]
+    },
+    {
+      "id": "C47",
+      "name": "Cognitive Reappraisal",
+      "equation": "C_reapp = interpretation_shift * distance",
+      "domain": "cognitive",
+      "tags": ["reappraisal", "emotion", "cognition"]
+    },
+    {
+      "id": "C48",
+      "name": "Threat Appraisal",
+      "equation": "T_app = danger_signal - safety_signal",
+      "domain": "physiological",
+      "tags": ["threat", "appraisal", "safety"]
+    },
+    {
+      "id": "C49",
+      "name": "Safety Learning",
+      "equation": "S_learn = exposure * successful_regulation",
+      "domain": "cognitive",
+      "tags": ["safety", "learning", "exposure"]
+    },
+    {
+      "id": "C50",
+      "name": "Pain Signal Integration",
+      "equation": "P_int = nociception * interpretation",
+      "domain": "physiological",
+      "tags": ["pain", "integration", "signal"]
+    },
+    {
+      "id": "C51",
+      "name": "Interoceptive Awareness",
+      "equation": "I_aw = body_signal_precision * attention",
+      "domain": "physiological",
+      "tags": ["interoception", "awareness", "body"]
+    },
+    {
+      "id": "C52",
+      "name": "Homeostatic Drift Correction",
+      "equation": "H_corr = setpoint_error * corrective_response",
+      "domain": "physiological",
+      "tags": ["homeostasis", "setpoint", "correction"]
+    },
+    {
+      "id": "C53",
+      "name": "Metabolic-Cognitive Coupling",
+      "equation": "MC_couple = energy_availability * cognitive_demand",
+      "domain": "physiological",
+      "tags": ["metabolism", "energy", "cognition"]
+    },
+    {
+      "id": "C54",
+      "name": "Attention Allocation",
+      "equation": "A_alloc = salience / distraction",
+      "domain": "cognitive",
+      "tags": ["attention", "focus", "salience", "control"]
+    },
+    {
+      "id": "C55",
+      "name": "Task Switching Cost",
+      "equation": "TS_cost = switch_frequency * context_loss",
+      "domain": "cognitive",
+      "tags": ["task-switching", "cost", "efficiency"]
+    },
+    {
+      "id": "C56",
+      "name": "Cognitive Throughput",
+      "equation": "C_tp = processed_info / time",
+      "domain": "cognitive",
+      "tags": ["throughput", "processing", "speed"]
+    },
+    {
+      "id": "C57",
+      "name": "Semantic Compression",
+      "equation": "S_comp = meaning_density / token_count",
+      "domain": "cognitive",
+      "tags": ["semantic", "compression", "representation"]
+    },
+    {
+      "id": "C58",
+      "name": "Concept Linking",
+      "equation": "CL_strength = shared_features * co_activation",
+      "domain": "cognitive",
+      "tags": ["concept", "linking", "association"]
+    },
+    {
+      "id": "C59",
+      "name": "Novelty Salience",
+      "equation": "N_sal = surprise * relevance",
+      "domain": "cognitive",
+      "tags": ["novelty", "salience", "surprise"]
+    },
+    {
+      "id": "C60",
+      "name": "Curiosity Gradient",
+      "equation": "C_grad = uncertainty_gap * expected_gain",
+      "domain": "cognitive",
+      "tags": ["curiosity", "uncertainty", "exploration"]
+    },
+    {
+      "id": "C61",
+      "name": "Exploration-Exploitation Balance",
+      "equation": "EE_ratio = novelty_value / known_value",
+      "domain": "cognitive",
+      "tags": ["exploration", "exploitation", "decision"]
+    },
+    {
+      "id": "C62",
+      "name": "Error Sensitivity",
+      "equation": "E_sens = detection_rate * correction_priority",
+      "domain": "cognitive",
+      "tags": ["error", "sensitivity", "monitoring"]
+    },
+    {
+      "id": "C63",
+      "name": "Feedback Uptake",
+      "equation": "F_up = trust * relevance * clarity",
+      "domain": "cognitive",
+      "tags": ["feedback", "uptake", "learning"]
+    },
+    {
+      "id": "C64",
+      "name": "Conflict Monitoring",
+      "equation": "C_mon = competing_signals / control_bandwidth",
+      "domain": "cognitive",
+      "tags": ["conflict", "monitoring", "control"]
+    },
+    {
+      "id": "C65",
+      "name": "Goal-Action Alignment",
+      "equation": "GA_align = action_consistency * goal_clarity",
+      "domain": "cognitive",
+      "tags": ["goal", "action", "alignment"]
+    },
+    {
+      "id": "C66",
+      "name": "Planning Horizon",
+      "equation": "P_horizon = foresight_depth * model_stability",
+      "domain": "cognitive",
+      "tags": ["planning", "horizon", "foresight"]
+    },
+    {
+      "id": "C67",
+      "name": "Mental Simulation Fidelity",
+      "equation": "MS_fid = model_detail * constraint_adherence",
+      "domain": "cognitive",
+      "tags": ["simulation", "fidelity", "modeling"]
+    },
+    {
+      "id": "C68",
+      "name": "Counterfactual Evaluation",
+      "equation": "CF_eval = alternative_quality - realized_quality",
+      "domain": "cognitive",
+      "tags": ["counterfactual", "evaluation", "decision"]
+    },
+    {
+      "id": "C69",
+      "name": "Belief Revision",
+      "equation": "B_rev = prior + evidence_weight * delta",
+      "domain": "cognitive",
+      "tags": ["belief", "revision", "evidence"]
+    },
+    {
+      "id": "C70",
+      "name": "Uncertainty Calibration",
+      "equation": "U_cal = confidence - accuracy_gap",
+      "domain": "cognitive",
+      "tags": ["uncertainty", "calibration", "confidence"]
+    },
+    {
+      "id": "C71",
+      "name": "Emotional Regulation",
+      "equation": "E_reg = awareness * reappraisal - impulsivity",
+      "domain": "physiological",
+      "tags": ["emotion", "regulation", "stability", "awareness"]
+    },
+    {
+      "id": "C72",
+      "name": "Affect Stability",
+      "equation": "A_stable = baseline - volatility",
+      "domain": "physiological",
+      "tags": ["affect", "stability", "volatility"]
+    },
+    {
+      "id": "C73",
+      "name": "Empathy Resonance",
+      "equation": "E_res = perspective_taking * attunement",
+      "domain": "cognitive",
+      "tags": ["empathy", "resonance", "social"]
+    },
+    {
+      "id": "C74",
+      "name": "Social Signal Parsing",
+      "equation": "SS_parse = cue_detection * context_model",
+      "domain": "cognitive",
+      "tags": ["social", "signals", "context"]
+    },
+    {
+      "id": "C75",
+      "name": "Trust Updating",
+      "equation": "T_update = prior_trust + consistency_delta",
+      "domain": "cognitive",
+      "tags": ["trust", "updating", "social-learning"]
+    },
+    {
+      "id": "C76",
+      "name": "Cooperation Yield",
+      "equation": "C_yield = shared_goal * reciprocity",
+      "domain": "cognitive",
+      "tags": ["cooperation", "reciprocity", "coordination"]
+    },
+    {
+      "id": "C77",
+      "name": "Communication Clarity",
+      "equation": "Comm_clear = intent_match / ambiguity",
+      "domain": "cognitive",
+      "tags": ["communication", "clarity", "intent"]
+    },
+    {
+      "id": "C78",
+      "name": "Narrative Coherence",
+      "equation": "N_coh = causal_links / contradictions",
+      "domain": "cognitive",
+      "tags": ["narrative", "coherence", "causality"]
+    },
+    {
+      "id": "C79",
+      "name": "Identity Consistency",
+      "equation": "I_cons = value_alignment * temporal_stability",
+      "domain": "cognitive",
+      "tags": ["identity", "consistency", "values"]
+    },
+    {
+      "id": "C80",
+      "name": "Meaning Attribution",
+      "equation": "M_attr = relevance * narrative_fit",
+      "domain": "cognitive",
+      "tags": ["meaning", "attribution", "sensemaking"]
+    },
+    {
+      "id": "C81",
+      "name": "Purpose Persistence",
+      "equation": "P_persist = purpose_strength - friction",
+      "domain": "cognitive",
+      "tags": ["purpose", "persistence", "motivation"]
+    },
+    {
+      "id": "C82",
+      "name": "Ethical Constraint Activation",
+      "equation": "E_const = value_salience * guardrails",
+      "domain": "cognitive",
+      "tags": ["ethics", "constraint", "guardrails"]
+    },
+    {
+      "id": "C83",
+      "name": "Value Tradeoff Resolution",
+      "equation": "VT_res = weighted_values - conflict_cost",
+      "domain": "cognitive",
+      "tags": ["values", "tradeoff", "resolution"]
+    },
+    {
+      "id": "C84",
+      "name": "Norm Internalization",
+      "equation": "N_int = repetition * social_reinforcement",
+      "domain": "cognitive",
+      "tags": ["norms", "internalization", "behavior"]
+    },
+    {
+      "id": "C85",
+      "name": "Self-Reflection Gain",
+      "equation": "SR_gain = introspection_depth * honesty",
+      "domain": "cognitive",
+      "tags": ["self-reflection", "introspection", "growth"]
+    },
+    {
+      "id": "C86",
+      "name": "Meta-Cognitive Monitoring",
+      "equation": "MC_mon = awareness_of_state * control_adjustment",
+      "domain": "cognitive",
+      "tags": ["metacognition", "monitoring", "control"]
+    },
+    {
+      "id": "C87",
+      "name": "Calibration Feedback Loop",
+      "equation": "CF_loop = estimate_error * update_rate",
+      "domain": "cognitive",
+      "tags": ["calibration", "feedback-loop", "accuracy"]
+    },
+    {
+      "id": "C88",
+      "name": "Signal-to-Noise Cognition",
+      "equation": "SN_cog = relevant_signal / distractor_noise",
+      "domain": "cognitive",
+      "tags": ["signal-noise", "attention", "clarity"]
+    },
+    {
+      "id": "C89",
+      "name": "Multi-Modal Integration",
+      "equation": "MM_int = cross_modal_consistency * weighting",
+      "domain": "cognitive",
+      "tags": ["multimodal", "integration", "consistency"]
+    },
+    {
+      "id": "C90",
+      "name": "Temporal Ordering",
+      "equation": "T_order = event_sequence_accuracy",
+      "domain": "cognitive",
+      "tags": ["temporal", "ordering", "sequence"]
+    },
+    {
+      "id": "C91",
+      "name": "Prospective Memory Trigger",
+      "equation": "PM_trigger = cue_strength * intention_binding",
+      "domain": "cognitive",
+      "tags": ["prospective-memory", "trigger", "intention"]
+    },
+    {
+      "id": "C92",
+      "name": "Somatic Marker Influence",
+      "equation": "SM_inf = body_signal * decision_weight",
+      "domain": "physiological",
+      "tags": ["somatic", "marker", "decision"]
+    },
+    {
+      "id": "C93",
+      "name": "Respiratory Regulation",
+      "equation": "R_reg = breath_depth * cadence",
+      "domain": "physiological",
+      "tags": ["respiration", "regulation", "calm"]
+    },
+    {
+      "id": "C94",
+      "name": "Cardio-Affective Coupling",
+      "equation": "CA_couple = HRV * emotional_balance",
+      "domain": "physiological",
+      "tags": ["cardio", "affect", "hrv"]
+    },
+    {
+      "id": "C95",
+      "name": "Inflammation Load Effect",
+      "equation": "I_load = stress + immune_activation",
+      "domain": "physiological",
+      "tags": ["inflammation", "load", "health"]
+    },
+    {
+      "id": "C96",
+      "name": "Recovery Capacity",
+      "equation": "R_cap = rest_quality * resource_availability",
+      "domain": "physiological",
+      "tags": ["recovery", "capacity", "restoration"]
+    },
+    {
+      "id": "C97",
+      "name": "Allostatic Load Accumulation",
+      "equation": "AL_acc = chronic_stress - recovery_cycles",
+      "domain": "physiological",
+      "tags": ["allostasis", "load", "stress"]
+    },
+    {
+      "id": "C98",
+      "name": "Resilience Adaptation",
+      "equation": "R_adapt = challenge_exposure * recovery_efficiency",
+      "domain": "physiological",
+      "tags": ["resilience", "adaptation", "recovery"]
+    },
+    {
+      "id": "C99",
+      "name": "Energy Budgeting",
+      "equation": "E_budget = intake - expenditure",
+      "domain": "physiological",
+      "tags": ["energy", "budget", "metabolic"]
+    },
+    {
+      "id": "C100",
+      "name": "Cognitive Endurance",
+      "equation": "C_end = sustained_focus * recovery_ratio",
+      "domain": "cognitive",
+      "tags": ["endurance", "focus", "sustained-performance"]
+    },
+    {
+      "id": "C101",
+      "name": "Adaptation Latency",
+      "equation": "A_lat = change_detect_time / response_rate",
+      "domain": "cognitive",
+      "tags": ["adaptation", "latency", "response"]
+    },
+    {
+      "id": "C102",
+      "name": "Coherence Maintenance",
+      "equation": "C_maint = integration - fragmentation",
+      "domain": "cognitive",
+      "tags": ["coherence", "integration", "stability"]
+    },
+    {
+      "id": "C103",
+      "name": "System Homeostasis Integration",
+      "equation": "SH_int = cognitive_control * physiological_balance",
+      "domain": "physiological",
+      "tags": ["system", "homeostasis", "integration"]
+    }
+  ]
+}

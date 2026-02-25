@@ -1,4 +1,5 @@
 const omniImageGenerator = require("./core/omniImageGenerator");
+const { Laws } = require("./core/lawRegistry");
 const logger = require("./utils/logger");
 const { ensureString } = require("./utils/validator");
 
@@ -17,5 +18,6 @@ async function omniImageGenerate(userPrompt, options = {}) {
 }
 
 module.exports = {
-    omniImageGenerate
+    omniImageGenerate,
+    Laws
 };
