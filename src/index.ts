@@ -57,6 +57,10 @@ type ImageRequestBody = {
   mode?: string;
   seed?: number;
   debug?: boolean;
+  ratio?: string;
+  resolution?: string;
+  width?: number;
+  height?: number;
 };
 
 type ImageModelConfig = {
@@ -64,6 +68,8 @@ type ImageModelConfig = {
   styleId: string;
   width: number;
   height: number;
+  ratio: string;
+  resolution: string;
 };
 
 type OmniImagePromptData = {
@@ -407,22 +413,112 @@ function refineOmniImagePrompt(promptData: OmniImagePromptData, options: OmniIma
 }
 
 function parseResolution(value: string): { width: number; height: number } {
-  const match = String(value || "").match(/^(\d+)x(\d+)$/i);
+  const match = String(value || "").trim().toLowerCase().match(/^(\d+)\s*[x×]\s*(\d+)$/i);
   if (!match) return { width: 1024, height: 1024 };
   return {
-    width: clamp(Number(match[1]), 256, 1536),
-    height: clamp(Number(match[2]), 256, 1536)
+    width: clamp(Number(match[1]), 256, 8192),
+    height: clamp(Number(match[2]), 256, 8192)
   };
 }
 
-function selectImageModelConfig(styleId: string, quality: string | undefined, env: Env): ImageModelConfig {
-  const resolution = quality === "high" ? "768x768" : quality === "ultra" ? "1024x1024" : "1024x1024";
-  const parsed = parseResolution(resolution);
+function parseRatio(value: string): { ratioW: number; ratioH: number; label: string } {
+  const normalized = String(value || "").trim().toLowerCase();
+  const presets: Record<string, [number, number]> = {
+    "1:1": [1, 1],
+    "4:3": [4, 3],
+    "3:4": [3, 4],
+    "3:2": [3, 2],
+    "2:3": [2, 3],
+    "16:9": [16, 9],
+    "9:16": [9, 16],
+    "21:9": [21, 9],
+    "9:21": [9, 21],
+    "5:4": [5, 4],
+    "4:5": [4, 5],
+    "7:5": [7, 5],
+    "5:7": [5, 7]
+  };
+
+  if (presets[normalized]) {
+    const [ratioW, ratioH] = presets[normalized];
+    return { ratioW, ratioH, label: normalized };
+  }
+
+  const match = normalized.match(/^(\d+)\s*[:/]\s*(\d+)$/);
+  if (match) {
+    const ratioW = clamp(Number(match[1]), 1, 64);
+    const ratioH = clamp(Number(match[2]), 1, 64);
+    return { ratioW, ratioH, label: `${ratioW}:${ratioH}` };
+  }
+
+  return { ratioW: 1, ratioH: 1, label: "1:1" };
+}
+
+function parseResolutionPreset(value: string, quality: string): number {
+  const normalized = String(value || "").trim().toLowerCase();
+  const presets: Record<string, number> = {
+    "sd": 512,
+    "hd": 1280,
+    "fhd": 1920,
+    "qhd": 2560,
+    "4k": 3840,
+    "5k": 5120,
+    "6k": 6144,
+    "8k": 7680
+  };
+
+  if (presets[normalized]) {
+    return presets[normalized];
+  }
+
+  if (quality === "high") return 1280;
+  if (quality === "ultra") return 2048;
+  return 1024;
+}
+
+function deriveDimensionsFromRatio(ratio: string, resolution: string, quality: string): { width: number; height: number; ratio: string } {
+  const ratioData = parseRatio(ratio);
+  const maxSide = parseResolutionPreset(resolution, quality);
+
+  let width = maxSide;
+  let height = Math.round((maxSide * ratioData.ratioH) / ratioData.ratioW);
+
+  if (height > maxSide) {
+    height = maxSide;
+    width = Math.round((maxSide * ratioData.ratioW) / ratioData.ratioH);
+  }
+
+  return {
+    width: clamp(width, 256, 8192),
+    height: clamp(height, 256, 8192),
+    ratio: ratioData.label
+  };
+}
+
+function selectImageModelConfig(
+  styleId: string,
+  quality: string | undefined,
+  env: Env,
+  requestedRatio?: string,
+  requestedResolution?: string,
+  requestedWidth?: number,
+  requestedHeight?: number
+): ImageModelConfig {
+  const safeQuality = String(quality || "ultra").toLowerCase();
+  const computed = deriveDimensionsFromRatio(requestedRatio || "1:1", requestedResolution || "", safeQuality);
+  const explicitWidth = Number(requestedWidth);
+  const explicitHeight = Number(requestedHeight);
+
+  const width = Number.isFinite(explicitWidth) ? clamp(Math.floor(explicitWidth), 256, 8192) : computed.width;
+  const height = Number.isFinite(explicitHeight) ? clamp(Math.floor(explicitHeight), 256, 8192) : computed.height;
+
   return {
     model: env.MODEL_IMAGE || "@cf/black-forest-labs/flux-1-schnell",
     styleId: styleId || "mythic_cinematic",
-    width: parsed.width,
-    height: parsed.height
+    width,
+    height,
+    ratio: requestedRatio || computed.ratio,
+    resolution: `${width}x${height}`
   };
 }
 
@@ -622,6 +718,10 @@ export default {
           const requestedStylePack = sanitizePromptText(String(body?.stylePack || "")).toLowerCase();
           const requestedQuality = sanitizePromptText(String(body?.quality || "ultra")).toLowerCase() || "ultra";
           const requestedMode = sanitizePromptText(String(body?.mode || "simple")).toLowerCase() || "simple";
+          const requestedRatio = sanitizePromptText(String(body?.ratio || "1:1")) || "1:1";
+          const requestedResolution = sanitizePromptText(String(body?.resolution || ""));
+          const requestedWidth = Number(body?.width);
+          const requestedHeight = Number(body?.height);
           const parsedSeed = Number(body?.seed);
           const debugRequested =
             body?.debug === true ||
@@ -653,7 +753,15 @@ export default {
             seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined
           });
 
-          const modelConfig = selectImageModelConfig(requestedStylePack, requestedQuality, env);
+          const modelConfig = selectImageModelConfig(
+            requestedStylePack,
+            requestedQuality,
+            env,
+            requestedRatio,
+            requestedResolution,
+            requestedWidth,
+            requestedHeight
+          );
 
           const rawImage = await env.AI.run(modelConfig.model, {
             prompt: refined.data.finalPrompt,
@@ -673,7 +781,8 @@ export default {
             metadata: {
               style_id: modelConfig.styleId,
               model: modelConfig.model,
-              resolution: `${modelConfig.width}x${modelConfig.height}`,
+              ratio: modelConfig.ratio,
+              resolution: modelConfig.resolution,
               mode: requestedMode,
               quality: requestedQuality,
               seed: refined.finalOptions.seed,
@@ -696,6 +805,10 @@ export default {
                 mode: requestedMode,
                 stylePack: requestedStylePack,
                 quality: requestedQuality,
+                ratio: requestedRatio,
+                resolution: requestedResolution || null,
+                width: Number.isFinite(requestedWidth) ? requestedWidth : null,
+                height: Number.isFinite(requestedHeight) ? requestedHeight : null,
                 seed: Number.isFinite(parsedSeed) ? parsedSeed : null
               },
               pass1_orchestrated: {

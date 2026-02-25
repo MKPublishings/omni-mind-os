@@ -24,6 +24,35 @@ async function exportImage(buffer, format = "png") {
     return filePath;
 }
 
+function sanitizeRatioLabel(ratio) {
+    const raw = String(ratio || "").trim();
+    if (!raw) return "";
+    return raw.replace(/\s+/g, "").replace(/:/g, "x").replace(/[^a-zA-Z0-9x_-]/g, "");
+}
+
+async function exportImageWithMeta(buffer, options = {}) {
+    ensureOutputDir();
+
+    const format = String(options.format || "png").toLowerCase();
+    const timestamp = formatDateTimeForFilename(new Date());
+    const width = Number(options.width) || 0;
+    const height = Number(options.height) || 0;
+    const ratioLabel = sanitizeRatioLabel(options.ratio || options.aspectRatio || (width > 0 && height > 0 ? `${width}:${height}` : ""));
+    const resolutionLabel = width > 0 && height > 0 ? `${width}x${height}` : "";
+
+    const parts = ["omni_image", timestamp];
+    if (ratioLabel) parts.push(ratioLabel);
+    if (resolutionLabel) parts.push(resolutionLabel);
+
+    const filename = `${parts.join("_")}.${format}`;
+    const filePath = path.join(OUTPUT_DIR, filename);
+
+    await fs.promises.writeFile(filePath, buffer);
+    logger.info("Image exported:", filePath);
+    return filePath;
+}
+
 module.exports = {
-    exportImage
+    exportImage,
+    exportImageWithMeta
 };

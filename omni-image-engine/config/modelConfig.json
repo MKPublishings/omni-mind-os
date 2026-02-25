@@ -1,4 +1,6 @@
 {
+  "minOutputSide": 256,
+  "maxOutputSide": 8192,
   "defaultModel": "omni_openai",
   "models": {
     "omni_openai": {
