@@ -570,10 +570,12 @@
     return { wrapper, body };
   }
 
-  function updateAssistantMessageBody(bodyEl, text) {
+  function updateAssistantMessageBody(bodyEl, text, options = {}) {
     if (!bodyEl) return;
     bodyEl.innerHTML = renderMarkdown(text);
-    highlightCodeBlocks(bodyEl);
+    if (options.highlight !== false) {
+      highlightCodeBlocks(bodyEl);
+    }
     smoothScrollToBottom(false);
   }
 
@@ -972,20 +974,7 @@
 
     const trimmed = content.trim();
     if (!trimmed) return;
-
-    const isApiOnline = await checkApiStatus();
-    if (!isApiOnline) {
-      const activeMode = getActiveMode(session);
-      appendMessage(
-        "assistant",
-        "[Connection] API is offline right now. Please try again in a moment.",
-        {
-          model: session.model || "auto",
-          mode: activeMode
-        }
-      );
-      return;
-    }
+    checkApiStatus().catch(() => {});
 
     // Push user message
     session.messages.push({ role: "user", content: trimmed, timestamp: Date.now() });
@@ -1107,7 +1096,15 @@
     if (typingIndicatorEl) typingIndicatorEl.style.display = "block";
 
     session._streamingAssistantText = "";
-    const assistantTypewriter = createStreamingTypewriter(assistantBodyEl);
+    let streamRenderScheduled = false;
+    const renderStreamFrame = () => {
+      if (streamRenderScheduled || !assistantBodyEl) return;
+      streamRenderScheduled = true;
+      requestAnimationFrame(() => {
+        streamRenderScheduled = false;
+        updateAssistantMessageBody(assistantBodyEl, session._streamingAssistantText || "", { highlight: false });
+      });
+    };
 
     try {
       await streamOmniResponse(
@@ -1118,15 +1115,12 @@
             session._streamingAssistantText,
             token
           );
-          assistantTypewriter.append(token);
+          renderStreamFrame();
         },
         (meta) => {
           updateModelInspector(meta?.modelUsed || session.model || "auto", meta?.routeReason || "");
         }
       );
-
-      assistantTypewriter.complete();
-      await assistantTypewriter.waitForDrain();
 
       const finalText = (session._streamingAssistantText || "").trim();
       const safeText = finalText || "[No response received]";
@@ -1144,7 +1138,6 @@
       }
     } catch (err) {
       console.error("Omni streaming error:", err);
-      assistantTypewriter.flush();
       updateAssistantMessageBody(
         assistantBodyEl,
         "[Error] Something went wrong while streaming the response."
