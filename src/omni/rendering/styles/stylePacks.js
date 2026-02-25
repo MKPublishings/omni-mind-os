@@ -8,11 +8,6 @@ hyper-realistic photography, physically accurate lighting, true-to-life renderin
 global illumination, subsurface scattering, cinematic lighting
 `,
 
-  "2.5d-anime": `
-2.5D semi-real anime, stylized realism, crisp lineart,
-realistic shading, glossy eyes, atmospheric depth
-`,
-
   "realistic": `
 photorealistic, ultra-detailed textures, lifelike lighting,
 natural imperfections, depth of field, HDR clarity
@@ -21,16 +16,6 @@ natural imperfections, depth of field, HDR clarity
   "semi-realistic": `
 semi-realistic, stylized realism, soft shading, smooth gradients,
 realistic textures with artistic interpretation
-`,
-
-  "anime": `
-anime style, clean lineart, cel shading, vibrant colors,
-expressive eyes, stylized proportions
-`,
-
-  "realistic-anime": `
-realistic anime, hybrid anime-realism, detailed eyes,
-soft skin shading, cinematic lighting
 `,
 
   "vector": `

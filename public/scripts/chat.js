@@ -54,11 +54,8 @@
   const KNOWN_RENDER_STYLES = [
     "hyper-real",
     "3d",
-    "2.5d-anime",
     "realistic",
     "semi-realistic",
-    "anime",
-    "realistic-anime",
     "vector",
     "logo",
     "monochrome",

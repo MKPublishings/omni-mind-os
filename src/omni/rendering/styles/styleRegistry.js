@@ -6,7 +6,6 @@ const STYLE_PACK_MAP = STYLE_PACKS;
 /** @type {Record<string, string>} */
 const STYLE_ALIASES = {
   mythic_cinematic: "vfx",
-  anime_realism: "realistic-anime",
   os_cinematic: "3d",
   noir_tech: "vfx",
   hyperreal: "hyper-real",

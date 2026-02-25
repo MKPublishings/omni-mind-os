@@ -1,7 +1,6 @@
 export const BASE_STYLE_RECOGNITION = `
 Recognize and render a wide range of visual styles, including:
-3D, 2.5D, semi-realistic, realistic, hyperrealistic, anime, niji anime,
-realistic anime, 3D anime, 2.5D anime, illustration, vector art,
+3D, 2.5D, semi-realistic, realistic, hyperrealistic, illustration, vector art,
 graphic design, logo design, typography, monochrome, black and white,
 sketch, drawing, printmaking, poster art, cinematic visuals, VFX,
 3D effects, holographic visuals, glitch effects, neon effects,

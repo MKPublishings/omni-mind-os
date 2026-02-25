@@ -199,10 +199,6 @@ const OMNI_STYLE_PACKS: Record<string, { name: string; tags: string[] }> = {
     name: "Mythic Cinematic",
     tags: ["cinematic lighting", "dramatic contrast", "symbolic composition", "high detail", "emotional depth"]
   },
-  anime_realism: {
-    name: "Anime Realism",
-    tags: ["anime style", "realistic shading", "soft lighting", "vibrant colors"]
-  },
   os_cinematic: {
     name: "OS Cinematic",
     tags: ["futuristic UI", "holographic overlays", "clean interface", "glowing panels"]
@@ -343,10 +339,7 @@ function inferStyleFromPrompt(prompt: string): string {
 
   const candidates: Array<{ style: string; pattern: RegExp }> = [
     { style: "hyper-real", pattern: /\b(hyper\s*real|hyperreal|photo\s*real|photoreal|photorealistic|photographic|photo[-\s]?realistic)\b/i },
-    { style: "2.5d-anime", pattern: /\b(2\.5d\s*anime|2\.5d|2d\/?3d\s*anime|semi\s*real\s*anime)\b/i },
-    { style: "realistic-anime", pattern: /\b(realistic\s*anime|anime\s*realism|anime\s*realistic|hybrid\s*anime\s*realism)\b/i },
     { style: "semi-realistic", pattern: /\b(semi\s*realistic|stylized\s*realism|semi\s*real)\b/i },
-    { style: "anime", pattern: /\b(anime|niji\s*anime|manga\s*style|cel\s*shading)\b/i },
     { style: "vector", pattern: /\b(vector\s*art|flat\s*vector|flat\s*design|svg\s*style)\b/i },
     { style: "logo", pattern: /\b(logo\s*design|brand\s*mark|logomark|wordmark)\b/i },
     { style: "monochrome", pattern: /\b(monochrome|black\s*and\s*white|grayscale|greyscale)\b/i },
