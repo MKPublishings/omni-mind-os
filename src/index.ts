@@ -63,6 +63,9 @@ type ImageRequestBody = {
   resolution?: string;
   width?: number;
   height?: number;
+  camera?: string;
+  lighting?: string;
+  materials?: string[];
 };
 
 type ImageModelConfig = {
@@ -94,6 +97,9 @@ type OmniImageOptions = {
   quality?: string;
   seed?: number;
   fresh?: boolean;
+  camera?: string;
+  lighting?: string;
+  materials?: string[];
 };
 
 function toPositiveInt(value: unknown, fallback: number): number {
@@ -331,6 +337,72 @@ function extractEnvironmentKeywords(prompt: string): string[] {
   return OMNI_ENVIRONMENTS.filter((value) => lower.includes(value));
 }
 
+function inferStyleFromPrompt(prompt: string): string {
+  const lower = String(prompt || "").toLowerCase();
+  if (!lower) return "";
+
+  const candidates: Array<{ style: string; pattern: RegExp }> = [
+    { style: "hyper-real", pattern: /\b(hyper\s*real|hyperreal|photo\s*real|photoreal|photorealistic|photographic|photo[-\s]?realistic)\b/i },
+    { style: "2.5d-anime", pattern: /\b(2\.5d\s*anime|2\.5d|2d\/?3d\s*anime|semi\s*real\s*anime)\b/i },
+    { style: "realistic-anime", pattern: /\b(realistic\s*anime|anime\s*realism|anime\s*realistic|hybrid\s*anime\s*realism)\b/i },
+    { style: "semi-realistic", pattern: /\b(semi\s*realistic|stylized\s*realism|semi\s*real)\b/i },
+    { style: "anime", pattern: /\b(anime|niji\s*anime|manga\s*style|cel\s*shading)\b/i },
+    { style: "vector", pattern: /\b(vector\s*art|flat\s*vector|flat\s*design|svg\s*style)\b/i },
+    { style: "logo", pattern: /\b(logo\s*design|brand\s*mark|logomark|wordmark)\b/i },
+    { style: "monochrome", pattern: /\b(monochrome|black\s*and\s*white|grayscale|greyscale)\b/i },
+    { style: "sketch", pattern: /\b(sketch|pencil\s*sketch|graphite|line\s*drawing|hand\s*drawn)\b/i },
+    { style: "vfx", pattern: /\b(vfx|cinematic\s*vfx|glitch\s*effect|holographic|particle\s*effects)\b/i },
+    { style: "text", pattern: /\b(typography|text\s*design|lettering|word\s*art)\b/i },
+    { style: "3d", pattern: /\b(3d|three\s*dimensional|cgi|rendered\s*3d)\b/i },
+    { style: "realistic", pattern: /\b(realistic|lifelike|natural\s*imperfections|photo\s*quality)\b/i }
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate.pattern.test(lower)) {
+      return candidate.style;
+    }
+  }
+
+  return "";
+}
+
+function inferCameraFromPrompt(prompt: string): string {
+  const lower = String(prompt || "").toLowerCase();
+  if (!lower) return "";
+
+  if (/\b(85mm|portrait lens|portrait shot|headshot|bokeh portrait)\b/i.test(lower)) return "portrait-85mm";
+  if (/\b(35mm|wide angle|wide-angle|environmental portrait|street photo)\b/i.test(lower)) return "wide-35mm";
+  if (/\b(macro|close-up macro|extreme close-up|micro detail|micro-detail)\b/i.test(lower)) return "macro";
+  if (/\b(135mm|telephoto|compressed background|long lens)\b/i.test(lower)) return "telephoto-135mm";
+
+  return "";
+}
+
+function inferLightingFromPrompt(prompt: string): string {
+  const lower = String(prompt || "").toLowerCase();
+  if (!lower) return "";
+
+  if (/\b(soft studio|beauty light|diffused studio|softbox)\b/i.test(lower)) return "studio-soft";
+  if (/\b(hard studio|hard light|sharp shadows|high contrast studio)\b/i.test(lower)) return "studio-hard";
+  if (/\b(natural daylight|daylight|golden hour daylight|outdoor sunlight)\b/i.test(lower)) return "natural-daylight";
+  if (/\b(low[-\s]?key|moody lighting|dramatic shadows|cinematic low key)\b/i.test(lower)) return "cinematic-lowkey";
+
+  return "";
+}
+
+function inferMaterialsFromPrompt(prompt: string): string[] {
+  const lower = String(prompt || "").toLowerCase();
+  if (!lower) return [];
+
+  const inferred: string[] = [];
+  if (/\b(skin|portrait skin|face texture|pores)\b/i.test(lower)) inferred.push("skin");
+  if (/\b(fabric|cloth|textile|cotton|silk|denim|wool)\b/i.test(lower)) inferred.push("fabric");
+  if (/\b(metal|chrome|steel|iron|aluminum|brushed metal)\b/i.test(lower)) inferred.push("metal");
+  if (/\b(glass|crystal|transparent|refraction|window pane)\b/i.test(lower)) inferred.push("glass");
+
+  return [...new Set(inferred)];
+}
+
 function orchestrateOmniImagePrompt(userPrompt: string, options: OmniImageOptions): OmniImagePromptData {
   const tokens = tokenizePrompt(userPrompt);
   const sceneDescription = inferSceneDescription(userPrompt);
@@ -338,7 +410,11 @@ function orchestrateOmniImagePrompt(userPrompt: string, options: OmniImageOption
   const timeDirective = buildTimeDirective(timeIntent);
   const strictDirective = buildStrictPromptDirective();
   const selectedStylePack = getStylePack(options.stylePack || "");
-  const styleAwarePrompt = assemblePrompt(userPrompt, options.stylePack || "");
+  const styleAwarePrompt = assemblePrompt(userPrompt, options.stylePack || "", {
+    camera: options.camera,
+    lighting: options.lighting,
+    materials: Array.isArray(options.materials) ? options.materials : undefined
+  });
 
   const semanticExpansion = [styleAwarePrompt, sceneDescription, timeDirective, strictDirective].filter(Boolean).join(", ");
   const styleTags = selectedStylePack.tags || [];
@@ -721,7 +797,26 @@ export default {
           const requestedStylePack = sanitizePromptText(String(body?.stylePack || "")).toLowerCase();
           const requestedQuality = sanitizePromptText(String(body?.quality || "ultra")).toLowerCase() || "ultra";
           const requestedMode = sanitizePromptText(String(body?.mode || "simple")).toLowerCase() || "simple";
-          const resolvedRenderingStyle = resolveStyleName(requestedStylePack) || "auto";
+          const promptInferredStyle = resolveStyleName(inferStyleFromPrompt(promptText));
+          const promptInferredCamera = inferCameraFromPrompt(promptText);
+          const promptInferredLighting = inferLightingFromPrompt(promptText);
+          const promptInferredMaterials = inferMaterialsFromPrompt(promptText);
+          const effectiveStylePack = promptInferredStyle || requestedStylePack;
+          const resolvedRenderingStyle = resolveStyleName(effectiveStylePack) || "auto";
+          const requestedCameraRaw = sanitizePromptText(String(body?.camera || "")).toLowerCase();
+          const requestedLightingRaw = sanitizePromptText(String(body?.lighting || "")).toLowerCase();
+          const requestedMaterials = Array.isArray(body?.materials)
+            ? body.materials.map((item) => sanitizePromptText(String(item || "")).toLowerCase()).filter(Boolean)
+            : [];
+          const effectiveCamera = promptInferredCamera || requestedCameraRaw || "portrait-85mm";
+          const effectiveLighting = promptInferredLighting || requestedLightingRaw || "studio-soft";
+          const effectiveMaterials = promptInferredMaterials.length
+            ? promptInferredMaterials
+            : requestedMaterials.length
+              ? requestedMaterials
+              : resolvedRenderingStyle === "hyper-real"
+                ? ["skin"]
+                : [];
           const requestedRatio = sanitizePromptText(String(body?.ratio || "1:1")) || "1:1";
           const requestedResolution = sanitizePromptText(String(body?.resolution || ""));
           const requestedWidth = Number(body?.width);
@@ -743,22 +838,28 @@ export default {
 
           const orchestrated = orchestrateOmniImagePrompt(promptText, {
             mode: requestedMode,
-            stylePack: requestedStylePack,
+            stylePack: effectiveStylePack,
             quality: requestedQuality,
             feedback,
-            seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined
+            seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined,
+            camera: effectiveCamera,
+            lighting: effectiveLighting,
+            materials: effectiveMaterials
           });
 
           const refined = refineOmniImagePrompt(orchestrated, {
             mode: requestedMode,
-            stylePack: requestedStylePack,
+            stylePack: effectiveStylePack,
             quality: requestedQuality,
             feedback,
-            seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined
+            seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined,
+            camera: effectiveCamera,
+            lighting: effectiveLighting,
+            materials: effectiveMaterials
           });
 
           const modelConfig = selectImageModelConfig(
-            requestedStylePack,
+            effectiveStylePack,
             requestedQuality,
             env,
             requestedRatio,
@@ -790,6 +891,13 @@ export default {
               mode: requestedMode,
               quality: requestedQuality,
               rendering_style: resolvedRenderingStyle,
+              rendering_style_source: promptInferredStyle ? "prompt" : (requestedStylePack ? "session-or-request" : "auto"),
+              camera: effectiveCamera,
+              camera_source: promptInferredCamera ? "prompt" : (requestedCameraRaw ? "session-or-request" : "default"),
+              lighting: effectiveLighting,
+              lighting_source: promptInferredLighting ? "prompt" : (requestedLightingRaw ? "session-or-request" : "default"),
+              materials: effectiveMaterials,
+              materials_source: promptInferredMaterials.length ? "prompt" : (requestedMaterials.length ? "session-or-request" : (resolvedRenderingStyle === "hyper-real" ? "hyper-real-default" : "default")),
               seed: refined.finalOptions.seed,
               feedbackApplied: Boolean(feedback),
               prompt: {
@@ -809,8 +917,16 @@ export default {
               requested: {
                 mode: requestedMode,
                 stylePack: requestedStylePack,
+                inferredStyleFromPrompt: promptInferredStyle || null,
+                effectiveStylePack: effectiveStylePack || null,
                 quality: requestedQuality,
                 renderingStyle: resolvedRenderingStyle,
+                inferredCameraFromPrompt: promptInferredCamera || null,
+                effectiveCamera: effectiveCamera,
+                inferredLightingFromPrompt: promptInferredLighting || null,
+                effectiveLighting: effectiveLighting,
+                inferredMaterialsFromPrompt: promptInferredMaterials,
+                effectiveMaterials: effectiveMaterials,
                 availableStyles: listAvailableStyles(),
                 ratio: requestedRatio,
                 resolution: requestedResolution || null,

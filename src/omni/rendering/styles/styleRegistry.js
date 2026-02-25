@@ -8,7 +8,11 @@ const STYLE_ALIASES = {
   mythic_cinematic: "vfx",
   anime_realism: "realistic-anime",
   os_cinematic: "3d",
-  noir_tech: "vfx"
+  noir_tech: "vfx",
+  hyperreal: "hyper-real",
+  "hyper-realistic": "hyper-real",
+  photoreal: "hyper-real",
+  "photo-real": "hyper-real"
 };
 
 /**

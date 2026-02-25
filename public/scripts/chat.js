@@ -52,6 +52,7 @@
   const KNOWN_MODELS = ["auto", "omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
   const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore", "reasoning", "coding", "knowledge", "system-knowledge"];
   const KNOWN_RENDER_STYLES = [
+    "hyper-real",
     "3d",
     "2.5d-anime",
     "realistic",
@@ -65,6 +66,9 @@
     "vfx",
     "text"
   ];
+  const KNOWN_CAMERA_PROFILES = ["portrait-85mm", "wide-35mm", "macro", "telephoto-135mm"];
+  const KNOWN_LIGHTING_PROFILES = ["studio-soft", "studio-hard", "natural-daylight", "cinematic-lowkey"];
+  const KNOWN_MATERIAL_PROFILES = ["skin", "fabric", "metal", "glass"];
 
   let state = {
     activeSessionId: null,
@@ -182,6 +186,46 @@
     return normalizeImageStyle(session?.imageStyle);
   }
 
+  function normalizeCameraProfile(camera) {
+    const normalized = typeof camera === "string" ? camera.trim().toLowerCase() : "";
+    return KNOWN_CAMERA_PROFILES.includes(normalized) ? normalized : "";
+  }
+
+  function normalizeLightingProfile(lighting) {
+    const normalized = typeof lighting === "string" ? lighting.trim().toLowerCase() : "";
+    return KNOWN_LIGHTING_PROFILES.includes(normalized) ? normalized : "";
+  }
+
+  function getActiveCameraProfile(session = getActiveSession()) {
+    return normalizeCameraProfile(session?.imageCamera) || "portrait-85mm";
+  }
+
+  function getActiveLightingProfile(session = getActiveSession()) {
+    return normalizeLightingProfile(session?.imageLighting) || "studio-soft";
+  }
+
+  function normalizeMaterialName(material) {
+    const normalized = typeof material === "string" ? material.trim().toLowerCase() : "";
+    return KNOWN_MATERIAL_PROFILES.includes(normalized) ? normalized : "";
+  }
+
+  function normalizeMaterialList(value) {
+    if (Array.isArray(value)) {
+      return [...new Set(value.map((item) => normalizeMaterialName(item)).filter(Boolean))];
+    }
+
+    const raw = String(value || "").trim();
+    if (!raw) return [];
+
+    return [...new Set(raw.split(/[;,]/).map((item) => normalizeMaterialName(item)).filter(Boolean))];
+  }
+
+  function getActiveMaterials(session = getActiveSession()) {
+    const materials = normalizeMaterialList(session?.imageMaterials);
+    if (materials.length) return materials;
+    return ["skin"];
+  }
+
   function parseStyleCommand(content) {
     const text = String(content || "").trim();
     if (!text.toLowerCase().startsWith("/style")) return null;
@@ -199,14 +243,83 @@
     return { action: "set", style: normalizeImageStyle(rawStyle) };
   }
 
+  function parseCameraCommand(content) {
+    const text = String(content || "").trim();
+    if (!text.toLowerCase().startsWith("/camera")) return null;
+
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) {
+      return { action: "show" };
+    }
+
+    const requested = parts.slice(1).join(" ").trim().toLowerCase();
+    if (requested === "reset" || requested === "default" || requested === "auto") {
+      return { action: "set", camera: "portrait-85mm" };
+    }
+
+    return { action: "set", camera: normalizeCameraProfile(requested) };
+  }
+
+  function parseLightCommand(content) {
+    const text = String(content || "").trim();
+    if (!text.toLowerCase().startsWith("/light")) return null;
+
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) {
+      return { action: "show" };
+    }
+
+    const requested = parts.slice(1).join(" ").trim().toLowerCase();
+    if (requested === "reset" || requested === "default" || requested === "auto") {
+      return { action: "set", lighting: "studio-soft" };
+    }
+
+    return { action: "set", lighting: normalizeLightingProfile(requested) };
+  }
+
+  function parseMaterialsCommand(content) {
+    const text = String(content || "").trim();
+    const lower = text.toLowerCase();
+
+    if (!lower.startsWith("/material") && !lower.startsWith("/materials")) return null;
+
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) {
+      return { action: "show" };
+    }
+
+    const requested = parts.slice(1).join(" ").trim();
+    const requestedLower = requested.toLowerCase();
+    if (requestedLower === "reset" || requestedLower === "default" || requestedLower === "auto") {
+      return { action: "set", materials: ["skin"] };
+    }
+
+    return { action: "set", materials: normalizeMaterialList(requested) };
+  }
+
   function formatAvailableStyles() {
     return KNOWN_RENDER_STYLES.join(", ");
   }
 
+  function formatAvailableCameras() {
+    return KNOWN_CAMERA_PROFILES.join(", ");
+  }
+
+  function formatAvailableLighting() {
+    return KNOWN_LIGHTING_PROFILES.join(", ");
+  }
+
+  function formatAvailableMaterials() {
+    return KNOWN_MATERIAL_PROFILES.join(", ");
+  }
+
   function buildStyleStatusMessage(session) {
     const active = getActiveImageStyle(session);
+    const camera = getActiveCameraProfile(session);
+    const lighting = getActiveLightingProfile(session);
+    const materials = getActiveMaterials(session);
     const styleText = active ? `Current style: **${active}**.` : "Current style: **auto** (no forced style).";
-    return `${styleText}\n\nUse \`/style <name>\` to set a default image style.\nAvailable: ${formatAvailableStyles()}`;
+    return `${styleText}\nCamera: **${camera}**\nLighting: **${lighting}**\nMaterials: **${materials.join(", ")}**\n\nUse \`/style <name>\`, \`/camera <profile>\`, \`/light <profile>\`, \`/materials a,b,c\`.\nStyles: ${formatAvailableStyles()}\nCameras: ${formatAvailableCameras()}\nLighting: ${formatAvailableLighting()}\nMaterials: ${formatAvailableMaterials()}`;
   }
 
   function toModelLabel(model) {
@@ -728,11 +841,17 @@
 
   async function requestGeneratedImage(session, prompt) {
     const selectedStyle = getActiveImageStyle(session);
+    const selectedCamera = getActiveCameraProfile(session);
+    const selectedLighting = getActiveLightingProfile(session);
+    const selectedMaterials = getActiveMaterials(session);
     const payload = {
       userId: session?.id || `session-${Date.now()}`,
       prompt,
       feedback: "",
-      stylePack: selectedStyle || ""
+      stylePack: selectedStyle || "",
+      camera: selectedCamera,
+      lighting: selectedLighting,
+      materials: selectedStyle === "hyper-real" ? selectedMaterials : []
     };
 
     const res = await fetch(getImageEndpoint(), {
@@ -924,7 +1043,10 @@
     if (!trimmed) return;
 
     const styleCommand = parseStyleCommand(trimmed);
-    if (styleCommand) {
+    const cameraCommand = parseCameraCommand(trimmed);
+    const lightCommand = parseLightCommand(trimmed);
+    const materialsCommand = parseMaterialsCommand(trimmed);
+    if (styleCommand || cameraCommand || lightCommand || materialsCommand) {
       const commandTimestamp = Date.now();
       session.messages.push({ role: "user", content: trimmed, timestamp: commandTimestamp });
       updateSessionMetaFromMessages(session);
@@ -938,25 +1060,90 @@
       });
 
       let assistantText = "";
-      if (styleCommand.action === "show") {
-        assistantText = buildStyleStatusMessage(session);
-      } else {
-        const requestedStyle = String(styleCommand.style || "").trim();
-        if (!requestedStyle && String(trimmed || "").trim().split(/\s+/).length > 1 && !/\b(auto|none|off|reset)\b/i.test(trimmed)) {
-          assistantText = `Unknown style. Use one of: ${formatAvailableStyles()}`;
+      if (styleCommand) {
+        if (styleCommand.action === "show") {
+          assistantText = buildStyleStatusMessage(session);
         } else {
-          session.imageStyle = requestedStyle;
-          session.updatedAt = Date.now();
-          saveState();
-          try {
-            await savePreferences();
-          } catch {
-            // ignore style preference save failures
+          const requestedStyle = String(styleCommand.style || "").trim();
+          if (!requestedStyle && String(trimmed || "").trim().split(/\s+/).length > 1 && !/\b(auto|none|off|reset)\b/i.test(trimmed)) {
+            assistantText = `Unknown style. Use one of: ${formatAvailableStyles()}`;
+          } else {
+            session.imageStyle = requestedStyle;
+            if (requestedStyle === "hyper-real") {
+              session.imageCamera = getActiveCameraProfile(session);
+              session.imageLighting = getActiveLightingProfile(session);
+            }
+            session.updatedAt = Date.now();
+            saveState();
+            try {
+              await savePreferences();
+            } catch {
+              // ignore style preference save failures
+            }
+            assistantText = requestedStyle
+              ? `Image style set to **${requestedStyle}** for this session.`
+              : "Image style reset to **auto** for this session.";
           }
-          assistantText = requestedStyle
-            ? `Image style set to **${requestedStyle}** for this session.`
-            : "Image style reset to **auto** for this session.";
         }
+      } else if (cameraCommand) {
+        if (cameraCommand.action === "show") {
+          assistantText = `Current camera: **${getActiveCameraProfile(session)}**. Available: ${formatAvailableCameras()}`;
+        } else {
+          const requestedCamera = String(cameraCommand.camera || "").trim();
+          if (!requestedCamera) {
+            assistantText = `Unknown camera profile. Use one of: ${formatAvailableCameras()}`;
+          } else {
+            session.imageCamera = requestedCamera;
+            session.updatedAt = Date.now();
+            saveState();
+            try {
+              await savePreferences();
+            } catch {
+              // ignore camera preference save failures
+            }
+            assistantText = `Camera profile set to **${requestedCamera}**.`;
+          }
+        }
+      } else if (lightCommand) {
+        if (lightCommand.action === "show") {
+          assistantText = `Current lighting: **${getActiveLightingProfile(session)}**. Available: ${formatAvailableLighting()}`;
+        } else {
+          const requestedLighting = String(lightCommand.lighting || "").trim();
+          if (!requestedLighting) {
+            assistantText = `Unknown lighting profile. Use one of: ${formatAvailableLighting()}`;
+          } else {
+            session.imageLighting = requestedLighting;
+            session.updatedAt = Date.now();
+            saveState();
+            try {
+              await savePreferences();
+            } catch {
+              // ignore lighting preference save failures
+            }
+            assistantText = `Lighting profile set to **${requestedLighting}**.`;
+          }
+        }
+      } else if (materialsCommand) {
+        if (materialsCommand.action === "show") {
+          assistantText = `Current materials: **${getActiveMaterials(session).join(", ")}**. Available: ${formatAvailableMaterials()}`;
+        } else {
+          const requestedMaterials = Array.isArray(materialsCommand.materials) ? materialsCommand.materials : [];
+          if (!requestedMaterials.length) {
+            assistantText = `Unknown material profile. Use one or more of: ${formatAvailableMaterials()}`;
+          } else {
+            session.imageMaterials = requestedMaterials;
+            session.updatedAt = Date.now();
+            saveState();
+            try {
+              await savePreferences();
+            } catch {
+              // ignore material preference save failures
+            }
+            assistantText = `Materials set to **${requestedMaterials.join(", ")}**.`;
+          }
+        }
+      } else {
+        assistantText = "Rendering command received.";
       }
 
       appendMessage("assistant", assistantText, {
@@ -1294,6 +1481,9 @@
     const session = getActiveSession();
     if (!session) return;
     const preferredImageStyle = getActiveImageStyle(session);
+    const preferredImageCamera = getActiveCameraProfile(session);
+    const preferredImageLighting = getActiveLightingProfile(session);
+    const preferredImageMaterials = getActiveMaterials(session);
 
     const payload = {
       preferredMode: getActiveMode(session),
@@ -1301,6 +1491,9 @@
       lastUsedSettings: {
         preferredModel: session.model || "auto",
         preferredImageStyle: preferredImageStyle || "",
+        preferredImageCamera: preferredImageCamera,
+        preferredImageLighting: preferredImageLighting,
+        preferredImageMaterials: preferredImageMaterials.join(","),
         reasoningMode: getActiveMode(session) === "reasoning",
         codingMode: getActiveMode(session) === "coding",
         knowledgeMode: getActiveMode(session) === "knowledge"
@@ -1330,8 +1523,14 @@
 
       const preferredMode = normalizeMode(data.preferredMode) || session.mode || "auto";
       const preferredImageStyle = normalizeImageStyle(data?.lastUsedSettings?.preferredImageStyle || "");
+      const preferredImageCamera = normalizeCameraProfile(data?.lastUsedSettings?.preferredImageCamera || "") || "portrait-85mm";
+      const preferredImageLighting = normalizeLightingProfile(data?.lastUsedSettings?.preferredImageLighting || "") || "studio-soft";
+      const preferredImageMaterials = normalizeMaterialList(data?.lastUsedSettings?.preferredImageMaterials || "") || ["skin"];
       session.mode = preferredMode;
       session.imageStyle = preferredImageStyle;
+      session.imageCamera = preferredImageCamera;
+      session.imageLighting = preferredImageLighting;
+      session.imageMaterials = preferredImageMaterials;
       session.updatedAt = Date.now();
       saveState();
       syncSelectorsFromSession();

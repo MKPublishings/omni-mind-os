@@ -1,4 +1,8 @@
 export const STYLE_PACKS = {
+  "hyper-real": `
+hyper-realistic photography, physically accurate lighting, true-to-life rendering
+`,
+
   "3d": `
 3D render, high-poly modeling, PBR textures, ray tracing,
 global illumination, subsurface scattering, cinematic lighting
