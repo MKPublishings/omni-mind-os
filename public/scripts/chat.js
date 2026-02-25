@@ -51,6 +51,20 @@
   };
   const KNOWN_MODELS = ["auto", "omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
   const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore", "reasoning", "coding", "knowledge", "system-knowledge"];
+  const KNOWN_RENDER_STYLES = [
+    "3d",
+    "2.5d-anime",
+    "realistic",
+    "semi-realistic",
+    "anime",
+    "realistic-anime",
+    "vector",
+    "logo",
+    "monochrome",
+    "sketch",
+    "vfx",
+    "text"
+  ];
 
   let state = {
     activeSessionId: null,
@@ -157,6 +171,42 @@
   function normalizeModel(model) {
     const normalized = typeof model === "string" ? model.trim().toLowerCase() : "";
     return KNOWN_MODELS.includes(normalized) ? normalized : "";
+  }
+
+  function normalizeImageStyle(style) {
+    const normalized = typeof style === "string" ? style.trim().toLowerCase() : "";
+    return KNOWN_RENDER_STYLES.includes(normalized) ? normalized : "";
+  }
+
+  function getActiveImageStyle(session = getActiveSession()) {
+    return normalizeImageStyle(session?.imageStyle);
+  }
+
+  function parseStyleCommand(content) {
+    const text = String(content || "").trim();
+    if (!text.toLowerCase().startsWith("/style")) return null;
+
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) {
+      return { action: "show" };
+    }
+
+    const rawStyle = parts.slice(1).join(" ").trim().toLowerCase();
+    if (rawStyle === "auto" || rawStyle === "none" || rawStyle === "off" || rawStyle === "reset") {
+      return { action: "set", style: "" };
+    }
+
+    return { action: "set", style: normalizeImageStyle(rawStyle) };
+  }
+
+  function formatAvailableStyles() {
+    return KNOWN_RENDER_STYLES.join(", ");
+  }
+
+  function buildStyleStatusMessage(session) {
+    const active = getActiveImageStyle(session);
+    const styleText = active ? `Current style: **${active}**.` : "Current style: **auto** (no forced style).";
+    return `${styleText}\n\nUse \`/style <name>\` to set a default image style.\nAvailable: ${formatAvailableStyles()}`;
   }
 
   function toModelLabel(model) {
@@ -677,10 +727,12 @@
   }
 
   async function requestGeneratedImage(session, prompt) {
+    const selectedStyle = getActiveImageStyle(session);
     const payload = {
       userId: session?.id || `session-${Date.now()}`,
       prompt,
-      feedback: ""
+      feedback: "",
+      stylePack: selectedStyle || ""
     };
 
     const res = await fetch(getImageEndpoint(), {
@@ -870,6 +922,66 @@
 
     const trimmed = content.trim();
     if (!trimmed) return;
+
+    const styleCommand = parseStyleCommand(trimmed);
+    if (styleCommand) {
+      const commandTimestamp = Date.now();
+      session.messages.push({ role: "user", content: trimmed, timestamp: commandTimestamp });
+      updateSessionMetaFromMessages(session);
+      saveState();
+
+      const activeMode = getActiveMode(session);
+      appendMessage("user", trimmed, {
+        model: session.model || "auto",
+        mode: activeMode,
+        timestamp: commandTimestamp
+      });
+
+      let assistantText = "";
+      if (styleCommand.action === "show") {
+        assistantText = buildStyleStatusMessage(session);
+      } else {
+        const requestedStyle = String(styleCommand.style || "").trim();
+        if (!requestedStyle && String(trimmed || "").trim().split(/\s+/).length > 1 && !/\b(auto|none|off|reset)\b/i.test(trimmed)) {
+          assistantText = `Unknown style. Use one of: ${formatAvailableStyles()}`;
+        } else {
+          session.imageStyle = requestedStyle;
+          session.updatedAt = Date.now();
+          saveState();
+          try {
+            await savePreferences();
+          } catch {
+            // ignore style preference save failures
+          }
+          assistantText = requestedStyle
+            ? `Image style set to **${requestedStyle}** for this session.`
+            : "Image style reset to **auto** for this session.";
+        }
+      }
+
+      appendMessage("assistant", assistantText, {
+        model: session.model || "auto",
+        mode: getActiveMode(session),
+        timestamp: Date.now()
+      });
+
+      session.messages.push({
+        role: "assistant",
+        content: assistantText,
+        timestamp: Date.now()
+      });
+      updateSessionMetaFromMessages(session);
+      saveState();
+      renderSessionsSidebar();
+      playNotificationSound("assistant");
+
+      if (inputEl) {
+        inputEl.value = "";
+        inputEl.focus();
+      }
+      return;
+    }
+
     checkApiStatus().catch(() => {});
 
     // Push user message
@@ -1181,12 +1293,14 @@
   async function savePreferences() {
     const session = getActiveSession();
     if (!session) return;
+    const preferredImageStyle = getActiveImageStyle(session);
 
     const payload = {
       preferredMode: getActiveMode(session),
       writingStyle: "concise",
       lastUsedSettings: {
         preferredModel: session.model || "auto",
+        preferredImageStyle: preferredImageStyle || "",
         reasoningMode: getActiveMode(session) === "reasoning",
         codingMode: getActiveMode(session) === "coding",
         knowledgeMode: getActiveMode(session) === "knowledge"
@@ -1215,7 +1329,9 @@
       if (!session || !data) return;
 
       const preferredMode = normalizeMode(data.preferredMode) || session.mode || "auto";
+      const preferredImageStyle = normalizeImageStyle(data?.lastUsedSettings?.preferredImageStyle || "");
       session.mode = preferredMode;
+      session.imageStyle = preferredImageStyle;
       session.updatedAt = Date.now();
       saveState();
       syncSelectorsFromSession();

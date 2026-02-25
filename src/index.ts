@@ -12,6 +12,8 @@ import {
   shouldUseKnowledgeRetrieval,
   shouldUseSystemKnowledge
 } from "./omni/enhancements";
+import { assemblePrompt } from "./omni/rendering/engine/promptAssembler";
+import { listAvailableStyles, resolveStyleName } from "./omni/rendering/styles/styleRegistry";
 import { warmupConnections, getConnectionStats } from "./llm/cloudflareOptimizations";
 import type { KVNamespace, Fetcher } from "@cloudflare/workers-types";
 
@@ -336,8 +338,9 @@ function orchestrateOmniImagePrompt(userPrompt: string, options: OmniImageOption
   const timeDirective = buildTimeDirective(timeIntent);
   const strictDirective = buildStrictPromptDirective();
   const selectedStylePack = getStylePack(options.stylePack || "");
+  const styleAwarePrompt = assemblePrompt(userPrompt, options.stylePack || "");
 
-  const semanticExpansion = [userPrompt, sceneDescription, timeDirective, strictDirective].filter(Boolean).join(", ");
+  const semanticExpansion = [styleAwarePrompt, sceneDescription, timeDirective, strictDirective].filter(Boolean).join(", ");
   const styleTags = selectedStylePack.tags || [];
   const technicalTags: string[] = [];
 
@@ -718,6 +721,7 @@ export default {
           const requestedStylePack = sanitizePromptText(String(body?.stylePack || "")).toLowerCase();
           const requestedQuality = sanitizePromptText(String(body?.quality || "ultra")).toLowerCase() || "ultra";
           const requestedMode = sanitizePromptText(String(body?.mode || "simple")).toLowerCase() || "simple";
+          const resolvedRenderingStyle = resolveStyleName(requestedStylePack) || "auto";
           const requestedRatio = sanitizePromptText(String(body?.ratio || "1:1")) || "1:1";
           const requestedResolution = sanitizePromptText(String(body?.resolution || ""));
           const requestedWidth = Number(body?.width);
@@ -785,6 +789,7 @@ export default {
               resolution: modelConfig.resolution,
               mode: requestedMode,
               quality: requestedQuality,
+              rendering_style: resolvedRenderingStyle,
               seed: refined.finalOptions.seed,
               feedbackApplied: Boolean(feedback),
               prompt: {
@@ -805,6 +810,8 @@ export default {
                 mode: requestedMode,
                 stylePack: requestedStylePack,
                 quality: requestedQuality,
+                renderingStyle: resolvedRenderingStyle,
+                availableStyles: listAvailableStyles(),
                 ratio: requestedRatio,
                 resolution: requestedResolution || null,
                 width: Number.isFinite(requestedWidth) ? requestedWidth : null,
