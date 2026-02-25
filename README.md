@@ -1,5 +1,7 @@
 ![42339559-e98e-4eb7-ba72-9f3662a0679a](https://github.com/user-attachments/assets/233f9b2d-9cbd-49c4-8d1d-99a900e238e8)
 
+[![Image Engine CI](https://github.com/Slizz/omni-mind-os/actions/workflows/image-engine-ci.yml/badge.svg)](https://github.com/Slizz/omni-mind-os/actions/workflows/image-engine-ci.yml)
+
 
               O M N I   M I N D / O S
       A Cognitive Operating System for AI Models

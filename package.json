@@ -8,7 +8,9 @@
     "deploy": "wrangler deploy",
     "preview": "wrangler dev --local",
     "build": "echo \"No build step required\"",
-    "typecheck": "tsc -p tsconfig.json"
+    "test": "npm run smoke:image",
+    "typecheck": "tsc -p tsconfig.json",
+    "smoke:image": "node ./omni-image-engine/utils/smokeTest.js"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260227.0",

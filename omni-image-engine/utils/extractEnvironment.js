@@ -5,6 +5,6 @@ const ENVIRONMENTS = [
 ];
 
 module.exports = function extractEnvironment(prompt) {
-    const lower = prompt.toLowerCase();
+    const lower = String(prompt || "").toLowerCase();
     return ENVIRONMENTS.filter(env => lower.includes(env));
 };

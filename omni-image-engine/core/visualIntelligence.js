@@ -1,6 +1,6 @@
 module.exports = {
     inferScene(prompt) {
-        const lower = prompt.toLowerCase();
+        const lower = String(prompt || "").toLowerCase();
         let description = "";
 
         if (lower.includes("bedroom") || lower.includes("room")) {
