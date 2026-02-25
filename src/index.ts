@@ -12,7 +12,7 @@ import {
   shouldUseKnowledgeRetrieval,
   shouldUseSystemKnowledge
 } from "./omni/enhancements";
-import { warmupConnections, getConnectionStats, TokenStreamOptimizer } from "./llm/cloudflareOptimizations";
+import { warmupConnections, getConnectionStats } from "./llm/cloudflareOptimizations";
 import type { KVNamespace, Fetcher } from "@cloudflare/workers-types";
 
 export interface Env {
@@ -836,8 +836,6 @@ export default {
           maxOutputTokens: outputTokenLimit
         };
 
-        const streamOptimizer = new TokenStreamOptimizer({ chunkSize: 48, batchDelay: 5 });
-
         try {
           const result = await omniBrainLoop(env, runtimeCtx);
 
@@ -847,9 +845,14 @@ export default {
                 ? { response: result }
                 : result;
             const safe = OmniSafety.safeGuardResponse(parsedResult.response || "", responseLimit);
-
-            // Use optimized streaming
-            const stream = streamOptimizer.createOptimizedStream(safe);
+            const encoder = new TextEncoder();
+            const stream = new ReadableStream({
+              start(controller) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: safe })}\n\n`));
+                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                controller.close();
+              }
+            });
 
             return new Response(stream, {
               headers: {
