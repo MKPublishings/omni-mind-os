@@ -34,7 +34,6 @@
   const simulationExportBtn = document.getElementById("simulation-export-btn");
   const simulationRulesEditorEl = document.getElementById("simulation-rules-editor");
   const simulationLogEl = document.getElementById("simulation-log");
-  const sendShortcutHintEl = document.getElementById("send-shortcut-hint");
   const savePreferencesBtn = document.getElementById("save-preferences-btn");
   const resetMemoryBtn = document.getElementById("reset-memory-btn");
 
@@ -156,12 +155,6 @@
     messagesEl.classList.toggle("chat-font-small", runtimeSettings.fontSize === "small");
     messagesEl.classList.toggle("chat-font-medium", runtimeSettings.fontSize === "medium");
     messagesEl.classList.toggle("chat-font-large", runtimeSettings.fontSize === "large");
-
-    if (sendShortcutHintEl) {
-      sendShortcutHintEl.textContent = runtimeSettings.sendWithEnter
-        ? "Shortcut: Enter to send"
-        : "Shortcut: Ctrl/Cmd + Enter to send";
-    }
   }
 
   function getDefaultModelFromSettings() {
