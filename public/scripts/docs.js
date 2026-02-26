@@ -1,4 +1,6 @@
 (() => {
+  const scrollRoot = document.getElementById("main");
+  const backToTopBtn = document.getElementById("docs-back-to-top");
   const navLinks = Array.from(document.querySelectorAll(".docs-nav-link[href^='#']"));
   const sections = navLinks
     .map((link) => {
@@ -25,8 +27,8 @@
         setActiveById(visible.target.id);
       },
       {
-        root: null,
-        rootMargin: "-20% 0px -60% 0px",
+        root: scrollRoot || null,
+        rootMargin: "-15% 0px -68% 0px",
         threshold: [0.2, 0.45, 0.7]
       }
     );
@@ -35,9 +37,35 @@
   }
 
   navLinks.forEach((link) => {
-    link.addEventListener("click", () => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
       const id = link.getAttribute("href")?.slice(1) || "";
-      if (id) setActiveById(id);
+      if (!id) return;
+
+      const target = document.getElementById(id);
+      if (!target) return;
+
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+        inline: "nearest"
+      });
+      setActiveById(id);
     });
   });
+
+  if (scrollRoot && backToTopBtn) {
+    const updateBackToTopVisibility = () => {
+      const shouldShow = scrollRoot.scrollTop > 320;
+      backToTopBtn.classList.toggle("is-visible", shouldShow);
+    };
+
+    scrollRoot.addEventListener("scroll", updateBackToTopVisibility, { passive: true });
+    updateBackToTopVisibility();
+
+    backToTopBtn.addEventListener("click", () => {
+      scrollRoot.scrollTo({ top: 0, behavior: "smooth" });
+      setActiveById("overview");
+    });
+  }
 })();

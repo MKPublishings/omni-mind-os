@@ -1,6 +1,13 @@
 .docs-main {
   width: 100%;
   margin: 0 auto;
+  overscroll-behavior-y: contain;
+}
+
+#main.docs-main {
+  padding-bottom: 14px;
+  scroll-padding-top: 12px;
+  scroll-padding-bottom: 8px;
 }
 
 .docs-header {
@@ -31,6 +38,7 @@
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
+  padding-bottom: 2px;
 }
 
 .docs-nav-panel {
@@ -192,6 +200,45 @@
   text-decoration: underline;
 }
 
+.docs-disclaimer {
+  border-color: rgba(244, 208, 161, 0.36);
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.08), rgba(244, 208, 161, 0.06));
+}
+
+.docs-disclaimer p {
+  color: var(--text-dim);
+}
+
+.docs-back-to-top {
+  position: fixed;
+  right: 26px;
+  bottom: 24px;
+  z-index: 40;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(15, 82, 186, 0.42), rgba(11, 58, 132, 0.34));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.2s ease;
+}
+
+.docs-back-to-top.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.docs-back-to-top:hover {
+  border-color: rgba(165, 198, 255, 0.8);
+}
+
 @media (max-width: 980px) {
   .docs-shell {
     grid-template-columns: 1fr;
@@ -217,5 +264,11 @@
 
   .docs-section h3 {
     font-size: 21px;
+  }
+
+  .docs-back-to-top {
+    right: 16px;
+    bottom: 16px;
+    padding: 9px 12px;
   }
 }
