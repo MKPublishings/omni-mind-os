@@ -9,6 +9,7 @@
       return document.getElementById(id);
     })
     .filter(Boolean);
+  let activeScrollRaf = null;
 
   function setActiveById(id) {
     navLinks.forEach((link) => {
@@ -19,6 +20,83 @@
 
   function getSectionById(id) {
     return sections.find((section) => section.id === id) || null;
+  }
+
+  function getMaxScrollTop() {
+    if (!scrollRoot) return 0;
+    return Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight);
+  }
+
+  function getSectionTargetTop(section) {
+    if (!scrollRoot || !section) return 0;
+    const maxTop = getMaxScrollTop();
+    const desiredTop = Math.max(0, section.offsetTop - 12);
+    return Math.min(desiredTop, maxTop);
+  }
+
+  function isBottomZoneTarget(section) {
+    if (!section) return false;
+    const index = sections.indexOf(section);
+    return index >= Math.max(0, sections.length - 3);
+  }
+
+  function animateScrollTo(top, duration = 180) {
+    if (!scrollRoot) return;
+
+    if (activeScrollRaf) {
+      cancelAnimationFrame(activeScrollRaf);
+      activeScrollRaf = null;
+    }
+
+    const startTop = scrollRoot.scrollTop;
+    const delta = top - startTop;
+    if (Math.abs(delta) < 1) {
+      scrollRoot.scrollTop = top;
+      return;
+    }
+
+    const startTime = performance.now();
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const tick = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(progress);
+      scrollRoot.scrollTop = startTop + delta * eased;
+
+      if (progress < 1) {
+        activeScrollRaf = requestAnimationFrame(tick);
+      } else {
+        scrollRoot.scrollTop = top;
+        activeScrollRaf = null;
+      }
+    };
+
+    activeScrollRaf = requestAnimationFrame(tick);
+  }
+
+  function scrollToSection(section, smooth = true) {
+    if (!scrollRoot || !section) return;
+    const top = getSectionTargetTop(section);
+    const maxTop = getMaxScrollTop();
+    const atBottom = top >= maxTop - 2;
+    const isBottomZone = isBottomZoneTarget(section);
+
+    if (!smooth) {
+      if (activeScrollRaf) {
+        cancelAnimationFrame(activeScrollRaf);
+        activeScrollRaf = null;
+      }
+      scrollRoot.scrollTo({ top, behavior: "auto" });
+      return;
+    }
+
+    if (isBottomZone || atBottom) {
+      animateScrollTo(top, 180);
+      return;
+    }
+
+    scrollRoot.scrollTo({ top, behavior: "smooth" });
   }
 
   function syncSidebarProgress() {
@@ -58,6 +136,13 @@
   }
 
   function updateActiveFromScroll() {
+    if (scrollRoot) {
+      const maxTop = getMaxScrollTop();
+      if (scrollRoot.scrollTop > maxTop) {
+        scrollRoot.scrollTop = maxTop;
+      }
+    }
+
     const activeId = computeActiveSectionId();
     if (activeId) setActiveById(activeId);
     syncSidebarProgress();
@@ -77,11 +162,7 @@
       const target = document.getElementById(id);
       if (!target) return;
 
-      target.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-        inline: "nearest"
-      });
+      scrollToSection(target, true);
       setActiveById(id);
     });
   });
@@ -119,7 +200,7 @@
     const target = getSectionById(hashId);
     if (target) {
       requestAnimationFrame(() => {
-        target.scrollIntoView({ behavior: "auto", block: "start", inline: "nearest" });
+        scrollToSection(target, false);
         setActiveById(hashId);
       });
     }
