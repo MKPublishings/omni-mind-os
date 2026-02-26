@@ -138,6 +138,7 @@ featureLists.forEach((list) => {
 // ==============================================
 
 const modeColors = {
+  auto: { primary: "251, 191, 36", name: "Auto" },
   architect: { primary: "59, 130, 246", name: "Architect" },
   analyst: { primary: "34, 197, 94", name: "Analyst" },
   visual: { primary: "168, 85, 247", name: "Visual" },

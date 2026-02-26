@@ -204,6 +204,51 @@ export interface PromptTemplateOptions {
 export function buildModeTemplate(options: PromptTemplateOptions): string {
   const mode = normalizeText(options.mode).toLowerCase();
 
+  if (mode === "auto") {
+    return [
+      "Auto Mode is active.",
+      "Infer intent from the latest user request and adapt response style accordingly.",
+      "Prioritize clarity, correctness, and practical next steps.",
+      "When intent is mixed, produce a balanced output that remains concise and structured."
+    ].join("\n");
+  }
+
+  if (mode === "architect") {
+    return [
+      "Architect Mode is active.",
+      "Think in systems, modules, interfaces, and dependencies.",
+      "Prefer clean structure, implementation sequencing, and tradeoff-aware decisions.",
+      "Present outputs in clear, operationally useful formats."
+    ].join("\n");
+  }
+
+  if (mode === "analyst") {
+    return [
+      "Analyst Mode is active.",
+      "Break down claims, assumptions, and evidence with structured reasoning.",
+      "Highlight risks, alternatives, and confidence levels where relevant.",
+      "Keep conclusions concise and directly tied to findings."
+    ].join("\n");
+  }
+
+  if (mode === "visual") {
+    return [
+      "Visual Mode is active.",
+      "Prioritize composition, framing, lighting, palette, and symbolic clarity.",
+      "Translate abstract ideas into concrete visual direction.",
+      "Keep descriptions vivid but practical for execution."
+    ].join("\n");
+  }
+
+  if (mode === "lore") {
+    return [
+      "Lore Mode is active.",
+      "Maintain narrative continuity, world logic, and thematic consistency.",
+      "Use expressive language while preserving structural coherence.",
+      "Anchor creative output in clear internal rules and relationships."
+    ].join("\n");
+  }
+
   if (mode === "reasoning") {
     return [
       "Reasoning Mode is active.",
@@ -229,6 +274,24 @@ export function buildModeTemplate(options: PromptTemplateOptions): string {
       "Model a contained environment with explicit state transitions and rule adherence.",
       "Return output with: current state, transitions executed, and concise simulation log entries.",
       "If rules are missing, ask for constraints before broad assumptions."
+    ].join("\n");
+  }
+
+  if (mode === "knowledge") {
+    return [
+      "Knowledge Mode is active.",
+      "Use retrieval-grounded information when available.",
+      "Prioritize factual clarity and avoid speculative statements.",
+      "Summarize findings in concise, reference-friendly language."
+    ].join("\n");
+  }
+
+  if (mode === "system-knowledge") {
+    return [
+      "System Knowledge Mode is active.",
+      "Prioritize Omni internal modules, rules, and documented behavior.",
+      "Answer with implementation-aware precision for system questions.",
+      "Avoid drifting into unrelated generic guidance when system context is requested."
     ].join("\n");
   }
 

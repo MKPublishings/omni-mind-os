@@ -182,76 +182,86 @@
 
           <section id="cognitive-modes" class="docs-section">
             <h3>Cognitive Modes</h3>
-            <p>Each mode configures reasoning style, response structure, and memory interaction.</p>
+            <p>Omni currently exposes 10 synced modes across Chat, Modes, Docs, and API routing.</p>
 
-            <h4>Architect Mode</h4>
+            <h4>Auto</h4>
+            <ul>
+              <li><strong>Purpose:</strong> intent-aware routing into the best mode for each prompt</li>
+              <li><strong>System Prompt Focus:</strong> triage, confidence-based selection, seamless handoff</li>
+              <li><strong>Example Input:</strong> “Plan an API, then write the endpoint, then document it.”</li>
+              <li><strong>Example Output:</strong> architecture + implementation + docs flow with adaptive mode behavior</li>
+            </ul>
+
+            <h4>Architect</h4>
             <ul>
               <li><strong>Purpose:</strong> structural planning and system decomposition</li>
               <li><strong>System Prompt Focus:</strong> modularity, constraints, implementation order</li>
               <li><strong>Example Input:</strong> “Design a scalable ingestion pipeline.”</li>
               <li><strong>Example Output:</strong> layered architecture + dependency flow + rollout plan</li>
-              <li><strong>When to Use:</strong> APIs, infrastructure, architecture reviews</li>
-              <li><strong>Memory Interaction:</strong> stores recurring structural preferences</li>
             </ul>
 
-            <h4>Creative Mode</h4>
-            <ul>
-              <li><strong>Purpose:</strong> ideation, story language, symbolic composition</li>
-              <li><strong>System Prompt Focus:</strong> atmosphere, metaphor, novelty</li>
-              <li><strong>Example Input:</strong> “Write a cinematic world concept.”</li>
-              <li><strong>Example Output:</strong> mood-rich narrative structure and scene framing</li>
-              <li><strong>When to Use:</strong> fiction, art direction, concept generation</li>
-              <li><strong>Memory Interaction:</strong> retains tone/style preferences</li>
-            </ul>
-
-            <h4>Analysis Mode</h4>
+            <h4>Analyst</h4>
             <ul>
               <li><strong>Purpose:</strong> logic breakdown and evidence-led evaluation</li>
               <li><strong>System Prompt Focus:</strong> claims, assumptions, structured findings</li>
               <li><strong>Example Input:</strong> “Evaluate this product strategy.”</li>
               <li><strong>Example Output:</strong> criteria matrix, risks, and recommendations</li>
-              <li><strong>When to Use:</strong> tradeoff analysis, summaries, decision support</li>
-              <li><strong>Memory Interaction:</strong> remembers preferred report format</li>
             </ul>
 
-            <h4>OS Mode</h4>
+            <h4>Visual</h4>
             <ul>
-              <li><strong>Purpose:</strong> system-level coordination and operational clarity</li>
-              <li><strong>System Prompt Focus:</strong> platform state, modules, execution context</li>
-              <li><strong>Example Input:</strong> “Show runtime behavior and dependencies.”</li>
-              <li><strong>Example Output:</strong> system map with status and operational notes</li>
-              <li><strong>When to Use:</strong> diagnostics and architecture introspection</li>
-              <li><strong>Memory Interaction:</strong> prioritizes stable system references</li>
+              <li><strong>Purpose:</strong> scene composition and visual communication</li>
+              <li><strong>System Prompt Focus:</strong> imagery, framing, palette, symbolic rendering</li>
+              <li><strong>Example Input:</strong> “Draft a cinematic landing page concept.”</li>
+              <li><strong>Example Output:</strong> visual direction with layout and art language</li>
             </ul>
 
-            <h4>Simulation Mode</h4>
+            <h4>Lore</h4>
             <ul>
-              <li><strong>Purpose:</strong> contained environment execution and state transitions</li>
-              <li><strong>System Prompt Focus:</strong> rules, steps, logs, and bounded simulation state</li>
+              <li><strong>Purpose:</strong> worldbuilding, narrative continuity, and mythic framing</li>
+              <li><strong>System Prompt Focus:</strong> arcs, motifs, continuity, symbolic language</li>
+              <li><strong>Example Input:</strong> “Create the origin myth for this faction.”</li>
+              <li><strong>Example Output:</strong> coherent lore timeline + character dynamics</li>
+            </ul>
+
+            <h4>Reasoning</h4>
+            <ul>
+              <li><strong>Purpose:</strong> multi-step logic with concise final answers</li>
+              <li><strong>System Prompt Focus:</strong> internal step validation, consistency checks</li>
+              <li><strong>Example Input:</strong> “Compare three rollout strategies with constraints.”</li>
+              <li><strong>Example Output:</strong> ranked recommendation with explicit rationale</li>
+            </ul>
+
+            <h4>Coding</h4>
+            <ul>
+              <li><strong>Purpose:</strong> implementation, debugging, and code review</li>
+              <li><strong>System Prompt Focus:</strong> correctness, minimal diffs, verification-first output</li>
+              <li><strong>Example Input:</strong> “Fix this TypeScript route bug and validate.”</li>
+              <li><strong>Example Output:</strong> targeted patch + test/validation notes</li>
+            </ul>
+
+            <h4>Knowledge</h4>
+            <ul>
+              <li><strong>Purpose:</strong> retrieval-grounded answers from indexed knowledge sources</li>
+              <li><strong>System Prompt Focus:</strong> fact extraction, source-grounded synthesis</li>
+              <li><strong>Example Input:</strong> “What does our system reference say about memory policy?”</li>
+              <li><strong>Example Output:</strong> concise answer using relevant indexed snippets</li>
+            </ul>
+
+            <h4>System Knowledge</h4>
+            <ul>
+              <li><strong>Purpose:</strong> internal behavior and rules for Omni itself</li>
+              <li><strong>System Prompt Focus:</strong> modules, system rules, operational constraints</li>
+              <li><strong>Example Input:</strong> “Which module defines simulation defaults?”</li>
+              <li><strong>Example Output:</strong> system-grounded explanation of internal behavior</li>
+            </ul>
+
+            <h4>Simulation</h4>
+            <ul>
+              <li><strong>Purpose:</strong> contained state-machine style scenario execution</li>
+              <li><strong>System Prompt Focus:</strong> rules, steps, logs, bounded state transitions</li>
               <li><strong>Example Input:</strong> “Run a failure cascade across 3 services.”</li>
-              <li><strong>Example Output:</strong> stepwise transition log + current state snapshot</li>
-              <li><strong>When to Use:</strong> scenarios, what-if analysis, behavior checks</li>
-              <li><strong>Memory Interaction:</strong> isolated simulation memory channel</li>
-            </ul>
-
-            <h4>Developer Mode</h4>
-            <ul>
-              <li><strong>Purpose:</strong> implementation, debugging, and code reasoning</li>
-              <li><strong>System Prompt Focus:</strong> correctness, minimal diffs, verification</li>
-              <li><strong>Example Input:</strong> “Fix this TypeScript route bug.”</li>
-              <li><strong>Example Output:</strong> patch + explanation + validation notes</li>
-              <li><strong>When to Use:</strong> refactors, fixes, feature implementation</li>
-              <li><strong>Memory Interaction:</strong> persists coding style and defaults</li>
-            </ul>
-
-            <h4>Mythic Mode (Optional)</h4>
-            <ul>
-              <li><strong>Purpose:</strong> mythic-cinematic dialect and symbolic synthesis</li>
-              <li><strong>System Prompt Focus:</strong> archetypes, resonance, cinematic texture</li>
-              <li><strong>Example Input:</strong> “Render this roadmap as a mythic arc.”</li>
-              <li><strong>Example Output:</strong> symbolic narrative with structured meaning layers</li>
-              <li><strong>When to Use:</strong> storytelling and identity-driven communication</li>
-              <li><strong>Memory Interaction:</strong> stores symbolic style motifs</li>
+              <li><strong>Example Output:</strong> transition log + current state snapshot</li>
             </ul>
           </section>
 

@@ -218,6 +218,14 @@ function createDropdownManager() {
 
 const dropdownMgr = createDropdownManager();
 
+function formatModeLabel(value = "") {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return "Architect";
+  if (normalized === "system-knowledge") return "System Knowledge";
+  if (normalized === "auto") return "Auto";
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
 // ==============================================
 // CHAT SETTINGS
 // ==============================================
@@ -325,7 +333,10 @@ if (modeSelectionDropdown && modeSelectionMenu) {
 }
 
 if (defaultModeDropdown && defaultModeMenu) {
-  defaultModeDropdown.setActive(getSetting(SETTINGS_KEYS.DEFAULT_MODE, "architect"));
+  const savedMode = getSetting(SETTINGS_KEYS.DEFAULT_MODE, "architect");
+  defaultModeDropdown.setActive(savedMode);
+  const defaultModeBtn = document.getElementById("default-mode-btn");
+  if (defaultModeBtn) defaultModeBtn.textContent = formatModeLabel(savedMode);
   defaultModeMenu.addEventListener("click", (e) => {
     const item = e.target.closest(".settings-dropdown-item[data-value]");
     if (!item) return;
@@ -394,7 +405,7 @@ window.addEventListener("storage", (e) => {
   if (e.key === SETTINGS_KEYS.DEFAULT_MODE) {
     const val = getSetting(SETTINGS_KEYS.DEFAULT_MODE, "architect");
     if (defaultModeDropdown) defaultModeDropdown.setActive(val);
-    if (defaultModeBtn) defaultModeBtn.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+    if (defaultModeBtn) defaultModeBtn.textContent = formatModeLabel(val);
   }
 
   if (e.key === SETTINGS_KEYS.DEFAULT_MODEL) {
