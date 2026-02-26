@@ -15,6 +15,11 @@ binding = "AI"
 # MODEL_IMAGE = "@cf/black-forest-labs/flux-1-schnell"
 # OPENAI_API_KEY = "your-openai-key"
 # DEEPSEEK_API_KEY = "your-deepseek-key"
+# OMNI_SIMULATION_PATHS = "2" # integer 2..4
+# OMNI_MEMORY_RETENTION_DAYS = "45"
+# OMNI_SESSION_MAX_AGE_HOURS = "72"
+# OMNI_AUTONOMY_LEVEL = "balanced" # conservative | balanced | aggressive
+# OMNI_ADMIN_KEY = "replace-with-strong-secret"
 # OMNI_RESPONSE_MIN_CHARS = "2000"
 # OMNI_RESPONSE_BASE_CHARS = "4500"
 # OMNI_RESPONSE_MAX_CHARS = "50000"
@@ -38,3 +43,23 @@ enabled = true
 [assets]
 directory = "./public"
 binding = "ASSETS"
+
+# Optional D1 long-term memory binding.
+# [[d1_databases]]
+# binding = "OMNI_DB"
+# database_name = "omni_memory"
+# database_id = "<replace-with-d1-id>"
+# migrations_dir = "migrations"
+
+# Optional Durable Object session binding.
+# [[durable_objects.bindings]]
+# name = "OMNI_SESSION"
+# class_name = "OmniSession"
+
+# [[migrations]]
+# tag = "v1"
+# new_sqlite_classes = ["OmniSession"]
+
+# Optional self-maintenance cron.
+# [triggers]
+# crons = ["*/30 * * * *"]

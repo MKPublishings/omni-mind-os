@@ -1,5 +1,5 @@
 // ============================================================
-// OMNI MIND/OS — LLM Inference Wrapper
+// Omni Ai — LLM Inference Wrapper
 // Wraps Cloudflare's AI model with Omni's cognitive engine.
 // ============================================================
 

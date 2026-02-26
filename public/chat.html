@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Omni Mind/OS – Chat</title>
+  <title>Omni Ai – Chat</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
   <link rel="stylesheet" href="/styles/base.css" />
   <link rel="stylesheet" href="/styles/layout.css" />
@@ -12,7 +12,7 @@
 <body class="page">
   <div id="layout">
     <aside id="sidebar">
-      <h1 class="logo">Omni Mind/OS</h1>
+      <h1 class="logo">Omni Ai</h1>
 
       <nav class="nav">
         <a href="/index.html" class="nav-link">Home</a>
@@ -65,6 +65,8 @@
           </div>
           <button id="save-preferences-btn" type="button" class="chat-action-btn">Save Preferences</button>
           <button id="reset-memory-btn" type="button" class="chat-action-btn">Reset Memory</button>
+          <input id="admin-key-input" class="chat-admin-input" type="password" placeholder="Admin key (optional)" autocomplete="off" />
+          <button id="release-readiness-btn" type="button" class="chat-action-btn">Release Readiness</button>
         </div>
       </header>
 
@@ -74,6 +76,16 @@
           <span id="simulation-badge" class="simulation-badge" hidden>Simulation: Inactive</span>
           <span id="model-inspector">Model: pending</span>
           <span id="api-status" aria-live="polite">API: checking…</span>
+        </div>
+        <div id="mind-state-panel" class="mind-state-panel" aria-live="polite">
+          <div class="mind-state-row">
+            <span id="mind-route">Route: chat</span>
+            <span id="mind-persona">Persona: pending</span>
+            <span id="mind-emotion">Emotion: pending</span>
+          </div>
+          <div id="release-readiness-summary" class="release-readiness-summary">Readiness: not checked</div>
+          <div id="release-readiness-list" class="release-readiness-list"></div>
+          <div id="mind-timeline" class="mind-timeline"></div>
         </div>
         <div id="chat-container"></div>
 

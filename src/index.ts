@@ -18,13 +18,27 @@ import { buildLawPromptDirectives, applyLawsToVisualInfluence, type LawReference
 import { Laws, type LawDomain } from "./omni/laws/lawRegistry";
 import { warmupConnections, getConnectionStats } from "./llm/cloudflareOptimizations";
 import { advanceSimulationState } from "./omni/simulation/engine";
-import type { KVNamespace, Fetcher } from "@cloudflare/workers-types";
+import { ensureOmniMemorySchema, getRecentMemoryArc, saveMemoryTurn } from "./memory/d1Memory";
+import { formatWorkingMemoryPrompt, loadWorkingMemory, updateWorkingMemoryFromTurn } from "./memory/workingMemory";
+import { runSelfMaintenance } from "./maintenance/selfMaintenance";
+import { getMaintenanceStatus } from "./maintenance/status";
+import { decideMultimodalRoute } from "./omni/multimodal/router";
+import { runVisualReasoning } from "./omni/multimodal/visualReasoner";
+import { buildPersonaPrompt, resolvePersonaProfile } from "./omni/behavior/personaEngine";
+import { buildEmotionalResonancePrompt, getEmotionalResonance, persistEmotionalResonance } from "./omni/behavior/emotionalResonance";
+import { applyAdaptiveBehavior, buildAdaptiveBehaviorPrompt } from "./omni/behavior/adaptiveBehavior";
+import { executeTool } from "./tools/execute";
+import type { KVNamespace, Fetcher, DurableObjectNamespace, D1Database, ScheduledController, ExecutionContext } from "@cloudflare/workers-types";
+
+export { OmniSession } from "./memory/session";
 
 export interface Env {
   AI: any;
   MEMORY: KVNamespace;
   MIND: KVNamespace;
   ASSETS: Fetcher;
+  OMNI_DB?: D1Database;
+  OMNI_SESSION?: DurableObjectNamespace;
   MODEL_OMNI?: string;
   MODEL_GPT_4O?: string;
   MODEL_GPT_4O_MINI?: string;
@@ -38,6 +52,10 @@ export interface Env {
   OMNI_MIN_OUTPUT_TOKENS?: string;
   OMNI_MAX_OUTPUT_TOKENS?: string;
   OMNI_ENV?: string;
+  OMNI_MEMORY_RETENTION_DAYS?: string;
+  OMNI_SESSION_MAX_AGE_HOURS?: string;
+  OMNI_AUTONOMY_LEVEL?: string;
+  OMNI_ADMIN_KEY?: string;
 }
 
 type OmniRole = "system" | "user" | "assistant";
@@ -113,6 +131,13 @@ type OmniImageOptions = {
   camera?: string;
   lighting?: string;
   materials?: string[];
+};
+
+type OmniImageGenerationResult = {
+  imageDataUrl: string;
+  filename: string;
+  metadata: Record<string, unknown>;
+  model: string;
 };
 
 function toPositiveInt(value: unknown, fallback: number): number {
@@ -197,6 +222,121 @@ function makeContextSystemMessage(label: string, content: string): OmniMessage {
   return {
     role: "system",
     content: `[${label}]\n${content}`
+  };
+}
+
+function resolveSessionId(request: Request): string {
+  const url = new URL(request.url);
+  const headerSession = String(request.headers.get("x-omni-session-id") || "").trim();
+  const querySession = String(url.searchParams.get("sid") || "").trim();
+  const raw = headerSession || querySession || "anon";
+  return raw.replace(/[^a-zA-Z0-9:_-]/g, "").slice(0, 120) || "anon";
+}
+
+function isAdminAuthorized(request: Request, env: Env): boolean {
+  const explicitEnv = String(env.OMNI_ENV || "").trim().toLowerCase();
+  const isProduction = explicitEnv === "production";
+  const configured = String(env.OMNI_ADMIN_KEY || "").trim();
+  if (!configured) return !isProduction;
+
+  const provided = String(request.headers.get("x-omni-admin-key") || "").trim();
+  return provided.length > 0 && provided === configured;
+}
+
+function getReleaseHardeningStatus(env: Env): {
+  ready: boolean;
+  checks: Array<{ name: string; ok: boolean; detail: string }>;
+} {
+  const explicitEnv = String(env.OMNI_ENV || "").trim().toLowerCase();
+  const isProduction = explicitEnv === "production";
+
+  const checks = [
+    {
+      name: "env-set",
+      ok: explicitEnv.length > 0,
+      detail: explicitEnv.length > 0 ? `OMNI_ENV=${explicitEnv}` : "OMNI_ENV is not set"
+    },
+    {
+      name: "admin-key",
+      ok: !isProduction || String(env.OMNI_ADMIN_KEY || "").trim().length >= 16,
+      detail:
+        !isProduction || String(env.OMNI_ADMIN_KEY || "").trim().length >= 16
+          ? "OMNI_ADMIN_KEY configured for protected maintenance endpoints"
+          : "OMNI_ADMIN_KEY missing or weak for production"
+    },
+    {
+      name: "memory-kv",
+      ok: Boolean(env.MEMORY),
+      detail: env.MEMORY ? "MEMORY KV binding present" : "MEMORY KV binding missing"
+    },
+    {
+      name: "mind-kv",
+      ok: Boolean(env.MIND),
+      detail: env.MIND ? "MIND KV binding present" : "MIND KV binding missing"
+    },
+    {
+      name: "ai-binding",
+      ok: Boolean(env.AI),
+      detail: env.AI ? "AI binding present" : "AI binding missing"
+    },
+    {
+      name: "assets-binding",
+      ok: Boolean(env.ASSETS),
+      detail: env.ASSETS ? "ASSETS binding present" : "ASSETS binding missing"
+    }
+  ];
+
+  const ready = checks.every((check) => check.ok);
+  return { ready, checks };
+}
+
+async function getReleaseSpecPayload(env: Env): Promise<Record<string, unknown>> {
+  const release = {
+    name: "Omni Ai",
+    version: "1.0.0",
+    date: "2026-02-26",
+    lineage: ["Omni Ai"],
+    recognitionCycle: "initiated"
+  };
+
+  let autonomyStatus: Record<string, unknown> | null = null;
+  try {
+    const status = await getMaintenanceStatus(env);
+    autonomyStatus = {
+      health: status.health,
+      drift: status.drift,
+      autonomy: status.autonomy,
+      maintenance: status.maintenance
+    };
+  } catch {
+    autonomyStatus = null;
+  }
+
+  return {
+    release,
+    capabilities: {
+      identity: true,
+      reasoning: true,
+      memory: true,
+      multimodal: true,
+      behavior: true,
+      autonomy: true,
+      frontendMindState: true
+    },
+    endpoints: {
+      omni: "/api/omni",
+      image: "/api/image",
+      maintenanceStatus: "/api/maintenance/status",
+      maintenanceRun: "/api/maintenance/run",
+      releaseReadiness: "/api/release/readiness",
+      releaseSpec: "/api/release/spec"
+    },
+    publicArtifacts: {
+      declaration: "/omni-ai-declaration.md",
+      manifest: "/omni-ai-release.json",
+      specDoc: "/OMNI_AI_RELEASE_SPEC.md"
+    },
+    runtime: autonomyStatus
   };
 }
 
@@ -688,8 +828,138 @@ function makeImageFilename(styleId: string): string {
   return `slizzai_${safeStyle}_${ts}.png`;
 }
 
+async function generateOmniImageFromPrompt(env: Env, userPrompt: string, options: Partial<ImageRequestBody> = {}): Promise<OmniImageGenerationResult> {
+  const promptText = sanitizePromptText(String(userPrompt || ""));
+  if (!promptText) {
+    throw new Error("Prompt is required");
+  }
+
+  const feedback = sanitizePromptText(String(options?.feedback || ""));
+  const requestedStylePack = sanitizePromptText(String(options?.stylePack || "")).toLowerCase();
+  const requestedLaws = Array.isArray(options?.laws)
+    ? options.laws
+        .map((law) => {
+          const id = sanitizePromptText(String(law?.id || "")).toUpperCase();
+          const mode = sanitizePromptText(String(law?.mode || "")).toLowerCase();
+          const weight = Number(law?.weight);
+          const normalizedMode: LawReference["mode"] =
+            mode === "symbolic" || mode === "structural" || mode === "color" || mode === "motion"
+              ? mode
+              : undefined;
+          return {
+            id,
+            mode: normalizedMode,
+            weight: Number.isFinite(weight) ? Math.min(1, Math.max(0, weight)) : undefined
+          };
+        })
+        .filter((law) => Boolean(law.id))
+    : [];
+
+  const requestedQuality = sanitizePromptText(String(options?.quality || "ultra")).toLowerCase() || "ultra";
+  const promptInferredStyle = resolveStyleName(inferStyleFromPrompt(promptText));
+  const visualReasoning = runVisualReasoning(promptText);
+  const promptInferredCamera = inferCameraFromPrompt(promptText) || visualReasoning.cameraIntent;
+  const promptInferredLighting = inferLightingFromPrompt(promptText) || visualReasoning.lightingIntent;
+  const promptInferredMaterials = inferMaterialsFromPrompt(promptText);
+  const effectiveStylePack = promptInferredStyle || requestedStylePack;
+  const resolvedRenderingStyle = resolveStyleName(effectiveStylePack) || "auto";
+  const requestedCameraRaw = sanitizePromptText(String(options?.camera || "")).toLowerCase();
+  const requestedLightingRaw = sanitizePromptText(String(options?.lighting || "")).toLowerCase();
+  const requestedMaterials = Array.isArray(options?.materials)
+    ? options.materials.map((item) => sanitizePromptText(String(item || "")).toLowerCase()).filter(Boolean)
+    : [];
+  const effectiveCamera = promptInferredCamera || requestedCameraRaw || "portrait-85mm";
+  const effectiveLighting = promptInferredLighting || requestedLightingRaw || "studio-soft";
+  const effectiveMaterials = promptInferredMaterials.length
+    ? promptInferredMaterials
+    : requestedMaterials.length
+      ? requestedMaterials
+      : resolvedRenderingStyle === "hyper-real"
+        ? ["skin"]
+        : [];
+
+  const requestedRatio = sanitizePromptText(String(options?.ratio || "1:1")) || "1:1";
+  const requestedResolution = sanitizePromptText(String(options?.resolution || ""));
+  const requestedWidth = Number(options?.width);
+  const requestedHeight = Number(options?.height);
+  const parsedSeed = Number(options?.seed);
+
+  const orchestrated = orchestrateOmniImagePrompt(
+    `${promptText}, visual reasoning: ${visualReasoning.directive}`,
+    {
+      mode: sanitizePromptText(String(options?.mode || "simple")).toLowerCase() || "simple",
+      stylePack: effectiveStylePack,
+      laws: requestedLaws,
+      quality: requestedQuality,
+      feedback,
+      seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined,
+      camera: effectiveCamera,
+      lighting: effectiveLighting,
+      materials: effectiveMaterials
+    }
+  );
+
+  const refined = refineOmniImagePrompt(orchestrated, {
+    mode: sanitizePromptText(String(options?.mode || "simple")).toLowerCase() || "simple",
+    stylePack: effectiveStylePack,
+    laws: requestedLaws,
+    quality: requestedQuality,
+    feedback,
+    seed: Number.isFinite(parsedSeed) ? parsedSeed : undefined,
+    camera: effectiveCamera,
+    lighting: effectiveLighting,
+    materials: effectiveMaterials
+  });
+
+  const modelConfig = selectImageModelConfig(
+    effectiveStylePack,
+    requestedQuality,
+    env,
+    requestedRatio,
+    requestedResolution,
+    requestedWidth,
+    requestedHeight
+  );
+
+  const rawImage = await env.AI.run(modelConfig.model, {
+    prompt: refined.data.finalPrompt,
+    width: modelConfig.width,
+    height: modelConfig.height,
+    seed: refined.finalOptions.seed
+  });
+
+  const normalized = await normalizeImageOutput(rawImage);
+  const imageDataUrl = `data:${normalized.mimeType};base64,${bytesToBase64(normalized.bytes)}`;
+  const filename = makeImageFilename(modelConfig.styleId);
+
+  return {
+    imageDataUrl,
+    filename,
+    model: modelConfig.model,
+    metadata: {
+      style_id: modelConfig.styleId,
+      model: modelConfig.model,
+      ratio: modelConfig.ratio,
+      resolution: modelConfig.resolution,
+      quality: requestedQuality,
+      rendering_style: resolvedRenderingStyle,
+      camera: effectiveCamera,
+      lighting: effectiveLighting,
+      materials: effectiveMaterials,
+      visual_reasoning: visualReasoning,
+      seed: refined.finalOptions.seed,
+      prompt: {
+        userPrompt: orchestrated.userPrompt,
+        semanticExpansion: orchestrated.semanticExpansion,
+        finalPrompt: refined.data.finalPrompt
+      }
+    }
+  };
+}
+
 // Warmup connections on first request (non-blocking)
 let connectionsWarmedUp = false;
+let hardeningChecked = false;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -701,6 +971,17 @@ export default {
       warmupConnections(env).catch(() => {}); // Fire and forget
     }
 
+    if (!hardeningChecked) {
+      hardeningChecked = true;
+      const hardening = getReleaseHardeningStatus(env);
+      if (!hardening.ready) {
+        logger.log("release_hardening_warning", {
+          ready: hardening.ready,
+          failedChecks: hardening.checks.filter((check) => !check.ok)
+        });
+      }
+    }
+
     try {
       const url = new URL(request.url);
       const isApiRoute =
@@ -709,7 +990,11 @@ export default {
         url.pathname === "/api/laws" ||
         url.pathname === "/api/search" ||
         url.pathname === "/api/preferences" ||
-        url.pathname === "/api/stats";
+        url.pathname === "/api/stats" ||
+        url.pathname === "/api/maintenance/run" ||
+        url.pathname === "/api/maintenance/status" ||
+        url.pathname === "/api/release/readiness" ||
+        url.pathname === "/api/release/spec";
 
       if (isApiRoute && request.method === "OPTIONS") {
         return new Response(null, {
@@ -796,6 +1081,78 @@ export default {
         });
       }
 
+      if (url.pathname === "/api/maintenance/status" && request.method === "GET") {
+        if (!isAdminAuthorized(request, env)) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const status = await getMaintenanceStatus(env);
+        return new Response(JSON.stringify(status), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/release/readiness" && request.method === "GET") {
+        if (!isAdminAuthorized(request, env)) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const hardening = getReleaseHardeningStatus(env);
+        return new Response(JSON.stringify(hardening), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/release/spec" && request.method === "GET") {
+        const spec = await getReleaseSpecPayload(env);
+        return new Response(JSON.stringify(spec), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/maintenance/run" && request.method === "POST") {
+        if (!isAdminAuthorized(request, env)) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const report = await runSelfMaintenance(env);
+        logger.log("manual_self_maintenance_complete", report);
+
+        return new Response(JSON.stringify({ ok: true, report }), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
       if (url.pathname === "/api/preferences" && request.method === "POST") {
         const payload = await request.json();
         const memory = await savePreferences(env, payload || {});
@@ -838,6 +1195,46 @@ export default {
       }
 
       if (url.pathname === "/api/laws" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/maintenance/status" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/maintenance/run" && request.method !== "POST") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/release/readiness" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/release/spec" && request.method !== "GET") {
         return new Response("Method Not Allowed", {
           status: 405,
           headers: {
@@ -1061,6 +1458,7 @@ export default {
       }
 
       if (url.pathname === "/api/omni" && request.method === "POST") {
+        await ensureOmniMemorySchema(env);
         const body = (await request.json()) as OmniRequestBody;
 
         if (!body.messages || !OmniSafety.validateMessages(body.messages)) {
@@ -1081,8 +1479,21 @@ export default {
         const simulationContext = normalizedMode === "simulation"
           ? await advanceSimulationState(env, ctx.messages)
           : null;
+        const sessionId = resolveSessionId(request);
+        const workingMemory = await loadWorkingMemory(env, sessionId);
 
         const latestUserText = getLatestUserText(ctx.messages);
+        const personaProfile = await resolvePersonaProfile(env, normalizedMode);
+        const emotionalResonance = await getEmotionalResonance(
+          env,
+          sessionId,
+          latestUserText,
+          workingMemory.emotionalTone
+        );
+        const orchestratorDecision = decideMultimodalRoute({
+          latestUserText,
+          mode: normalizedMode
+        });
         const routeSelection = chooseModelForTask(ctx.model, latestUserText, normalizedMode);
 
         const promptSystemMessages: OmniMessage[] = [];
@@ -1100,6 +1511,46 @@ export default {
           promptSystemMessages.push(
             makeContextSystemMessage("Simulation Log", simulationContext.logsSummary)
           );
+        }
+
+        promptSystemMessages.push(
+          makeContextSystemMessage("Persona Engine", buildPersonaPrompt(personaProfile))
+        );
+        promptSystemMessages.push(
+          makeContextSystemMessage("Emotional Resonance", buildEmotionalResonancePrompt(emotionalResonance))
+        );
+        promptSystemMessages.push(
+          makeContextSystemMessage(
+            "Adaptive Behavior",
+            buildAdaptiveBehaviorPrompt({
+              mode: normalizedMode,
+              userEmotion: emotionalResonance.userEmotion,
+              omniTone: emotionalResonance.omniTone,
+              route: orchestratorDecision.route
+            })
+          )
+        );
+
+        if (normalizedMode !== "simulation") {
+          const workingMemoryPrompt = formatWorkingMemoryPrompt(workingMemory);
+          if (workingMemoryPrompt) {
+            promptSystemMessages.push(
+              makeContextSystemMessage("Working Memory", workingMemoryPrompt)
+            );
+          }
+
+          const memoryArc = await getRecentMemoryArc(env, sessionId, 3);
+          if (memoryArc.length) {
+            const arcPrompt = memoryArc
+              .map((entry, index) => {
+                return `(${index + 1}) [${entry.mode}] USER: ${entry.userText}\nOMNI: ${entry.assistantText}`;
+              })
+              .join("\n\n");
+
+            promptSystemMessages.push(
+              makeContextSystemMessage("Long-Term Memory Arc", arcPrompt)
+            );
+          }
         }
 
         const modeTemplate = buildModeTemplate({
@@ -1150,6 +1601,8 @@ export default {
 
         logger.log("incoming_request", {
           ...ctx,
+          orchestratorRoute: orchestratorDecision.route,
+          orchestratorReason: orchestratorDecision.reason,
           modelSelected: routeSelection.selectedModel,
           routeReason: routeSelection.reason,
           taskType: routeSelection.taskType,
@@ -1167,7 +1620,52 @@ export default {
         };
 
         try {
-          const result = await omniBrainLoop(env, runtimeCtx);
+          let multimodalPayload: Record<string, unknown> | null = null;
+          let result: any;
+
+          if (orchestratorDecision.route === "tool" && orchestratorDecision.toolDirective) {
+            const toolResult = await executeTool(
+              orchestratorDecision.toolDirective.name,
+              orchestratorDecision.toolDirective.input
+            );
+            result = {
+              response: toolResult.success
+                ? `Tool '${toolResult.tool}' executed successfully. Output: ${JSON.stringify(toolResult.output)}`
+                : `Tool '${toolResult.tool}' failed: ${toolResult.error || "unknown error"}`
+            };
+          } else if (orchestratorDecision.route === "memory") {
+            result = {
+              response: [
+                "Memory snapshot:",
+                formatWorkingMemoryPrompt(workingMemory),
+                savedMemory && Object.keys(savedMemory).length
+                  ? `Preferences: ${JSON.stringify(savedMemory)}`
+                  : "Preferences: none"
+              ]
+                .filter(Boolean)
+                .join("\n\n")
+            };
+          } else if (orchestratorDecision.route === "image") {
+            const generated = await generateOmniImageFromPrompt(env, latestUserText, {
+              mode: normalizedMode,
+              quality: "ultra"
+            });
+
+            multimodalPayload = {
+              imageDataUrl: generated.imageDataUrl,
+              image: {
+                filename: generated.filename,
+                model: generated.model,
+                metadata: generated.metadata
+              }
+            };
+
+            result = {
+              response: `Image generated via multi-modal orchestration. File: ${generated.filename}. Model: ${generated.model}.`
+            };
+          } else {
+            result = await omniBrainLoop(env, runtimeCtx);
+          }
 
           if (result) {
             const parsedResult =
@@ -1175,14 +1673,46 @@ export default {
                 ? { response: result }
                 : result;
             const safe = OmniSafety.safeGuardResponse(parsedResult.response || "", responseLimit);
+            const adapted = applyAdaptiveBehavior(safe, {
+              mode: normalizedMode,
+              userEmotion: emotionalResonance.userEmotion,
+              omniTone: emotionalResonance.omniTone,
+              route: orchestratorDecision.route
+            });
+            const finalResponse = OmniSafety.safeGuardResponse(adapted, responseLimit);
             const encoder = new TextEncoder();
             const stream = new ReadableStream({
               start(controller) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: safe })}\n\n`));
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ content: finalResponse, route: orchestratorDecision.route, ...multimodalPayload })}\n\n`
+                  )
+                );
                 controller.enqueue(encoder.encode("data: [DONE]\n\n"));
                 controller.close();
               }
             });
+
+            const latestUserTurn = getLatestUserText(ctx.messages);
+            if (normalizedMode !== "simulation" && latestUserTurn && finalResponse) {
+              await persistEmotionalResonance(env, emotionalResonance);
+
+              await updateWorkingMemoryFromTurn(env, {
+                sessionId,
+                mode: normalizedMode,
+                userText: latestUserTurn,
+                assistantText: finalResponse,
+                emotionalTone: emotionalResonance.omniTone
+              });
+
+              await saveMemoryTurn(env, {
+                sessionId,
+                mode: normalizedMode,
+                userText: latestUserTurn,
+                assistantText: finalResponse,
+                emotionalTone: emotionalResonance.omniTone
+              });
+            }
 
             return new Response(stream, {
               headers: {
@@ -1192,6 +1722,11 @@ export default {
                 "Connection": "keep-alive",
                 "X-Omni-Model-Used": String(runtimeCtx.model || routeSelection.selectedModel),
                 "X-Omni-Route-Reason": routeSelection.reason,
+                "X-Omni-Orchestrator-Route": orchestratorDecision.route,
+                "X-Omni-Orchestrator-Reason": orchestratorDecision.reason,
+                "X-Omni-Persona-Tone": personaProfile.tone,
+                "X-Omni-Emotion-User": emotionalResonance.userEmotion,
+                "X-Omni-Emotion-Omni": emotionalResonance.omniTone,
                 ...(simulationContext
                   ? {
                       "X-Omni-Simulation-Id": simulationContext.state.simulationId,
@@ -1204,13 +1739,13 @@ export default {
                       "X-Omni-Response-Cap": String(responseLimit),
                       "X-Omni-Output-Token-Cap": String(outputTokenLimit),
                     "Access-Control-Expose-Headers": simulationContext
-                      ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
-                      : "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
+                      ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Orchestrator-Route, X-Omni-Orchestrator-Reason, X-Omni-Persona-Tone, X-Omni-Emotion-User, X-Omni-Emotion-Omni, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
+                      : "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Orchestrator-Route, X-Omni-Orchestrator-Reason, X-Omni-Persona-Tone, X-Omni-Emotion-User, X-Omni-Emotion-Omni, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
                     }
                   : {
                       "Access-Control-Expose-Headers": simulationContext
-                        ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps"
-                        : "X-Omni-Model-Used, X-Omni-Route-Reason"
+                        ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Orchestrator-Route, X-Omni-Orchestrator-Reason, X-Omni-Persona-Tone, X-Omni-Emotion-User, X-Omni-Emotion-Omni, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps"
+                        : "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Orchestrator-Route, X-Omni-Orchestrator-Reason, X-Omni-Persona-Tone, X-Omni-Emotion-User, X-Omni-Emotion-Omni"
                     })
               }
             });
@@ -1283,5 +1818,21 @@ export default {
       logger.error("fatal_error", err);
       return new Response("Omni crashed but recovered", { status: 500 });
     }
+  },
+
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    const logger = new OmniLogger(env);
+    ctx.waitUntil(
+      (async () => {
+        const report = await runSelfMaintenance(env);
+        logger.log("self_maintenance_complete", {
+          cron: controller.cron,
+          scheduledTime: controller.scheduledTime,
+          ...report
+        });
+      })().catch((err) => {
+        logger.error("self_maintenance_failed", err);
+      })
+    );
   }
 };

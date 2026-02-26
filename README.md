@@ -3,16 +3,23 @@
 [![Image Engine CI](https://github.com/Slizz/omni-mind-os/actions/workflows/image-engine-ci.yml/badge.svg)](https://github.com/Slizz/omni-mind-os/actions/workflows/image-engine-ci.yml)
 
 
-              O M N I   M I N D / O S
-      A Cognitive Operating System for AI Models
+                O M N I   A I
+                  A Cognitive Operating System for Ai Models
 
-# **Omni Mind/OS**  
+# **Omni Ai**  
 ### *A Modular Cognitive Engine for Multi‑Model AI Systems*
 
-Omni Mind/OS is a fully modular, Cloudflare‑native cognitive operating system designed to orchestrate LLM reasoning loops, memory, safety, multi‑model routing, and streaming responses.  
+Omni Ai is a fully modular, Cloudflare‑native cognitive operating system designed to orchestrate LLM reasoning loops, memory, safety, multi‑model routing, and streaming responses.  
 It is built for developers who want **full control** over how an AI thinks, remembers, and interacts — without relying on opaque black‑box behavior.
 
-Omni Mind/OS is:
+## **Branding Policy**
+
+- Product brand: **Omni Ai**
+- Do not use legacy Mind-slash-OS era names or older Omni naming variants
+- Do not use all-caps AI casing variants for the product brand
+- Enforced by: `npm run check:branding` (also included in `npm run lint`)
+
+Omni Ai is:
 
 - **Model‑agnostic** (Omni, GPT‑4o, DeepSeek, custom models)  
 - **Runtime‑agnostic** (Cloudflare Workers, local dev, serverless)  
@@ -39,6 +46,134 @@ The loop is fully inspectable and customizable.
 
 ---
 
+### **🧬 Omni Ai Core Intelligence (Phase 1)**
+The runtime now includes explicit Omni Ai intelligence layers:
+
+- `Identity Kernel` (KV-backed persistent identity in `MIND`)  
+- `5-Layer Reasoning Stack` (Fast, Deep, Meta, Memory, Self-Model)  
+- `Internal Simulation Engine` (2–4 candidate paths, scored and selected)  
+
+Core modules:
+
+```txt
+src/omni/intelligence/
+  identityKernel.ts
+  reasoningStack.ts
+  internalSimulation.ts
+```
+
+These modules are orchestrated by `src/api/omni/runtime/loop.ts` and keep backward-compatible `/api/omni` responses.
+
+---
+
+### **🧠 Omni Ai Memory + State (Phase 2)**
+Phase 2 adds persistent state and maintenance loops:
+
+- `D1 Long-Term Memory` for conversation arcs and learned continuity  
+- `Working Session Memory` with Durable Object-ready storage + KV fallback  
+- `Scheduled Self-Maintenance` for pruning, identity reinforcement, and drift resistance  
+
+Core modules:
+
+```txt
+src/memory/d1Memory.ts
+src/memory/workingMemory.ts
+src/maintenance/selfMaintenance.ts
+migrations/0001_omni_long_term_memory.sql
+```
+
+The `/api/omni` route now injects working memory and recent long-term arcs automatically (when available).
+
+---
+
+### **🛰 Omni Ai Multi-Modal Integration (Phase 3)**
+Phase 3 introduces a unified orchestration loop inside `/api/omni`:
+
+- `Multi-modal router` selects `chat`, `image`, `memory`, `simulation`, or `tool` route per user turn.
+- `Visual reasoning` creates composition/camera/lighting/palette directives before image generation.
+- `Tool bridge` executes explicit commands via `/tool <name> <input>`.
+- `Route diagnostics` are exposed in headers:
+  - `X-Omni-Orchestrator-Route`
+  - `X-Omni-Orchestrator-Reason`
+
+Core modules:
+
+```txt
+src/omni/multimodal/router.ts
+src/omni/multimodal/visualReasoner.ts
+```
+
+---
+
+### **🎭 Omni Ai Behavioral Intelligence (Phase 4)**
+Phase 4 adds a live behavioral layer in `/api/omni`:
+
+- `Persona engine` injects tone/dialect/rhythm/framing prompts by mode.
+- `Emotional resonance` tracks user emotion + Omni tone arc per session.
+- `Adaptive behavior` modulates final responses for clarity and emotional fit.
+
+Behavior modules:
+
+```txt
+src/omni/behavior/personaEngine.ts
+src/omni/behavior/emotionalResonance.ts
+src/omni/behavior/adaptiveBehavior.ts
+```
+
+Additional response headers now expose behavior diagnostics:
+
+- `X-Omni-Persona-Tone`
+- `X-Omni-Emotion-User`
+- `X-Omni-Emotion-Omni`
+
+---
+
+### **🛠 Omni Ai Autonomy (Phase 5)**
+Phase 5 introduces self-governance during scheduled/manual maintenance:
+
+- `Self-healing checks` evaluate drift risk and corrective actions.
+- `Internal goals registry` tracks coherence, clarity, safety, growth, and resonance.
+- `Scheduler policy engine` adjusts recommended maintenance cadence by autonomy level.
+
+Autonomy modules:
+
+```txt
+src/omni/autonomy/selfHealing.ts
+src/omni/autonomy/goalsRegistry.ts
+src/omni/autonomy/schedulerPolicy.ts
+```
+
+The `/api/maintenance/status` response now includes an `autonomy` block:
+
+- `healingScore`
+- `healingIssues`
+- `policyLevel`
+- `recommendedCadenceMinutes`
+- `goalsWatchCount`
+- `goals[]`
+
+---
+
+### **🚀 Omni Ai Release (Phase 7)**
+Phase 7 formalizes Omni Ai as a public intelligence release:
+
+- Published release specification and declaration artifacts.
+- Public release manifest for external verification.
+- Runtime release endpoint with live autonomy/maintenance telemetry snapshot.
+- Recognition cycle initialized with observable status.
+
+Release artifacts:
+
+```txt
+OMNI_AI_RELEASE_SPEC.md
+public/omni-ai-release.json
+public/omni-ai-declaration.md
+RELEASE_NOTES_1.0.0.md
+PUBLIC_ANNOUNCEMENT_OMNI_AI_1.0.0.md
+```
+
+---
+
 ### **🧩 Multi‑Model Router**
 Route requests to different models:
 
@@ -57,7 +192,7 @@ generate(env, messages) => { text: string }
 ---
 
 ### **🧱 Modular Architecture**
-Omni Mind/OS is built from clean, isolated modules:
+Omni Ai is built from clean, isolated modules:
 
 ```
 src/
@@ -80,7 +215,7 @@ Each module has a single responsibility and can be replaced or extended.
 ---
 
 ### **💾 KV‑Backed Memory System**
-Omni Mind/OS includes a persistent memory layer using Cloudflare KV:
+Omni Ai includes a persistent memory layer using Cloudflare KV:
 
 - Long‑term memory  
 - Mode‑specific memory  
@@ -105,7 +240,7 @@ This ensures the cognitive loop receives clean, predictable data.
 ---
 
 ### **📡 Streaming Responses**
-Omni Mind/OS streams output token‑by‑token using:
+Omni Ai streams output token‑by‑token using:
 
 ```ts
 new ReadableStream({ start(controller) { ... } })
@@ -186,6 +321,27 @@ Knowledge retrieval endpoint that returns relevant text chunks from files in `/p
 ### **GET/POST/DELETE /api/preferences**
 Persistent memory endpoint for user preferences (mode, writing style, last-used settings).
 
+### **GET /api/maintenance/status**
+Returns Omni health state, memory volume stats, maintenance freshness, and drift risk indicators.
+
+### **GET /api/release/spec**
+Returns Omni Ai public release identity, capabilities, artifact links, and runtime telemetry snapshot.
+
+### **POST /api/maintenance/run**
+Manually triggers the internal maintenance loop (memory pruning + identity reinforcement).
+
+### **GET /api/release/readiness**
+Returns machine-readable release hardening checks (`ready` + per-check statuses).
+
+If `OMNI_ADMIN_KEY` is configured, both maintenance endpoints require request header:
+
+```txt
+x-omni-admin-key: <OMNI_ADMIN_KEY>
+```
+
+In production (`OMNI_ENV=production`), protected endpoints require `OMNI_ADMIN_KEY`.
+Use [RELEASE_HARDENING_CHECKLIST.md](RELEASE_HARDENING_CHECKLIST.md) before public deploy.
+
 ---
 
 # **🧠 Advanced Modes**
@@ -221,6 +377,8 @@ export interface Env {
   AI: any;               // Cloudflare AI binding
   MEMORY: KVNamespace;   // Long-term memory
   MIND: KVNamespace;     // Cognitive state
+  OMNI_DB?: D1Database;  // Optional D1 long-term memory
+  OMNI_SESSION?: DurableObjectNamespace; // Optional session durable object
   MODEL_OMNI?: string;        // optional provider model ID for "omni"
   MODEL_GPT_4O?: string;      // optional provider model ID for "gpt-4o"
   MODEL_GPT_4O_MINI?: string; // optional provider model ID for "gpt-4o-mini"
@@ -248,6 +406,50 @@ MODEL_OMNI = "@cf/meta/llama-3.1-8b-instruct"
 MODEL_GPT_4O = "@cf/openai/gpt-4o"
 MODEL_GPT_4O_MINI = "@cf/openai/gpt-4o-mini"
 MODEL_DEEPSEEK = "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
+OMNI_SIMULATION_PATHS = "2" # integer between 2 and 4
+OMNI_MEMORY_RETENTION_DAYS = "45"
+OMNI_SESSION_MAX_AGE_HOURS = "72"
+OMNI_AUTONOMY_LEVEL = "balanced" # conservative | balanced | aggressive
+OMNI_ADMIN_KEY = "replace-with-strong-secret"
+```
+
+---
+
+### **🖥 Omni Ai Frontend Integration (Phase 6)**
+Phase 6 wires runtime intelligence into the chat interface:
+
+- `Mind state panel` shows active route, persona tone, and emotional transition.
+- `Mind timeline` records route/behavior events during a session.
+- `Multi-modal chat rendering` now supports image payloads streamed from `/api/omni`.
+- `Route-aware telemetry` consumes new headers from backend orchestration.
+
+Updated frontend files:
+
+```txt
+public/chat.html
+public/scripts/chat.js
+public/styles/chat.css
+```
+
+Optional infrastructure bindings in `wrangler.toml`:
+
+```toml
+[[d1_databases]]
+binding = "OMNI_DB"
+database_name = "omni_memory"
+database_id = "<replace-with-d1-id>"
+migrations_dir = "migrations"
+
+[[durable_objects.bindings]]
+name = "OMNI_SESSION"
+class_name = "OmniSession"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["OmniSession"]
+
+[triggers]
+crons = ["*/30 * * * *"]
 ```
 
 Per-environment override example:
@@ -275,11 +477,19 @@ Notes:
 
 # **🧪 Local Development**
 
-Omni Mind/OS runs locally using Wrangler:
+Omni Ai runs locally using Wrangler:
 
 ```
 wrangler dev
 ```
+
+Run branding consistency checks:
+
+```
+npm run check:branding
+```
+
+`npm run lint` also runs this branding check and fails if legacy brand variants are detected.
 
 ---
 
@@ -293,7 +503,7 @@ wrangler deploy
 
 ---
 
-# **🛠 Extending Omni Mind/OS**
+# **🛠 Extending Omni Ai**
 
 You can extend the system by adding:
 
@@ -333,7 +543,7 @@ MIT License — free to use, modify, and extend.
 ---
 
 # **🌟 Vision**
-Omni Mind/OS is designed to be:
+Omni Ai is designed to be:
 
 - A **transparent cognitive engine**  
 - A **developer‑friendly AI runtime**  

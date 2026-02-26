@@ -1,5 +1,5 @@
 // ============================================================
-// OMNI MIND/OS — Cloudflare Workers Optimizations
+// Omni Ai — Cloudflare Workers Optimizations
 // Cloudflare-specific API optimizations and utilities
 // ============================================================
 

@@ -1,4 +1,4 @@
-// omni chat.js — Style C (Full Mind/OS)
+// omni chat.js — Style C (Full Omni Ai)
 // Features:
 // - SSE streaming with [DONE] sentinel
 // - No early cutoffs, robust parsing
@@ -34,8 +34,16 @@
   const simulationExportBtn = document.getElementById("simulation-export-btn");
   const simulationRulesEditorEl = document.getElementById("simulation-rules-editor");
   const simulationLogEl = document.getElementById("simulation-log");
+  const mindRouteEl = document.getElementById("mind-route");
+  const mindPersonaEl = document.getElementById("mind-persona");
+  const mindEmotionEl = document.getElementById("mind-emotion");
+  const mindTimelineEl = document.getElementById("mind-timeline");
+  const releaseReadinessSummaryEl = document.getElementById("release-readiness-summary");
+  const releaseReadinessListEl = document.getElementById("release-readiness-list");
   const savePreferencesBtn = document.getElementById("save-preferences-btn");
   const resetMemoryBtn = document.getElementById("reset-memory-btn");
+  const adminKeyInputEl = document.getElementById("admin-key-input");
+  const releaseReadinessBtn = document.getElementById("release-readiness-btn");
 
   const sessionsSidebarEl = document.getElementById("sessions-sidebar");
   const newSessionBtn = document.getElementById("new-session-btn");
@@ -67,7 +75,8 @@
     PERSIST_MANUAL_MODE: "omni-persist-manual-mode",
     REQUEST_TIMEOUT: "omni-request-timeout",
     API_HEALTH_INTERVAL: "omni-api-health-interval",
-    API_RETRIES: "omni-api-retries"
+    API_RETRIES: "omni-api-retries",
+    ADMIN_KEY: "omni-admin-key"
   };
   const KNOWN_MODELS = ["auto", "omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
   const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore", "reasoning", "coding", "knowledge", "system-knowledge", "simulation"];
@@ -411,6 +420,78 @@
     return session.simulation;
   }
 
+  function ensureMindState(session) {
+    if (!session) return null;
+    if (!session.mindState || typeof session.mindState !== "object") {
+      session.mindState = {
+        route: "chat",
+        persona: "pending",
+        userEmotion: "pending",
+        omniEmotion: "pending",
+        timeline: []
+      };
+    }
+
+    if (!Array.isArray(session.mindState.timeline)) {
+      session.mindState.timeline = [];
+    }
+
+    return session.mindState;
+  }
+
+  function appendMindTimeline(session, text) {
+    const mindState = ensureMindState(session);
+    if (!mindState) return;
+
+    const entry = {
+      ts: Date.now(),
+      text: String(text || "").trim()
+    };
+    if (!entry.text) return;
+
+    mindState.timeline.push(entry);
+    mindState.timeline = mindState.timeline.slice(-30);
+  }
+
+  function renderMindTimeline(session) {
+    if (!mindTimelineEl) return;
+    const mindState = ensureMindState(session);
+    const timeline = Array.isArray(mindState?.timeline) ? mindState.timeline : [];
+
+    mindTimelineEl.innerHTML = "";
+    if (!timeline.length) {
+      const empty = document.createElement("div");
+      empty.className = "mind-timeline-entry";
+      empty.textContent = "No mind-state events yet.";
+      mindTimelineEl.appendChild(empty);
+      return;
+    }
+
+    for (const item of timeline.slice(-8)) {
+      const row = document.createElement("div");
+      row.className = "mind-timeline-entry";
+      const time = Number.isFinite(item?.ts)
+        ? new Date(item.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+        : "--:--:--";
+      row.textContent = `[${time}] ${String(item?.text || "")}`;
+      mindTimelineEl.appendChild(row);
+    }
+
+    mindTimelineEl.scrollTop = mindTimelineEl.scrollHeight;
+  }
+
+  function updateMindStateUI(session = getActiveSession()) {
+    const mindState = ensureMindState(session);
+    if (mindRouteEl) mindRouteEl.textContent = `Route: ${mindState?.route || "chat"}`;
+    if (mindPersonaEl) mindPersonaEl.textContent = `Persona: ${mindState?.persona || "pending"}`;
+    if (mindEmotionEl) {
+      const userEmotion = mindState?.userEmotion || "pending";
+      const omniEmotion = mindState?.omniEmotion || "pending";
+      mindEmotionEl.textContent = `Emotion: ${userEmotion} → ${omniEmotion}`;
+    }
+    renderMindTimeline(session);
+  }
+
   function appendSimulationLog(session, message) {
     const simulation = ensureSimulationState(session);
     if (!simulation) return;
@@ -665,6 +746,7 @@
     setActiveDropdownItem(modeMenu, activeMode);
     updateModeIndicator(activeMode);
     updateSimulationUI(session);
+    updateMindStateUI(session);
   }
 
   function updateSessionMetaFromMessages(session) {
@@ -917,6 +999,7 @@
         imageStyleId: msg.imageStyleId || ""
       });
     }
+    updateMindStateUI(session);
   }
 
   // =========================
@@ -942,6 +1025,132 @@
       return saved.trim() || "/api/omni";
     } catch {
       return "/api/omni";
+    }
+  }
+
+  function getReadinessEndpoint() {
+    const chatEndpoint = getApiEndpoint();
+    try {
+      const url = new URL(chatEndpoint, window.location.origin);
+      if (/\/api\/omni$/i.test(url.pathname)) {
+        url.pathname = url.pathname.replace(/\/api\/omni$/i, "/api/release/readiness");
+      } else {
+        url.pathname = "/api/release/readiness";
+      }
+      url.search = "";
+      if (url.origin === window.location.origin) {
+        return url.pathname;
+      }
+      return url.toString();
+    } catch {
+      return "/api/release/readiness";
+    }
+  }
+
+  function getAdminKey() {
+    const typed = String(adminKeyInputEl?.value || "").trim();
+    if (typed) return typed;
+    return String(getSetting(SETTINGS_KEYS.ADMIN_KEY, "") || "").trim();
+  }
+
+  function setAdminKey(value) {
+    const key = String(value || "").trim();
+    try {
+      if (key) {
+        localStorage.setItem(SETTINGS_KEYS.ADMIN_KEY, key);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  function renderReleaseReadiness(result, errorText = "") {
+    if (releaseReadinessSummaryEl) {
+      if (errorText) {
+        releaseReadinessSummaryEl.textContent = `Readiness: failed (${errorText})`;
+      } else {
+        releaseReadinessSummaryEl.textContent = `Readiness: ${result?.ready ? "ready" : "not ready"}`;
+      }
+    }
+
+    if (!releaseReadinessListEl) return;
+    releaseReadinessListEl.innerHTML = "";
+
+    if (errorText) {
+      const row = document.createElement("div");
+      row.className = "release-readiness-item fail";
+      row.textContent = errorText;
+      releaseReadinessListEl.appendChild(row);
+      return;
+    }
+
+    const checks = Array.isArray(result?.checks) ? result.checks : [];
+    if (!checks.length) {
+      const empty = document.createElement("div");
+      empty.className = "release-readiness-item";
+      empty.textContent = "No readiness checks returned.";
+      releaseReadinessListEl.appendChild(empty);
+      return;
+    }
+
+    for (const check of checks) {
+      const row = document.createElement("div");
+      row.className = `release-readiness-item ${check?.ok ? "ok" : "fail"}`;
+      row.textContent = `${check?.ok ? "✓" : "✗"} ${String(check?.name || "check")}: ${String(check?.detail || "")}`;
+      releaseReadinessListEl.appendChild(row);
+    }
+  }
+
+  async function runReleaseReadinessCheck() {
+    const session = getActiveSession();
+    const adminKey = getAdminKey();
+    setAdminKey(adminKey);
+
+    const headers = {};
+    if (adminKey) {
+      headers["x-omni-admin-key"] = adminKey;
+    }
+
+    try {
+      const res = await fetch(getReadinessEndpoint(), {
+        method: "GET",
+        headers
+      });
+
+      let payload = null;
+      try {
+        payload = await res.json();
+      } catch {
+        payload = null;
+      }
+
+      if (!res.ok) {
+        const reason = String(payload?.error || `HTTP ${res.status}`);
+        renderReleaseReadiness(null, reason);
+        updateModelInspector("auto", `readiness-${res.status}`);
+        if (session) {
+          appendMindTimeline(session, `release-readiness failed: ${reason}`);
+          updateMindStateUI(session);
+          saveState();
+        }
+        return;
+      }
+
+      renderReleaseReadiness(payload);
+      updateModelInspector("auto", payload?.ready ? "release-ready" : "release-not-ready");
+      if (session) {
+        appendMindTimeline(session, `release-readiness: ${payload?.ready ? "ready" : "not-ready"}`);
+        updateMindStateUI(session);
+        saveState();
+      }
+    } catch {
+      renderReleaseReadiness(null, "Network error");
+      updateModelInspector("auto", "readiness-network-error");
+      if (session) {
+        appendMindTimeline(session, "release-readiness failed: network-error");
+        updateMindStateUI(session);
+        saveState();
+      }
     }
   }
 
@@ -1142,6 +1351,11 @@
       onMeta({
         modelUsed: (res.headers.get("X-Omni-Model-Used") || "").trim(),
         routeReason: (res.headers.get("X-Omni-Route-Reason") || "").trim(),
+        orchestratorRoute: (res.headers.get("X-Omni-Orchestrator-Route") || "").trim(),
+        orchestratorReason: (res.headers.get("X-Omni-Orchestrator-Reason") || "").trim(),
+        personaTone: (res.headers.get("X-Omni-Persona-Tone") || "").trim(),
+        userEmotion: (res.headers.get("X-Omni-Emotion-User") || "").trim(),
+        omniEmotion: (res.headers.get("X-Omni-Emotion-Omni") || "").trim(),
         simulationId: (res.headers.get("X-Omni-Simulation-Id") || "").trim(),
         simulationStatus: (res.headers.get("X-Omni-Simulation-Status") || "").trim(),
         simulationSteps: Number(res.headers.get("X-Omni-Simulation-Steps") || "0")
@@ -1175,8 +1389,8 @@
           token = parsed;
         } else if (parsed && typeof parsed.token === "string") {
           token = parsed.token;
-        } else if (parsed && typeof parsed.content === "string") {
-          token = parsed.content;
+        } else if (parsed && typeof parsed === "object") {
+          token = parsed;
         }
       } catch {
         // raw token
@@ -1397,6 +1611,13 @@
 
     const shouldGenerateImage = isImageGenerationRequest(trimmed);
     if (shouldGenerateImage) {
+      const mindState = ensureMindState(session);
+      if (mindState) {
+        mindState.route = "image";
+        appendMindTimeline(session, "route=image, source=direct-image-endpoint");
+        updateMindStateUI(session);
+      }
+
       const assistantMessage = appendMessage("assistant", "Generating image...", {
         model: session.model || "auto",
         mode: activeMode
@@ -1490,15 +1711,47 @@
       await streamOmniResponse(
         session,
         assistantBodyEl,
-        (token) => {
-          session._streamingAssistantText = appendTokenWithSpacing(
-            session._streamingAssistantText,
-            token
-          );
+        (chunk) => {
+          if (chunk && typeof chunk === "object") {
+            const payload = chunk;
+            session._streamingMeta = {
+              route: String(payload.route || "").trim(),
+              imageDataUrl: String(payload.imageDataUrl || "").trim(),
+              imageFilename: String(payload?.image?.filename || "").trim(),
+              imageResolution: String(payload?.image?.metadata?.resolution || "").trim(),
+              imageStyleId: String(payload?.image?.metadata?.style_id || "").trim(),
+              imagePrompt: trimmed
+            };
+            if (typeof payload.content === "string") {
+              session._streamingAssistantText = appendTokenWithSpacing(
+                session._streamingAssistantText,
+                payload.content
+              );
+            }
+          } else {
+            session._streamingAssistantText = appendTokenWithSpacing(
+              session._streamingAssistantText,
+              chunk
+            );
+          }
           updateAssistantMessageBody(assistantBodyEl, session._streamingAssistantText || "", { highlight: false });
         },
         (meta) => {
           updateModelInspector(meta?.modelUsed || session.model || "auto", meta?.routeReason || "");
+
+          const mindState = ensureMindState(session);
+          if (mindState) {
+            if (meta?.orchestratorRoute) mindState.route = meta.orchestratorRoute;
+            if (meta?.personaTone) mindState.persona = meta.personaTone;
+            if (meta?.userEmotion) mindState.userEmotion = meta.userEmotion;
+            if (meta?.omniEmotion) mindState.omniEmotion = meta.omniEmotion;
+
+            const route = meta?.orchestratorRoute || "chat";
+            const persona = meta?.personaTone || "pending";
+            const emotions = `${meta?.userEmotion || "pending"}->${meta?.omniEmotion || "pending"}`;
+            appendMindTimeline(session, `route=${route}, persona=${persona}, emotion=${emotions}`);
+            updateMindStateUI(session);
+          }
 
           if (getActiveMode(session) === "simulation") {
             const simulation = ensureSimulationState(session);
@@ -1517,14 +1770,42 @@
       const safeText = finalText || "[No response received]";
       updateAssistantMessageBody(assistantBodyEl, safeText);
 
-      session.messages.push({ role: "assistant", content: safeText });
+      const streamedMeta = session._streamingMeta || {};
+      if (assistantBodyEl && streamedMeta.imageDataUrl) {
+        const imageCard = createGeneratedImageCard({
+          imageDataUrl: streamedMeta.imageDataUrl,
+          imageFilename: streamedMeta.imageFilename,
+          imagePrompt: streamedMeta.imagePrompt || trimmed,
+          imageResolution: streamedMeta.imageResolution,
+          imageStyleId: streamedMeta.imageStyleId
+        });
+        if (imageCard) {
+          const spacer = document.createElement("div");
+          spacer.className = "generated-image-spacer";
+          assistantBodyEl.appendChild(spacer);
+          assistantBodyEl.appendChild(imageCard);
+        }
+      }
+
+      session.messages.push({
+        role: "assistant",
+        content: safeText,
+        type: streamedMeta.imageDataUrl ? "image" : "text",
+        imageDataUrl: streamedMeta.imageDataUrl || "",
+        imageFilename: streamedMeta.imageFilename || "",
+        imagePrompt: streamedMeta.imagePrompt || "",
+        imageResolution: streamedMeta.imageResolution || "",
+        imageStyleId: streamedMeta.imageStyleId || ""
+      });
       session.messages[session.messages.length - 1].timestamp = Date.now();
       if (getActiveMode(session) === "simulation") {
         appendSimulationLog(session, "Assistant produced simulation state update.");
       }
       delete session._streamingAssistantText;
+      delete session._streamingMeta;
       updateSessionMetaFromMessages(session);
       saveState();
+      updateMindStateUI(session);
       playNotificationSound("assistant");
 
       if (runtimeSettings.showTimestamps || runtimeSettings.compactMode) {
@@ -1848,6 +2129,10 @@
     updateModelInspector("auto", "router-ready");
     loadPreferences();
     updateSimulationUI();
+    if (adminKeyInputEl) {
+      adminKeyInputEl.value = getSetting(SETTINGS_KEYS.ADMIN_KEY, "");
+      adminKeyInputEl.addEventListener("change", () => setAdminKey(adminKeyInputEl.value));
+    }
 
     // Listen for settings changes from other tabs or same page
     window.addEventListener("storage", (e) => {
@@ -2005,6 +2290,10 @@
 
     if (resetMemoryBtn) {
       resetMemoryBtn.addEventListener("click", resetMemory);
+    }
+
+    if (releaseReadinessBtn) {
+      releaseReadinessBtn.addEventListener("click", runReleaseReadinessCheck);
     }
 
     if (simulationStartBtn) {

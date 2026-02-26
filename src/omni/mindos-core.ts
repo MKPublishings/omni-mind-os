@@ -27,7 +27,7 @@ export function buildOmniPrompt(ctx: OmniContext): string {
   const primer = getModePrimer(ctx.mode);
 
   const mentalPathing = `
-You are OMNI MIND/OS — a cognitive operating system.
+You are Omni Ai — a cognitive operating system.
 You operate using structured mental pathing:
 
 1. Initialization

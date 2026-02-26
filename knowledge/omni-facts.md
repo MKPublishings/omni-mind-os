@@ -1,6 +1,6 @@
 # Omni Facts
 
-Omni Mind/OS is a Cloudflare Worker-based cognitive runtime with streaming responses.
+Omni Ai is a Cloudflare Worker-based cognitive runtime with streaming responses.
 
 ## Core Capabilities
 - Multi-model routing across Omni, GPT-4o, GPT-4o-mini, and DeepSeek.

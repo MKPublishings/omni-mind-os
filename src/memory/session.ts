@@ -1,7 +1,7 @@
 export class OmniSession {
-    state: any;
+  state: any;
 
-    constructor(state: any) {
+  constructor(state: any) {
     this.state = state;
   }
 
@@ -16,6 +16,11 @@ export class OmniSession {
     if (url.pathname === "/set") {
       const body = await request.json();
       await this.state.storage.put("session", body);
+      return new Response("OK");
+    }
+
+    if (url.pathname === "/delete") {
+      await this.state.storage.delete("session");
       return new Response("OK");
     }
 
