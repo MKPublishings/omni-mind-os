@@ -18,6 +18,11 @@ const SETTINGS_KEYS = {
   API_ENDPOINT: "omni-endpoint",
   DEBUG_MODE: "omni-debug-mode",
   REQUEST_TIMEOUT: "omni-request-timeout",
+  SIMULATION_DEFAULT_RULES: "omni-simulation-default-rules",
+  SIMULATION_MAX_DEPTH: "omni-simulation-max-depth",
+  SIMULATION_MAX_STEPS: "omni-simulation-max-steps",
+  SIMULATION_AUTO_RESET: "omni-simulation-auto-reset",
+  SIMULATION_LOG_VERBOSITY: "omni-simulation-log-verbosity",
   CHAT_HISTORY: "omni-chat-history"
 };
 const CHAT_SESSIONS_KEY = "omni_chat_sessions_v1";
@@ -258,6 +263,8 @@ const defaultModeMenu = document.getElementById("default-mode-menu");
 const defaultModeSetting = document.getElementById("default-mode-setting");
 const responseLengthDropdown = dropdownMgr.initDropdown("response-length-btn", "response-length-menu", "response-length-dropdown");
 const responseLengthMenu = document.getElementById("response-length-menu");
+const simulationVerbosityDropdown = dropdownMgr.initDropdown("simulation-verbosity-btn", "simulation-verbosity-menu", "simulation-verbosity-dropdown");
+const simulationVerbosityMenu = document.getElementById("simulation-verbosity-menu");
 
 function updateModeSettingVisibility() {
   if (!defaultModeSetting) return;
@@ -310,6 +317,17 @@ if (responseLengthDropdown && responseLengthMenu) {
     const responseLengthBtn = document.getElementById("response-length-btn");
     if (responseLengthBtn) responseLengthBtn.textContent = item.textContent.trim();
     setSetting(SETTINGS_KEYS.RESPONSE_LENGTH, item.dataset.value);
+  });
+}
+
+if (simulationVerbosityDropdown && simulationVerbosityMenu) {
+  simulationVerbosityDropdown.setActive(getSetting(SETTINGS_KEYS.SIMULATION_LOG_VERBOSITY, "balanced"));
+  simulationVerbosityMenu.addEventListener("click", (e) => {
+    const item = e.target.closest(".settings-dropdown-item[data-value]");
+    if (!item) return;
+    const simulationVerbosityBtn = document.getElementById("simulation-verbosity-btn");
+    if (simulationVerbosityBtn) simulationVerbosityBtn.textContent = item.textContent.trim();
+    setSetting(SETTINGS_KEYS.SIMULATION_LOG_VERBOSITY, item.dataset.value);
   });
 }
 
@@ -396,6 +414,11 @@ if (compactModeToggle) {
 const apiEndpointInput = document.getElementById("api-endpoint");
 const debugModeToggle = document.getElementById("debug-mode");
 const requestTimeoutInput = document.getElementById("request-timeout");
+const simulationDefaultRulesInput = document.getElementById("simulation-default-rules");
+const simulationMaxDepthInput = document.getElementById("simulation-max-depth");
+const simulationMaxStepsInput = document.getElementById("simulation-max-steps");
+const simulationAutoResetToggle = document.getElementById("simulation-auto-reset");
+const resetSimulationSettingsBtn = document.getElementById("reset-simulation-settings");
 
 if (apiEndpointInput) {
   apiEndpointInput.value = getSetting(SETTINGS_KEYS.API_ENDPOINT, "");
@@ -423,6 +446,71 @@ if (requestTimeoutInput) {
       alert("Timeout must be between 10 and 300 seconds.");
       requestTimeoutInput.value = getSetting(SETTINGS_KEYS.REQUEST_TIMEOUT, "60");
     }
+  });
+}
+
+if (simulationDefaultRulesInput) {
+  simulationDefaultRulesInput.value = getSetting(
+    SETTINGS_KEYS.SIMULATION_DEFAULT_RULES,
+    "domain: system-state; time: linear; entities: bounded; transitions: deterministic-by-default"
+  );
+  simulationDefaultRulesInput.addEventListener("change", () => {
+    setSetting(SETTINGS_KEYS.SIMULATION_DEFAULT_RULES, simulationDefaultRulesInput.value.trim());
+  });
+}
+
+if (simulationMaxDepthInput) {
+  simulationMaxDepthInput.value = getSetting(SETTINGS_KEYS.SIMULATION_MAX_DEPTH, "8");
+  simulationMaxDepthInput.addEventListener("change", () => {
+    const value = Number(simulationMaxDepthInput.value);
+    if (Number.isFinite(value) && value >= 1 && value <= 64) {
+      setSetting(SETTINGS_KEYS.SIMULATION_MAX_DEPTH, String(Math.floor(value)));
+    } else {
+      simulationMaxDepthInput.value = getSetting(SETTINGS_KEYS.SIMULATION_MAX_DEPTH, "8");
+      alert("Simulation max depth must be between 1 and 64.");
+    }
+  });
+}
+
+if (simulationMaxStepsInput) {
+  simulationMaxStepsInput.value = getSetting(SETTINGS_KEYS.SIMULATION_MAX_STEPS, "64");
+  simulationMaxStepsInput.addEventListener("change", () => {
+    const value = Number(simulationMaxStepsInput.value);
+    if (Number.isFinite(value) && value >= 1 && value <= 500) {
+      setSetting(SETTINGS_KEYS.SIMULATION_MAX_STEPS, String(Math.floor(value)));
+    } else {
+      simulationMaxStepsInput.value = getSetting(SETTINGS_KEYS.SIMULATION_MAX_STEPS, "64");
+      alert("Simulation max steps must be between 1 and 500.");
+    }
+  });
+}
+
+if (simulationAutoResetToggle) {
+  simulationAutoResetToggle.checked = getSettingBool(SETTINGS_KEYS.SIMULATION_AUTO_RESET, false);
+  simulationAutoResetToggle.addEventListener("change", () => {
+    setSettingBool(SETTINGS_KEYS.SIMULATION_AUTO_RESET, simulationAutoResetToggle.checked);
+  });
+}
+
+if (resetSimulationSettingsBtn) {
+  resetSimulationSettingsBtn.addEventListener("click", () => {
+    localStorage.removeItem(SETTINGS_KEYS.SIMULATION_DEFAULT_RULES);
+    localStorage.removeItem(SETTINGS_KEYS.SIMULATION_MAX_DEPTH);
+    localStorage.removeItem(SETTINGS_KEYS.SIMULATION_MAX_STEPS);
+    localStorage.removeItem(SETTINGS_KEYS.SIMULATION_AUTO_RESET);
+    localStorage.removeItem(SETTINGS_KEYS.SIMULATION_LOG_VERBOSITY);
+
+    if (simulationDefaultRulesInput) {
+      simulationDefaultRulesInput.value = "domain: system-state; time: linear; entities: bounded; transitions: deterministic-by-default";
+    }
+    if (simulationMaxDepthInput) simulationMaxDepthInput.value = "8";
+    if (simulationMaxStepsInput) simulationMaxStepsInput.value = "64";
+    if (simulationAutoResetToggle) simulationAutoResetToggle.checked = false;
+    if (simulationVerbosityDropdown) simulationVerbosityDropdown.setActive("balanced");
+    const simulationVerbosityBtn = document.getElementById("simulation-verbosity-btn");
+    if (simulationVerbosityBtn) simulationVerbosityBtn.textContent = "Balanced";
+
+    showToast("✓ Simulation settings reset to defaults", "success");
   });
 }
 

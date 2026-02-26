@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <title>Omni Mind/OS – Tools</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
   <link rel="stylesheet" href="/styles/base.css" />
   <link rel="stylesheet" href="/styles/layout.css" />
@@ -51,6 +51,32 @@
       <section class="tools-section">
         <h3>Diagnostics</h3>
         <button id="refresh-tools" class="btn">Refresh Tools</button>
+      </section>
+
+      <section class="tools-section">
+        <h3>Simulation Tools</h3>
+        <div class="tool-grid" id="simulation-tools-grid">
+          <div class="feature-card">
+            <strong>Rule Generator</strong>
+            <p>Drafts system-state constraints and transitions.</p>
+            <button class="btn" data-send-chat="Generate a simulation rule set for a distributed API gateway.">Send to Chat</button>
+          </div>
+          <div class="feature-card">
+            <strong>Entity Generator</strong>
+            <p>Creates bounded entities for simulation runs.</p>
+            <button class="btn" data-send-chat="Create 5 entities for a production incident simulation.">Send to Chat</button>
+          </div>
+          <div class="feature-card">
+            <strong>World Builder</strong>
+            <p>Assembles a contained simulation world definition.</p>
+            <button class="btn" data-send-chat="Build a contained system-state world for microservice dependency analysis.">Send to Chat</button>
+          </div>
+          <div class="feature-card">
+            <strong>Simulation Debugger</strong>
+            <p>Inspects transitions, drift, and invalid states.</p>
+            <button class="btn" data-send-chat="Debug this simulation state transition chain for invalid jumps.">Send to Chat</button>
+          </div>
+        </div>
       </section>
     </main>
   </div>

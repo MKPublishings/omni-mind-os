@@ -3,6 +3,10 @@ console.log("memory.js loaded");
 const memoryList = document.getElementById("memory-list");
 const refreshMemoriesBtn = document.getElementById("refresh-memories");
 const clearMemoriesBtn = document.getElementById("clear-memories");
+const persistSimulationMemoryToggle = document.getElementById("persist-simulation-memory");
+const clearSimulationMemoryBtn = document.getElementById("clear-simulation-memory");
+const SIM_MEMORY_PERSIST_KEY = "omni-simulation-persist-memory";
+const CHAT_SESSIONS_KEY = "omni_chat_sessions_v1";
 
 async function loadMemories() {
   if (!memoryList) return;
@@ -45,3 +49,32 @@ clearMemoriesBtn?.addEventListener("click", async () => {
 });
 
 loadMemories();
+
+if (persistSimulationMemoryToggle) {
+  persistSimulationMemoryToggle.checked = localStorage.getItem(SIM_MEMORY_PERSIST_KEY) === "true";
+  persistSimulationMemoryToggle.addEventListener("change", () => {
+    localStorage.setItem(SIM_MEMORY_PERSIST_KEY, persistSimulationMemoryToggle.checked ? "true" : "false");
+  });
+}
+
+clearSimulationMemoryBtn?.addEventListener("click", () => {
+  try {
+    const raw = localStorage.getItem(CHAT_SESSIONS_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    const sessions = parsed?.sessions || {};
+
+    for (const id of Object.keys(sessions)) {
+      if (sessions[id]?.simulation) {
+        sessions[id].simulation.logs = [];
+        sessions[id].simulation.steps = 0;
+        sessions[id].simulation.status = "inactive";
+      }
+    }
+
+    localStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(parsed));
+    alert("Simulation memory cleared.");
+  } catch (err) {
+    console.error("Clear simulation memory error:", err);
+  }
+});

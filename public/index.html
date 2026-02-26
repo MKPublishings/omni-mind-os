@@ -62,13 +62,13 @@
     }
 
     .home-brain-art {
-      width: min(420px, 82vw);
-      height: 250px;
+      width: min(560px, 90vw);
+      height: 340px;
       margin: 0 auto 22px;
-      border-radius: 16px;
-      background: radial-gradient(circle at 50% 42%, rgba(15, 82, 186, 0.18), rgba(6, 12, 24, 0.04) 62%, transparent 100%);
-      border: 1px solid rgba(127, 178, 255, 0.18);
-      box-shadow: 0 0 24px rgba(15, 82, 186, 0.18), inset 0 0 28px rgba(12, 32, 74, 0.24);
+      border-radius: 20px;
+      background: radial-gradient(circle at 50% 44%, rgba(15, 82, 186, 0.25), rgba(6, 12, 24, 0.05) 60%, transparent 100%);
+      border: 1px solid rgba(127, 178, 255, 0.24);
+      box-shadow: 0 0 34px rgba(15, 82, 186, 0.26), inset 0 0 34px rgba(12, 32, 74, 0.34);
       overflow: hidden;
     }
 
@@ -76,7 +76,7 @@
       width: 100%;
       height: 100%;
       display: block;
-      filter: drop-shadow(0 0 14px rgba(15, 82, 186, 0.28));
+      filter: drop-shadow(0 0 22px rgba(15, 82, 186, 0.34));
     }
 
     .home-brain-fallback {
@@ -202,6 +202,16 @@
       line-height: 1.5;
     }
 
+    .mode-card-cta {
+      margin-top: 12px;
+    }
+
+    .mode-card-link {
+      display: inline-block;
+      padding: 8px 14px;
+      font-size: 12px;
+    }
+
     .features-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -286,8 +296,8 @@
 
     @media (max-width: 768px) {
       .home-brain-art {
-        width: min(360px, 86vw);
-        height: 210px;
+        width: min(430px, 92vw);
+        height: 270px;
         margin-bottom: 18px;
       }
 
@@ -323,6 +333,7 @@
       <nav class="nav">
         <a href="/index.html" class="nav-link active">Home</a>
         <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
         <a href="/modes.html" class="nav-link">Modes</a>
         <a href="/settings.html" class="nav-link">Settings</a>
         <a href="/about.html" class="nav-link">About</a>
@@ -412,6 +423,13 @@
             <div class="mode-card-icon">🗂️</div>
             <h3 class="mode-card-title">System Knowledge Mode</h3>
             <p class="mode-card-desc">Internal module-aware answers grounded in system references</p>
+          </div>
+
+          <div class="mode-card">
+            <div class="mode-card-icon">🧪</div>
+            <h3 class="mode-card-title">Simulation Mode</h3>
+            <p class="mode-card-desc">Run contained worlds, systems, and scenarios inside Omni’s cognitive OS.</p>
+            <p class="mode-card-cta"><a href="/modes.html#simulation" class="hero-btn hero-btn-secondary mode-card-link">Open Simulation Mode</a></p>
           </div>
         </div>
       </section>

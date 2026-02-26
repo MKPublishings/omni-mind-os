@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Mind/OS – Docs</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/docs.css" />
+</head>
+<body class="page">
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Mind/OS</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link active">Docs</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <header class="docs-header">
+        <h2>Omni Mind/OS Documentation</h2>
+        <p>Public technical brain of Omni: architecture, physics, cognition, simulation, and engineering philosophy.</p>
+      </header>
+
+      <div class="docs-shell">
+        <aside class="docs-nav-panel" aria-label="Documentation sections">
+          <h3>Documentation</h3>
+          <nav class="docs-nav" id="docs-nav">
+            <a href="#overview" class="docs-nav-link is-active">Overview</a>
+            <a href="#architecture" class="docs-nav-link">Architecture</a>
+            <a href="#physics-engine" class="docs-nav-link">Physics Engine</a>
+            <a href="#code-structure" class="docs-nav-link">Code Structure</a>
+            <a href="#cognitive-modes" class="docs-nav-link">Cognitive Modes</a>
+            <a href="#simulation-mode" class="docs-nav-link">Simulation Mode</a>
+            <a href="#memory-system" class="docs-nav-link">Memory System</a>
+            <a href="#tools-extensions" class="docs-nav-link">Tools & Extensions</a>
+            <a href="#api-prompts" class="docs-nav-link">API & Prompts</a>
+            <a href="#ui-ux-philosophy" class="docs-nav-link">UI/UX Philosophy</a>
+            <a href="#deployment-pipeline" class="docs-nav-link">Deployment Pipeline</a>
+            <a href="#research-inspirations" class="docs-nav-link">Research & Inspirations</a>
+            <a href="#project-roadmap" class="docs-nav-link">Project Goals & Roadmap</a>
+          </nav>
+        </aside>
+
+        <article class="docs-content">
+          <section id="overview" class="docs-section">
+            <h3>Overview</h3>
+            <p><strong>Omni</strong> is a cognitive operating system designed for creators, builders, and analysts. <strong>Mind/OS</strong> refers to a modular intelligence model where cognition is composed of explicit layers: mode selection, reasoning templates, memory, tooling, and simulation.</p>
+            <p><strong>Lineage:</strong> Mind/OS → Omni AI → Mind AI. Omni is the currently deployed public runtime of that lineage.</p>
+            <ul>
+              <li>Mode-aware intelligence with explicit cognitive profiles</li>
+              <li>Memory-aware conversation with user preference persistence</li>
+              <li>Simulation-capable reasoning in contained environments</li>
+              <li>Inspectable architecture with documented design intent</li>
+            </ul>
+            <p>Omni exists to make intelligence systems transparent, modular, and practical in real creative and technical workflows.</p>
+          </section>
+
+          <section id="architecture" class="docs-section">
+            <h3>Architecture</h3>
+            <div class="docs-grid">
+              <div class="docs-card"><strong>Frontend</strong><p>Static pages + modular scripts (`public/`) with mode-aware UI and panelized controls.</p></div>
+              <div class="docs-card"><strong>Backend</strong><p>Cloudflare Worker in `src/index.ts` orchestrating routing, prompts, and streaming responses.</p></div>
+              <div class="docs-card"><strong>Modes Engine</strong><p>Mode templates and routing policies from `src/omni/enhancements.ts` and chat mode control.</p></div>
+              <div class="docs-card"><strong>Memory Engine</strong><p>Persistent preferences and scoped session memory, including isolated simulation state.</p></div>
+              <div class="docs-card"><strong>Simulation Engine</strong><p>Contained executor in `src/omni/simulation/engine.ts` for rules, steps, logs, and state evolution.</p></div>
+              <div class="docs-card"><strong>Deployment</strong><p>Cloudflare Pages (frontend) + Worker runtime (backend APIs + inference flow).</p></div>
+            </div>
+            <h4>Data Flow</h4>
+            <pre><code>User → Mode Router → Worker → LLM Template → Response Stream → UI Renderer</code></pre>
+
+            <h4>Architecture Diagram</h4>
+            <div class="docs-diagram" role="img" aria-label="Omni architecture flow from user input through mode router and worker to streamed UI output.">
+              <svg viewBox="0 0 1100 220" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="nodeFill" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="rgba(15,82,186,0.38)" />
+                    <stop offset="100%" stop-color="rgba(12,20,36,0.9)" />
+                  </linearGradient>
+                  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="rgba(165,198,255,0.95)" />
+                  </marker>
+                </defs>
+
+                <rect x="20" y="70" width="145" height="72" rx="12" fill="url(#nodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="92" y="102" text-anchor="middle" fill="white" font-size="14" font-weight="600">User</text>
+                <text x="92" y="122" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Prompt / Intent</text>
+
+                <rect x="205" y="70" width="180" height="72" rx="12" fill="url(#nodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="295" y="102" text-anchor="middle" fill="white" font-size="14" font-weight="600">Mode Router</text>
+                <text x="295" y="122" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Profile Selection</text>
+
+                <rect x="425" y="70" width="180" height="72" rx="12" fill="url(#nodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="515" y="102" text-anchor="middle" fill="white" font-size="14" font-weight="600">Worker Runtime</text>
+                <text x="515" y="122" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Routing / Memory / Guardrails</text>
+
+                <rect x="645" y="70" width="180" height="72" rx="12" fill="url(#nodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="735" y="102" text-anchor="middle" fill="white" font-size="14" font-weight="600">LLM Template</text>
+                <text x="735" y="122" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">System + Mode + Simulation</text>
+
+                <rect x="865" y="70" width="215" height="72" rx="12" fill="url(#nodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="972" y="102" text-anchor="middle" fill="white" font-size="14" font-weight="600">UI Renderer</text>
+                <text x="972" y="122" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Streaming Response + Panels</text>
+
+                <line x1="165" y1="106" x2="205" y2="106" stroke="rgba(165,198,255,0.9)" stroke-width="2.5" marker-end="url(#arrow)" />
+                <line x1="385" y1="106" x2="425" y2="106" stroke="rgba(165,198,255,0.9)" stroke-width="2.5" marker-end="url(#arrow)" />
+                <line x1="605" y1="106" x2="645" y2="106" stroke="rgba(165,198,255,0.9)" stroke-width="2.5" marker-end="url(#arrow)" />
+                <line x1="825" y1="106" x2="865" y2="106" stroke="rgba(165,198,255,0.9)" stroke-width="2.5" marker-end="url(#arrow)" />
+
+                <path d="M 515 142 C 515 184, 735 184, 735 142" fill="none" stroke="rgba(244,208,161,0.82)" stroke-width="2.2" marker-end="url(#arrow)" />
+                <text x="625" y="198" text-anchor="middle" fill="rgba(244,208,161,0.95)" font-size="12">Feedback loop: state, routing reason, simulation headers</text>
+              </svg>
+            </div>
+            <p class="docs-jump-links">
+              Jump: <a href="#overview">Overview</a> · <a href="#physics-engine">Physics Engine</a> · <a href="#api-prompts">API & Prompts</a>
+            </p>
+          </section>
+
+          <section id="physics-engine" class="docs-section">
+            <h3>Physics Engine</h3>
+            <p>Omni uses a <strong>soft-physics reasoning model</strong> in simulation contexts. Physics here describes bounded transition behavior for symbolic systems rather than numerical world simulation only.</p>
+            <ul>
+              <li><strong>Time rules:</strong> linear by default, optional segmented timelines</li>
+              <li><strong>Entity rules:</strong> bounded entities with constrained transitions</li>
+              <li><strong>State transitions:</strong> deterministic-by-default with optional stochastic drift</li>
+              <li><strong>Narrative/system coupling:</strong> transition outputs can be interpreted technically or narratively</li>
+            </ul>
+            <pre><code>const physics = {
+  time: "linear",
+  gravity: 0.2,
+  friction: 0.05,
+  randomness: 0.1
+};</code></pre>
+            <p>Physics parameters interact with Simulation Mode by influencing transition strictness, branch variance, and logging cadence.</p>
+          </section>
+
+          <section id="code-structure" class="docs-section">
+            <h3>Code Structure</h3>
+            <p>Omni follows a modular architecture with clear separation between static UI, runtime logic, and backend orchestration.</p>
+            <pre><code>/public
+  /styles
+  /scripts
+    chat.js
+    modes.js
+    settings.js
+    memory.js
+    tools.js
+  index.html
+  chat.html
+  modes.html
+  docs.html
+  about.html
+  system.html
+  settings.html
+
+/src
+  index.ts
+  /api
+  /core
+  /memory
+  /modes
+  /omni
+    /simulation
+      engine.ts
+</code></pre>
+            <ul>
+              <li>Modular JS patterns with page-specific scripts</li>
+              <li>Explicit mode routing and template injection</li>
+              <li>Focused modules for simulation and memory boundaries</li>
+              <li>Guard rails: sanitization, bounded output caps, explicit fallback behavior</li>
+            </ul>
+          </section>
+
+          <section id="cognitive-modes" class="docs-section">
+            <h3>Cognitive Modes</h3>
+            <p>Each mode configures reasoning style, response structure, and memory interaction.</p>
+
+            <h4>Architect Mode</h4>
+            <ul>
+              <li><strong>Purpose:</strong> structural planning and system decomposition</li>
+              <li><strong>System Prompt Focus:</strong> modularity, constraints, implementation order</li>
+              <li><strong>Example Input:</strong> “Design a scalable ingestion pipeline.”</li>
+              <li><strong>Example Output:</strong> layered architecture + dependency flow + rollout plan</li>
+              <li><strong>When to Use:</strong> APIs, infrastructure, architecture reviews</li>
+              <li><strong>Memory Interaction:</strong> stores recurring structural preferences</li>
+            </ul>
+
+            <h4>Creative Mode</h4>
+            <ul>
+              <li><strong>Purpose:</strong> ideation, story language, symbolic composition</li>
+              <li><strong>System Prompt Focus:</strong> atmosphere, metaphor, novelty</li>
+              <li><strong>Example Input:</strong> “Write a cinematic world concept.”</li>
+              <li><strong>Example Output:</strong> mood-rich narrative structure and scene framing</li>
+              <li><strong>When to Use:</strong> fiction, art direction, concept generation</li>
+              <li><strong>Memory Interaction:</strong> retains tone/style preferences</li>
+            </ul>
+
+            <h4>Analysis Mode</h4>
+            <ul>
+              <li><strong>Purpose:</strong> logic breakdown and evidence-led evaluation</li>
+              <li><strong>System Prompt Focus:</strong> claims, assumptions, structured findings</li>
+              <li><strong>Example Input:</strong> “Evaluate this product strategy.”</li>
+              <li><strong>Example Output:</strong> criteria matrix, risks, and recommendations</li>
+              <li><strong>When to Use:</strong> tradeoff analysis, summaries, decision support</li>
+              <li><strong>Memory Interaction:</strong> remembers preferred report format</li>
+            </ul>
+
+            <h4>OS Mode</h4>
+            <ul>
+              <li><strong>Purpose:</strong> system-level coordination and operational clarity</li>
+              <li><strong>System Prompt Focus:</strong> platform state, modules, execution context</li>
+              <li><strong>Example Input:</strong> “Show runtime behavior and dependencies.”</li>
+              <li><strong>Example Output:</strong> system map with status and operational notes</li>
+              <li><strong>When to Use:</strong> diagnostics and architecture introspection</li>
+              <li><strong>Memory Interaction:</strong> prioritizes stable system references</li>
+            </ul>
+
+            <h4>Simulation Mode</h4>
+            <ul>
+              <li><strong>Purpose:</strong> contained environment execution and state transitions</li>
+              <li><strong>System Prompt Focus:</strong> rules, steps, logs, and bounded simulation state</li>
+              <li><strong>Example Input:</strong> “Run a failure cascade across 3 services.”</li>
+              <li><strong>Example Output:</strong> stepwise transition log + current state snapshot</li>
+              <li><strong>When to Use:</strong> scenarios, what-if analysis, behavior checks</li>
+              <li><strong>Memory Interaction:</strong> isolated simulation memory channel</li>
+            </ul>
+
+            <h4>Developer Mode</h4>
+            <ul>
+              <li><strong>Purpose:</strong> implementation, debugging, and code reasoning</li>
+              <li><strong>System Prompt Focus:</strong> correctness, minimal diffs, verification</li>
+              <li><strong>Example Input:</strong> “Fix this TypeScript route bug.”</li>
+              <li><strong>Example Output:</strong> patch + explanation + validation notes</li>
+              <li><strong>When to Use:</strong> refactors, fixes, feature implementation</li>
+              <li><strong>Memory Interaction:</strong> persists coding style and defaults</li>
+            </ul>
+
+            <h4>Mythic Mode (Optional)</h4>
+            <ul>
+              <li><strong>Purpose:</strong> mythic-cinematic dialect and symbolic synthesis</li>
+              <li><strong>System Prompt Focus:</strong> archetypes, resonance, cinematic texture</li>
+              <li><strong>Example Input:</strong> “Render this roadmap as a mythic arc.”</li>
+              <li><strong>Example Output:</strong> symbolic narrative with structured meaning layers</li>
+              <li><strong>When to Use:</strong> storytelling and identity-driven communication</li>
+              <li><strong>Memory Interaction:</strong> stores symbolic style motifs</li>
+            </ul>
+          </section>
+
+          <section id="simulation-mode" class="docs-section">
+            <h3>Simulation Mode</h3>
+            <p>Simulation Mode is a contained reality engine with explicit rules, tracked state, and deterministic step progression by default.</p>
+            <h4>Rules Format</h4>
+            <pre><code>/simulation
+rules:
+  - time: linear
+  - entities: 3
+  - physics: soft</code></pre>
+
+            <h4>Lifecycle</h4>
+            <ul>
+              <li>Initialize simulation context and defaults</li>
+              <li>Start or resume step execution</li>
+              <li>Pause state progression</li>
+              <li>Reset state and logs</li>
+              <li>Export state snapshot to JSON</li>
+            </ul>
+
+            <h4>Lifecycle Diagram</h4>
+            <div class="docs-diagram" role="img" aria-label="Simulation lifecycle from initialize to run, pause, reset, and export.">
+              <svg viewBox="0 0 1100 230" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="simNodeFill" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="rgba(15,82,186,0.42)" />
+                    <stop offset="100%" stop-color="rgba(10,18,34,0.92)" />
+                  </linearGradient>
+                  <marker id="simArrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="rgba(165,198,255,0.95)" />
+                  </marker>
+                </defs>
+
+                <rect x="18" y="78" width="170" height="74" rx="12" fill="url(#simNodeFill)" stroke="rgba(165,198,255,0.58)" />
+                <text x="103" y="110" text-anchor="middle" fill="white" font-size="14" font-weight="600">Initialize</text>
+                <text x="103" y="130" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Rules + Defaults</text>
+
+                <rect x="225" y="78" width="170" height="74" rx="12" fill="url(#simNodeFill)" stroke="rgba(165,198,255,0.58)" />
+                <text x="310" y="110" text-anchor="middle" fill="white" font-size="14" font-weight="600">Run</text>
+                <text x="310" y="130" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Step Execution</text>
+
+                <rect x="432" y="78" width="170" height="74" rx="12" fill="url(#simNodeFill)" stroke="rgba(165,198,255,0.58)" />
+                <text x="517" y="110" text-anchor="middle" fill="white" font-size="14" font-weight="600">Pause</text>
+                <text x="517" y="130" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Hold State</text>
+
+                <rect x="639" y="78" width="170" height="74" rx="12" fill="url(#simNodeFill)" stroke="rgba(165,198,255,0.58)" />
+                <text x="724" y="110" text-anchor="middle" fill="white" font-size="14" font-weight="600">Reset</text>
+                <text x="724" y="130" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Clear / Re-seed</text>
+
+                <rect x="846" y="78" width="236" height="74" rx="12" fill="url(#simNodeFill)" stroke="rgba(165,198,255,0.58)" />
+                <text x="964" y="110" text-anchor="middle" fill="white" font-size="14" font-weight="600">Export State</text>
+                <text x="964" y="130" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">JSON Snapshot + Logs</text>
+
+                <line x1="188" y1="115" x2="225" y2="115" stroke="rgba(165,198,255,0.9)" stroke-width="2.5" marker-end="url(#simArrow)" />
+                <line x1="395" y1="115" x2="432" y2="115" stroke="rgba(165,198,255,0.9)" stroke-width="2.5" marker-end="url(#simArrow)" />
+                <line x1="602" y1="115" x2="639" y2="115" stroke="rgba(165,198,255,0.9)" stroke-width="2.5" marker-end="url(#simArrow)" />
+                <line x1="809" y1="115" x2="846" y2="115" stroke="rgba(165,198,255,0.9)" stroke-width="2.5" marker-end="url(#simArrow)" />
+
+                <path d="M 517 78 C 517 34, 310 34, 310 78" fill="none" stroke="rgba(244,208,161,0.85)" stroke-width="2.2" marker-end="url(#simArrow)" />
+                <text x="413" y="28" text-anchor="middle" fill="rgba(244,208,161,0.96)" font-size="12">Resume from Pause to Run</text>
+              </svg>
+            </div>
+            <p class="docs-jump-links">
+              Jump: <a href="#simulation-mode">Top of Simulation Mode</a> · <a href="#memory-system">Memory System</a> · <a href="#tools-extensions">Tools & Extensions</a>
+            </p>
+
+            <h4>State Schema (Summary)</h4>
+            <pre><code>{
+  "simulationId": "sim_...",
+  "status": "active | paused",
+  "stepsExecuted": 0,
+  "rules": ["..."],
+  "memoryUsageBytes": 0,
+  "logs": [{ "ts": 0, "level": "info", "message": "..." }]
+}</code></pre>
+            <p>Simulation memory is isolated from standard conversational memory to preserve boundary safety and traceability.</p>
+          </section>
+
+          <section id="memory-system" class="docs-section">
+            <h3>Memory System</h3>
+            <ul>
+              <li><strong>Persistent memory:</strong> saved preferences and stable context</li>
+              <li><strong>Ephemeral memory:</strong> active session-level context</li>
+              <li><strong>Simulation memory:</strong> isolated state, steps, and logs</li>
+              <li><strong>Boundaries:</strong> simulation channel does not overwrite general user memory</li>
+              <li><strong>Safety:</strong> scoped read/write operations and explicit reset controls</li>
+            </ul>
+
+            <h4>Memory Boundaries Diagram</h4>
+            <div class="docs-diagram" role="img" aria-label="Memory boundaries across persistent, ephemeral, and simulation memory channels.">
+              <svg viewBox="0 0 1100 260" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="memNodeFill" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="rgba(15,82,186,0.4)" />
+                    <stop offset="100%" stop-color="rgba(10,18,34,0.92)" />
+                  </linearGradient>
+                  <marker id="memArrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="rgba(165,198,255,0.95)" />
+                  </marker>
+                </defs>
+
+                <rect x="430" y="20" width="240" height="70" rx="12" fill="url(#memNodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="550" y="49" text-anchor="middle" fill="white" font-size="14" font-weight="600">Runtime Context</text>
+                <text x="550" y="68" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Session + Mode + User Input</text>
+
+                <rect x="60" y="120" width="290" height="90" rx="12" fill="url(#memNodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="205" y="150" text-anchor="middle" fill="white" font-size="14" font-weight="600">Persistent Memory</text>
+                <text x="205" y="170" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Preferences + Stable User Profile</text>
+                <text x="205" y="188" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">KV-backed / cross-session</text>
+
+                <rect x="405" y="120" width="290" height="90" rx="12" fill="url(#memNodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="550" y="150" text-anchor="middle" fill="white" font-size="14" font-weight="600">Ephemeral Memory</text>
+                <text x="550" y="170" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Active Conversation Window</text>
+                <text x="550" y="188" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Session-scoped / mutable</text>
+
+                <rect x="750" y="120" width="290" height="90" rx="12" fill="url(#memNodeFill)" stroke="rgba(244,208,161,0.72)" />
+                <text x="895" y="150" text-anchor="middle" fill="white" font-size="14" font-weight="600">Simulation Memory</text>
+                <text x="895" y="170" text-anchor="middle" fill="rgba(244,208,161,0.95)" font-size="12">State + Steps + Logs</text>
+                <text x="895" y="188" text-anchor="middle" fill="rgba(244,208,161,0.95)" font-size="12">Isolated channel / explicit reset</text>
+
+                <line x1="520" y1="90" x2="230" y2="120" stroke="rgba(165,198,255,0.9)" stroke-width="2.3" marker-end="url(#memArrow)" />
+                <line x1="550" y1="90" x2="550" y2="120" stroke="rgba(165,198,255,0.9)" stroke-width="2.3" marker-end="url(#memArrow)" />
+                <line x1="580" y1="90" x2="870" y2="120" stroke="rgba(165,198,255,0.9)" stroke-width="2.3" marker-end="url(#memArrow)" />
+
+                <line x1="350" y1="165" x2="405" y2="165" stroke="rgba(165,198,255,0.78)" stroke-width="2" marker-end="url(#memArrow)" />
+                <line x1="695" y1="165" x2="750" y2="165" stroke="rgba(244,208,161,0.9)" stroke-width="2" marker-end="url(#memArrow)" />
+
+                <path d="M 895 210 C 895 238, 550 238, 550 210" fill="none" stroke="rgba(244,208,161,0.85)" stroke-width="2.2" />
+                <text x="722" y="252" text-anchor="middle" fill="rgba(244,208,161,0.96)" font-size="12">Boundary rule: simulation state cannot overwrite persistent profile memory</text>
+              </svg>
+            </div>
+            <p class="docs-jump-links">
+              Jump: <a href="#memory-system">Top of Memory System</a> · <a href="#simulation-mode">Simulation Mode</a> · <a href="#api-prompts">API & Prompts</a>
+            </p>
+          </section>
+
+          <section id="tools-extensions" class="docs-section">
+            <h3>Tools & Extensions</h3>
+            <p>Omni exposes utilities that accelerate scenario authoring and runtime inspection.</p>
+            <div class="docs-grid">
+              <div class="docs-card"><strong>Rule Generator</strong><p>Produces initial rule sets for structured simulations.</p></div>
+              <div class="docs-card"><strong>Entity Generator</strong><p>Builds bounded actors/objects with state metadata.</p></div>
+              <div class="docs-card"><strong>World Builder</strong><p>Assembles context shells for scenario initialization.</p></div>
+              <div class="docs-card"><strong>Simulation Debugger</strong><p>Inspects transitions and detects invalid jumps.</p></div>
+              <div class="docs-card"><strong>Prompt Inspector</strong><p>Supports comparison and evolution of prompt layers.</p></div>
+              <div class="docs-card"><strong>System State Viewer</strong><p>Surfaces runtime status metrics and active state.</p></div>
+            </div>
+          </section>
+
+          <section id="api-prompts" class="docs-section">
+            <h3>API & Prompts</h3>
+            <h4>Worker Routing</h4>
+            <pre><code>if (mode === "simulation") {
+  // build simulation context and headers
+}</code></pre>
+
+            <h4>Mode Router Decision Flow</h4>
+            <div class="docs-diagram" role="img" aria-label="Decision flow for manual or automatic mode selection and model routing.">
+              <svg viewBox="0 0 1120 300" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="routerNodeFill" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="rgba(15,82,186,0.42)" />
+                    <stop offset="100%" stop-color="rgba(10,18,34,0.92)" />
+                  </linearGradient>
+                  <marker id="routerArrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="rgba(165,198,255,0.95)" />
+                  </marker>
+                </defs>
+
+                <rect x="20" y="116" width="160" height="72" rx="12" fill="url(#routerNodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="100" y="146" text-anchor="middle" fill="white" font-size="14" font-weight="600">User Input</text>
+                <text x="100" y="166" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Prompt + Settings</text>
+
+                <rect x="220" y="116" width="190" height="72" rx="12" fill="url(#routerNodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="315" y="146" text-anchor="middle" fill="white" font-size="14" font-weight="600">Mode Selection</text>
+                <text x="315" y="166" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Manual or Automatic</text>
+
+                <rect x="470" y="34" width="210" height="72" rx="12" fill="url(#routerNodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="575" y="64" text-anchor="middle" fill="white" font-size="14" font-weight="600">Manual Mode Path</text>
+                <text x="575" y="84" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Use selected mode directly</text>
+
+                <rect x="470" y="198" width="210" height="72" rx="12" fill="url(#routerNodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="575" y="228" text-anchor="middle" fill="white" font-size="14" font-weight="600">Automatic Path</text>
+                <text x="575" y="248" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Detect intent + infer mode</text>
+
+                <rect x="740" y="116" width="200" height="72" rx="12" fill="url(#routerNodeFill)" stroke="rgba(244,208,161,0.72)" />
+                <text x="840" y="146" text-anchor="middle" fill="white" font-size="14" font-weight="600">Model Router</text>
+                <text x="840" y="166" text-anchor="middle" fill="rgba(244,208,161,0.95)" font-size="12">Task-type model selection</text>
+
+                <rect x="980" y="116" width="120" height="72" rx="12" fill="url(#routerNodeFill)" stroke="rgba(165,198,255,0.55)" />
+                <text x="1040" y="146" text-anchor="middle" fill="white" font-size="14" font-weight="600">Prompt</text>
+                <text x="1040" y="166" text-anchor="middle" fill="rgba(220,234,255,0.88)" font-size="12">Assemble</text>
+
+                <line x1="180" y1="152" x2="220" y2="152" stroke="rgba(165,198,255,0.9)" stroke-width="2.4" marker-end="url(#routerArrow)" />
+
+                <line x1="410" y1="152" x2="470" y2="70" stroke="rgba(165,198,255,0.9)" stroke-width="2.3" marker-end="url(#routerArrow)" />
+                <line x1="410" y1="152" x2="470" y2="234" stroke="rgba(165,198,255,0.9)" stroke-width="2.3" marker-end="url(#routerArrow)" />
+
+                <line x1="680" y1="70" x2="740" y2="152" stroke="rgba(165,198,255,0.88)" stroke-width="2.3" marker-end="url(#routerArrow)" />
+                <line x1="680" y1="234" x2="740" y2="152" stroke="rgba(165,198,255,0.88)" stroke-width="2.3" marker-end="url(#routerArrow)" />
+
+                <line x1="940" y1="152" x2="980" y2="152" stroke="rgba(165,198,255,0.9)" stroke-width="2.4" marker-end="url(#routerArrow)" />
+
+                <path d="M 1040 188 C 1040 250, 315 250, 315 188" fill="none" stroke="rgba(244,208,161,0.86)" stroke-width="2.2" marker-end="url(#routerArrow)" />
+                <text x="678" y="286" text-anchor="middle" fill="rgba(244,208,161,0.96)" font-size="12">Feedback loop: route reason and chosen model inform subsequent turns</text>
+              </svg>
+            </div>
+            <p class="docs-jump-links">
+              Jump: <a href="#api-prompts">Top of API & Prompts</a> · <a href="#cognitive-modes">Cognitive Modes</a> · <a href="#deployment-pipeline">Deployment Pipeline</a>
+            </p>
+
+            <h4>Core Endpoint</h4>
+            <pre><code>POST /api/omni
+{
+  "model": "auto | omni | gpt-4o | deepseek",
+  "mode": "simulation",
+  "messages": [{ "role": "user", "content": "..." }]
+}</code></pre>
+
+            <h4>Prompt Layers</h4>
+            <ul>
+              <li>System prompt (global constraints)</li>
+              <li>Mode prompt (cognitive profile)</li>
+              <li>Simulation prompt (rules + state + logs)</li>
+              <li>User context + memory injection</li>
+            </ul>
+          </section>
+
+          <section id="ui-ux-philosophy" class="docs-section">
+            <h3>UI/UX Philosophy</h3>
+            <ul>
+              <li><strong>Cinematic interface:</strong> emotional clarity with technical readability</li>
+              <li><strong>Mode distinction:</strong> each mode is explicit, not hidden automation</li>
+              <li><strong>Simulation panel:</strong> direct control of runtime lifecycle and visibility</li>
+              <li><strong>Logs + state indicators:</strong> inspectability over black-box behavior</li>
+              <li><strong>Accessibility:</strong> navigable structure, keyboard support, and clear hierarchy</li>
+            </ul>
+          </section>
+
+          <section id="deployment-pipeline" class="docs-section">
+            <h3>Deployment Pipeline</h3>
+            <ul>
+              <li>Cloudflare Pages serves static frontend assets</li>
+              <li>Cloudflare Worker handles LLM routing and streaming</li>
+              <li>TypeScript build/typecheck validates backend behavior</li>
+              <li>Smoke tests validate image and core runtime paths</li>
+              <li>Environment variables define model and output constraints</li>
+              <li>Versioned releases flow through staging to production deployment</li>
+            </ul>
+          </section>
+
+          <section id="research-inspirations" class="docs-section">
+            <h3>Research & Inspirations</h3>
+            <ul>
+              <li>Cognitive architecture design and modular reasoning systems</li>
+              <li>Simulation theory and bounded state-machine models</li>
+              <li>Narrative engines and symbolic language systems</li>
+              <li>Prompt engineering and mode-conditioned generation</li>
+              <li>Human-centered AI safety and emotional checkpoint strategies</li>
+              <li>Mythic-cinematic dialect exploration for expressive interfaces</li>
+            </ul>
+          </section>
+
+          <section id="project-roadmap" class="docs-section">
+            <h3>Project Goals & Roadmap</h3>
+            <h4>Short-Term</h4>
+            <ul>
+              <li>Expand simulation controls and debugging depth</li>
+              <li>Strengthen prompt inspector and state telemetry</li>
+              <li>Improve docs examples and architecture visuals</li>
+            </ul>
+
+            <h4>Long-Term</h4>
+            <ul>
+              <li>Simulation engine expansion (branching worlds + richer physics)</li>
+              <li>Visual dialect integration into simulation/render loops</li>
+              <li>Mind AI evolution beyond single-session constraints</li>
+              <li>Public release hardening and potential open-source modules</li>
+            </ul>
+          </section>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script src="/scripts/docs.js"></script>
+  <script src="/scripts/page-transition.js"></script>
+</body>
+</html>

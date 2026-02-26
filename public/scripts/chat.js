@@ -23,8 +23,17 @@
   const modeBtn = document.getElementById("mode-btn");
   const modeMenu = document.getElementById("mode-menu");
   const modeLabelEl = document.getElementById("mode-label");
+  const chatAreaEl = document.getElementById("chat-area");
   const modelInspectorEl = document.getElementById("model-inspector");
   const apiStatusEl = document.getElementById("api-status");
+  const simulationBadgeEl = document.getElementById("simulation-badge");
+  const simulationPanelEl = document.getElementById("simulation-panel");
+  const simulationStartBtn = document.getElementById("simulation-start-btn");
+  const simulationPauseBtn = document.getElementById("simulation-pause-btn");
+  const simulationResetBtn = document.getElementById("simulation-reset-btn");
+  const simulationExportBtn = document.getElementById("simulation-export-btn");
+  const simulationRulesEditorEl = document.getElementById("simulation-rules-editor");
+  const simulationLogEl = document.getElementById("simulation-log");
   const savePreferencesBtn = document.getElementById("save-preferences-btn");
   const resetMemoryBtn = document.getElementById("reset-memory-btn");
 
@@ -44,13 +53,18 @@
     DEFAULT_MODEL: "omni-default-model",
     MODE_SELECTION: "omni-mode-selection",
     DEFAULT_MODE: "omni-default-mode",
+    SIMULATION_DEFAULT_RULES: "omni-simulation-default-rules",
+    SIMULATION_MAX_DEPTH: "omni-simulation-max-depth",
+    SIMULATION_MAX_STEPS: "omni-simulation-max-steps",
+    SIMULATION_AUTO_RESET: "omni-simulation-auto-reset",
+    SIMULATION_LOG_VERBOSITY: "omni-simulation-log-verbosity",
     SOUND: "omni-sound",
     SHOW_TIMESTAMPS: "omni-show-timestamps",
     COMPACT_MODE: "omni-compact-mode",
     REQUEST_TIMEOUT: "omni-request-timeout"
   };
   const KNOWN_MODELS = ["auto", "omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
-  const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore", "reasoning", "coding", "knowledge", "system-knowledge"];
+  const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore", "reasoning", "coding", "knowledge", "system-knowledge", "simulation"];
   const KNOWN_RENDER_STYLES = [
     "hyper-real",
     "3d",
@@ -331,7 +345,119 @@
   function toModeLabel(mode) {
     const normalized = normalizeMode(mode) || "auto";
     if (normalized === "system-knowledge") return "System Knowledge";
+    if (normalized === "simulation") return "Simulation";
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  function getSimulationDefaults() {
+    const defaultRules = String(
+      getSetting(
+        SETTINGS_KEYS.SIMULATION_DEFAULT_RULES,
+        "domain: system-state\ntime: linear\nentities: bounded\ntransitions: deterministic-by-default"
+      ) || ""
+    ).trim();
+    const maxDepth = Number(getSetting(SETTINGS_KEYS.SIMULATION_MAX_DEPTH, "8"));
+    const maxSteps = Number(getSetting(SETTINGS_KEYS.SIMULATION_MAX_STEPS, "64"));
+    const autoReset = getSettingBool(SETTINGS_KEYS.SIMULATION_AUTO_RESET, false);
+    const verbosity = String(getSetting(SETTINGS_KEYS.SIMULATION_LOG_VERBOSITY, "balanced") || "balanced").trim().toLowerCase();
+
+    return {
+      rules: defaultRules || "domain: system-state\ntime: linear\nentities: bounded\ntransitions: deterministic-by-default",
+      maxDepth: Number.isFinite(maxDepth) ? Math.max(1, Math.min(64, Math.floor(maxDepth))) : 8,
+      maxSteps: Number.isFinite(maxSteps) ? Math.max(1, Math.min(500, Math.floor(maxSteps))) : 64,
+      autoReset,
+      verbosity: ["quiet", "balanced", "verbose"].includes(verbosity) ? verbosity : "balanced"
+    };
+  }
+
+  function ensureSimulationState(session) {
+    if (!session) return null;
+    if (!session.simulation || typeof session.simulation !== "object") {
+      const defaults = getSimulationDefaults();
+      session.simulation = {
+        id: `sim_${Date.now()}`,
+        status: "inactive",
+        steps: 0,
+        rules: defaults.rules,
+        logs: [{ ts: Date.now(), message: "Simulation profile initialized (system-state)." }],
+        maxDepth: defaults.maxDepth,
+        maxSteps: defaults.maxSteps,
+        autoReset: defaults.autoReset,
+        verbosity: defaults.verbosity
+      };
+    }
+    return session.simulation;
+  }
+
+  function appendSimulationLog(session, message) {
+    const simulation = ensureSimulationState(session);
+    if (!simulation) return;
+    simulation.logs = Array.isArray(simulation.logs) ? simulation.logs : [];
+    simulation.logs.push({ ts: Date.now(), message: String(message || "").trim() || "Simulation event" });
+    simulation.logs = simulation.logs.slice(-40);
+  }
+
+  function renderSimulationLog(session) {
+    if (!simulationLogEl) return;
+    const simulation = ensureSimulationState(session);
+    const logs = Array.isArray(simulation?.logs) ? simulation.logs : [];
+    simulationLogEl.innerHTML = "";
+
+    if (!logs.length) {
+      simulationLogEl.innerHTML = "<div class=\"simulation-log-entry\">No simulation logs yet.</div>";
+      return;
+    }
+
+    for (const entry of logs.slice(-20)) {
+      const row = document.createElement("div");
+      row.className = "simulation-log-entry";
+      const timestamp = Number.isFinite(entry?.ts)
+        ? new Date(entry.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+        : "--:--:--";
+      row.textContent = `[${timestamp}] ${String(entry?.message || "")}`;
+      simulationLogEl.appendChild(row);
+    }
+    simulationLogEl.scrollTop = simulationLogEl.scrollHeight;
+  }
+
+  function syncSimulationEditor(session) {
+    if (!simulationRulesEditorEl) return;
+    const simulation = ensureSimulationState(session);
+    const nextValue = String(simulation?.rules || "");
+    if (simulationRulesEditorEl.value !== nextValue) {
+      simulationRulesEditorEl.value = nextValue;
+    }
+  }
+
+  function updateSimulationUI(session = getActiveSession()) {
+    const mode = getActiveMode(session);
+    const simulation = ensureSimulationState(session);
+    const isSimulationMode = mode === "simulation";
+    const isRunning = isSimulationMode && simulation?.status === "active";
+
+    if (simulationPanelEl) {
+      simulationPanelEl.hidden = !isSimulationMode;
+      simulationPanelEl.open = !!isSimulationMode;
+    }
+
+    if (simulationBadgeEl) {
+      simulationBadgeEl.hidden = !isSimulationMode;
+      const stateLabel = simulation?.status === "active" ? "Running" : simulation?.status === "paused" ? "Paused" : "Inactive";
+      const steps = Number.isFinite(simulation?.steps) ? simulation.steps : 0;
+      simulationBadgeEl.textContent = `Simulation: ${stateLabel} · Steps ${steps}`;
+    }
+
+    if (chatAreaEl) {
+      chatAreaEl.classList.toggle("simulation-active", !!isRunning);
+    }
+
+    if (simulationStartBtn) simulationStartBtn.disabled = !isSimulationMode || isRunning;
+    if (simulationPauseBtn) simulationPauseBtn.disabled = !isSimulationMode || !isRunning;
+    if (simulationResetBtn) simulationResetBtn.disabled = !isSimulationMode;
+    if (simulationExportBtn) simulationExportBtn.disabled = !isSimulationMode;
+
+    syncSimulationEditor(session);
+    renderSimulationLog(session);
   }
 
   function detectModeFromContent(content) {
@@ -342,13 +468,15 @@
     const analystKeywords = ["analyze", "analysis", "data", "research", "report", "trend", "pattern", "insight", "breakdown", "summary", "compare", "evaluate"];
     const visualKeywords = ["image", "visual", "scene", "visual art", "describe", "paint", "draw", "cinematic", "composition", "artistic", "aesthetic"];
     const loreKeywords = ["story", "lore", "narrative", "fiction", "worldbuild", "character", "background", "history", "mythology", "tales", "legend"];
+    const simulationKeywords = ["simulate", "simulation", "system-state", "state transition", "run scenario", "sandbox", "rules:", "/simulation"];
     
     const architectScore = architectKeywords.filter(k => lower.includes(k)).length;
     const analystScore = analystKeywords.filter(k => lower.includes(k)).length;
     const visualScore = visualKeywords.filter(k => lower.includes(k)).length;
     const loreScore = loreKeywords.filter(k => lower.includes(k)).length;
+    const simulationScore = simulationKeywords.filter(k => lower.includes(k)).length;
     
-    const scores = { architect: architectScore, analyst: analystScore, visual: visualScore, lore: loreScore };
+    const scores = { architect: architectScore, analyst: analystScore, visual: visualScore, lore: loreScore, simulation: simulationScore };
     const maxScore = Math.max(...Object.values(scores));
     
     if (maxScore === 0) return null;
@@ -445,6 +573,7 @@
       for (const session of Object.values(state.sessions)) {
         if (!session || typeof session !== "object") continue;
         session.mode = getActiveMode(session);
+        ensureSimulationState(session);
       }
 
       if (!state.sessions[state.activeSessionId]) {
@@ -482,6 +611,7 @@
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
+    ensureSimulationState(state.sessions[id]);
     state.activeSessionId = id;
     saveState();
   }
@@ -512,6 +642,7 @@
     setActiveDropdownItem(modelMenu, session.model);
     setActiveDropdownItem(modeMenu, activeMode);
     updateModeIndicator(activeMode);
+    updateSimulationUI(session);
   }
 
   function updateSessionMetaFromMessages(session) {
@@ -959,7 +1090,10 @@
     if (typeof onMeta === "function") {
       onMeta({
         modelUsed: (res.headers.get("X-Omni-Model-Used") || "").trim(),
-        routeReason: (res.headers.get("X-Omni-Route-Reason") || "").trim()
+        routeReason: (res.headers.get("X-Omni-Route-Reason") || "").trim(),
+        simulationId: (res.headers.get("X-Omni-Simulation-Id") || "").trim(),
+        simulationStatus: (res.headers.get("X-Omni-Simulation-Status") || "").trim(),
+        simulationSteps: Number(res.headers.get("X-Omni-Simulation-Steps") || "0")
       });
     }
 
@@ -1187,6 +1321,18 @@
         setActiveDropdownItem(modeMenu, activeMode);
       }
     }
+
+    if (activeMode === "simulation") {
+      const simulation = ensureSimulationState(session);
+      if (simulation.status !== "active") {
+        simulation.status = "active";
+        appendSimulationLog(session, "Simulation started from chat input.");
+      }
+
+      simulation.steps = Number(simulation.steps || 0) + 1;
+      appendSimulationLog(session, `Step ${simulation.steps}: user input processed.`);
+      updateSimulationUI(session);
+    }
     
     appendMessage("user", trimmed, {
       model: session.model || "auto",
@@ -1302,6 +1448,17 @@
         },
         (meta) => {
           updateModelInspector(meta?.modelUsed || session.model || "auto", meta?.routeReason || "");
+
+          if (getActiveMode(session) === "simulation") {
+            const simulation = ensureSimulationState(session);
+            if (meta?.simulationId) simulation.id = meta.simulationId;
+            if (meta?.simulationStatus) simulation.status = meta.simulationStatus;
+            if (Number.isFinite(meta?.simulationSteps) && meta.simulationSteps >= 0) {
+              simulation.steps = meta.simulationSteps;
+            }
+            appendSimulationLog(session, `Backend sync: ${simulation.status}, steps ${simulation.steps}.`);
+            updateSimulationUI(session);
+          }
         }
       );
 
@@ -1311,6 +1468,9 @@
 
       session.messages.push({ role: "assistant", content: safeText });
       session.messages[session.messages.length - 1].timestamp = Date.now();
+      if (getActiveMode(session) === "simulation") {
+        appendSimulationLog(session, "Assistant produced simulation state update.");
+      }
       delete session._streamingAssistantText;
       updateSessionMetaFromMessages(session);
       saveState();
@@ -1550,12 +1710,72 @@
     if (!session) return;
 
     session.mode = normalizeMode(mode) || "auto";
+    ensureSimulationState(session);
     session.updatedAt = Date.now();
     saveState();
     updateModeButton(session.mode);
     setActiveDropdownItem(modeMenu, session.mode);
     updateModeIndicator(session.mode);
+    updateSimulationUI(session);
     renderSessionsSidebar();
+  }
+
+  function startSimulation() {
+    const session = getActiveSession();
+    if (!session || getActiveMode(session) !== "simulation") return;
+    const simulation = ensureSimulationState(session);
+    simulation.status = "active";
+    appendSimulationLog(session, "Simulation started.");
+    session.updatedAt = Date.now();
+    saveState();
+    updateSimulationUI(session);
+  }
+
+  function pauseSimulation() {
+    const session = getActiveSession();
+    if (!session || getActiveMode(session) !== "simulation") return;
+    const simulation = ensureSimulationState(session);
+    simulation.status = "paused";
+    appendSimulationLog(session, "Simulation paused.");
+    session.updatedAt = Date.now();
+    saveState();
+    updateSimulationUI(session);
+  }
+
+  function resetSimulation() {
+    const session = getActiveSession();
+    if (!session || getActiveMode(session) !== "simulation") return;
+    const simulation = ensureSimulationState(session);
+    simulation.id = `sim_${Date.now()}`;
+    simulation.status = "inactive";
+    simulation.steps = 0;
+    simulation.logs = [];
+    appendSimulationLog(session, "Simulation reset.");
+    session.updatedAt = Date.now();
+    saveState();
+    updateSimulationUI(session);
+  }
+
+  function exportSimulationState() {
+    const session = getActiveSession();
+    if (!session || getActiveMode(session) !== "simulation") return;
+    const simulation = ensureSimulationState(session);
+    const payload = {
+      sessionId: session.id,
+      exportedAt: new Date().toISOString(),
+      simulation
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = `${simulation.id || "simulation"}-state.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(href);
+    appendSimulationLog(session, "Simulation state exported.");
+    updateSimulationUI(session);
   }
 
   // =========================
@@ -1571,6 +1791,7 @@
     startApiChecks();
     updateModelInspector("auto", "router-ready");
     loadPreferences();
+    updateSimulationUI();
 
     // Listen for settings changes from other tabs or same page
     window.addEventListener("storage", (e) => {
@@ -1719,6 +1940,35 @@
       resetMemoryBtn.addEventListener("click", resetMemory);
     }
 
+    if (simulationStartBtn) {
+      simulationStartBtn.addEventListener("click", startSimulation);
+    }
+
+    if (simulationPauseBtn) {
+      simulationPauseBtn.addEventListener("click", pauseSimulation);
+    }
+
+    if (simulationResetBtn) {
+      simulationResetBtn.addEventListener("click", resetSimulation);
+    }
+
+    if (simulationExportBtn) {
+      simulationExportBtn.addEventListener("click", exportSimulationState);
+    }
+
+    if (simulationRulesEditorEl) {
+      simulationRulesEditorEl.addEventListener("change", () => {
+        const session = getActiveSession();
+        if (!session || getActiveMode(session) !== "simulation") return;
+        const simulation = ensureSimulationState(session);
+        simulation.rules = String(simulationRulesEditorEl.value || "").trim();
+        appendSimulationLog(session, "Simulation rules updated from editor.");
+        session.updatedAt = Date.now();
+        saveState();
+        updateSimulationUI(session);
+      });
+    }
+
     document.addEventListener("click", (e) => {
       if (e.target.closest(".dropdown-control")) return;
       closeAllDropdowns();
@@ -1737,6 +1987,17 @@
       inputEl.addEventListener("keydown", handleInputKeydown);
       inputEl.addEventListener("input", autoResizeInput);
       autoResizeInput();
+
+      try {
+        const queuedPrompt = localStorage.getItem("omni-tools-prompt") || "";
+        if (queuedPrompt.trim()) {
+          inputEl.value = queuedPrompt;
+          localStorage.removeItem("omni-tools-prompt");
+          autoResizeInput();
+        }
+      } catch {
+        // ignore queued prompt failures
+      }
     }
     if (messagesEl) {
       ensureJumpToLatestPill();

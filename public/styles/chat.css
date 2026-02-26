@@ -277,6 +277,89 @@
   white-space: nowrap;
 }
 
+.simulation-badge {
+  border: 1px solid rgba(15, 82, 186, 0.5);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--text);
+  background: rgba(15, 82, 186, 0.16);
+}
+
+.simulation-panel {
+  border-top: 1px solid var(--border);
+  padding: 10px 20px 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.simulation-panel > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.simulation-controls {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.simulation-rules-label {
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.simulation-rules-editor {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text);
+  resize: vertical;
+  min-height: 100px;
+  padding: 10px;
+}
+
+.simulation-log-wrap {
+  margin-top: 10px;
+}
+
+.simulation-log-wrap strong {
+  color: var(--text);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.simulation-log {
+  margin-top: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.simulation-log-entry {
+  margin-bottom: 6px;
+}
+
+.simulation-log-entry:last-child {
+  margin-bottom: 0;
+}
+
+#chat-area.simulation-active {
+  box-shadow: 0 0 0 1px rgba(15, 82, 186, 0.34), 0 0 24px rgba(15, 82, 186, 0.18) inset;
+}
+
 /* ------------------------------
    CHAT CONTAINER
 ------------------------------ */

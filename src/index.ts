@@ -17,6 +17,7 @@ import { listAvailableStyles, resolveStyleName } from "./omni/rendering/styles/s
 import { buildLawPromptDirectives, applyLawsToVisualInfluence, type LawReference } from "./omni/laws/imageLawBridge";
 import { Laws, type LawDomain } from "./omni/laws/lawRegistry";
 import { warmupConnections, getConnectionStats } from "./llm/cloudflareOptimizations";
+import { advanceSimulationState } from "./omni/simulation/engine";
 import type { KVNamespace, Fetcher } from "@cloudflare/workers-types";
 
 export interface Env {
@@ -1077,14 +1078,27 @@ export default {
           }))
         };
 
+        const simulationContext = normalizedMode === "simulation"
+          ? await advanceSimulationState(env, ctx.messages)
+          : null;
+
         const latestUserText = getLatestUserText(ctx.messages);
         const routeSelection = chooseModelForTask(ctx.model, latestUserText, normalizedMode);
 
         const promptSystemMessages: OmniMessage[] = [];
-        const savedMemory = await getPreferences(env);
-        if (savedMemory && Object.keys(savedMemory).length > 0) {
+        const savedMemory = normalizedMode === "simulation" ? {} : await getPreferences(env);
+        if (normalizedMode !== "simulation" && savedMemory && Object.keys(savedMemory).length > 0) {
           promptSystemMessages.push(
             makeContextSystemMessage("User Memory", JSON.stringify(savedMemory, null, 2))
+          );
+        }
+
+        if (simulationContext) {
+          promptSystemMessages.push(
+            makeContextSystemMessage("Simulation Engine", simulationContext.systemPrompt)
+          );
+          promptSystemMessages.push(
+            makeContextSystemMessage("Simulation Log", simulationContext.logsSummary)
           );
         }
 
@@ -1178,14 +1192,25 @@ export default {
                 "Connection": "keep-alive",
                 "X-Omni-Model-Used": String(runtimeCtx.model || routeSelection.selectedModel),
                 "X-Omni-Route-Reason": routeSelection.reason,
+                ...(simulationContext
+                  ? {
+                      "X-Omni-Simulation-Id": simulationContext.state.simulationId,
+                      "X-Omni-Simulation-Status": simulationContext.state.status,
+                      "X-Omni-Simulation-Steps": String(simulationContext.state.stepsExecuted)
+                    }
+                  : {}),
                 ...(debugEnabled
                   ? {
                       "X-Omni-Response-Cap": String(responseLimit),
                       "X-Omni-Output-Token-Cap": String(outputTokenLimit),
-                    "Access-Control-Expose-Headers": "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
+                    "Access-Control-Expose-Headers": simulationContext
+                      ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
+                      : "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
                     }
                   : {
-                      "Access-Control-Expose-Headers": "X-Omni-Model-Used, X-Omni-Route-Reason"
+                      "Access-Control-Expose-Headers": simulationContext
+                        ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps"
+                        : "X-Omni-Model-Used, X-Omni-Route-Reason"
                     })
               }
             });
@@ -1227,14 +1252,25 @@ export default {
             "Connection": "keep-alive",
             "X-Omni-Model-Used": String(runtimeCtx.model || routeSelection.selectedModel),
             "X-Omni-Route-Reason": routeSelection.reason,
+            ...(simulationContext
+              ? {
+                  "X-Omni-Simulation-Id": simulationContext.state.simulationId,
+                  "X-Omni-Simulation-Status": simulationContext.state.status,
+                  "X-Omni-Simulation-Steps": String(simulationContext.state.stepsExecuted)
+                }
+              : {}),
             ...(debugEnabled
               ? {
                   "X-Omni-Response-Cap": String(responseLimit),
                   "X-Omni-Output-Token-Cap": String(outputTokenLimit),
-                "Access-Control-Expose-Headers": "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
+                "Access-Control-Expose-Headers": simulationContext
+                  ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
+                  : "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
                 }
               : {
-                  "Access-Control-Expose-Headers": "X-Omni-Model-Used, X-Omni-Route-Reason"
+                  "Access-Control-Expose-Headers": simulationContext
+                    ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps"
+                    : "X-Omni-Model-Used, X-Omni-Route-Reason"
                 })
           }
         });

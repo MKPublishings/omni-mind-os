@@ -17,6 +17,7 @@
       <nav class="nav">
         <a href="/index.html" class="nav-link">Home</a>
         <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
         <a href="/modes.html" class="nav-link active">Modes</a>
         <a href="/settings.html" class="nav-link">Settings</a>
         <a href="/about.html" class="nav-link">About</a>
@@ -718,6 +719,58 @@
               <span class="use-case-tag">Behavior Audits</span>
               <span class="use-case-tag">Runtime Explanation</span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODE: SIMULATION -->
+      <section class="mode-section" data-mode="simulation" id="simulation">
+        <div class="mode-header">
+          <div class="mode-icon">🧪</div>
+          <div class="mode-title-group">
+            <h3 class="mode-title">Simulation</h3>
+            <p class="mode-tagline">Contained reality engine for stateful system simulations</p>
+          </div>
+        </div>
+
+        <div class="mode-content">
+          <div class="mode-description">
+            <h4>What It Is</h4>
+            <p>Simulation Mode runs a <strong>contained cognitive environment</strong> inside Omni. It tracks system state over steps, applies explicit rules, and emits logs for transitions. V1 defaults to a <strong>System-State simulator profile</strong>.</p>
+          </div>
+
+          <div class="mode-features">
+            <h4>How It Works</h4>
+            <ul class="feature-list">
+              <li><span class="feature-icon">📏</span><div><strong>Rule Parsing</strong><p>Reads simulation rules and uses them as execution constraints</p></div></li>
+              <li><span class="feature-icon">🧩</span><div><strong>State Initialization</strong><p>Builds bounded state and entity context at simulation start</p></div></li>
+              <li><span class="feature-icon">🔁</span><div><strong>Step Execution</strong><p>Processes transitions in ordered, inspectable steps</p></div></li>
+              <li><span class="feature-icon">🪵</span><div><strong>Log Emission</strong><p>Outputs concise simulation logs and status metadata</p></div></li>
+            </ul>
+          </div>
+
+          <div class="mode-use-cases">
+            <h4>Example Simulations</h4>
+            <div class="use-case-tags">
+              <span class="use-case-tag">Network Incident Replay</span>
+              <span class="use-case-tag">API Capacity Evolution</span>
+              <span class="use-case-tag">Service Dependency Failure Cascade</span>
+              <span class="use-case-tag">Workflow State Machine Validation</span>
+            </div>
+          </div>
+
+          <div class="mode-tech">
+            <h4>Invocation Example</h4>
+            <pre><code>/simulation
+rules:
+  - time: linear
+  - entities: 3
+  - physics: soft</code></pre>
+          </div>
+
+          <div class="mode-use-cases mode-actions">
+            <a href="/chat.html" class="use-case-tag">Try in Chat</a>
+            <a href="/docs.html#simulation-mode" class="use-case-tag">View Docs</a>
           </div>
         </div>
       </section>

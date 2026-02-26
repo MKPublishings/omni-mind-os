@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Omni Mind/OS – PAGE_TITLE</title>
+  <title>Omni Mind/OS – System</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
   <link rel="stylesheet" href="/styles/base.css" />
   <link rel="stylesheet" href="/styles/layout.css" />
@@ -65,6 +65,17 @@
           <li>Memory Engine: Active</li>
           <li>Streaming: Enabled</li>
         </ul>
+      </section>
+
+      <section class="system-section">
+        <h3>Simulation Engine</h3>
+        <div class="status-card">
+          <p><strong>Status:</strong> <span id="sim-status">Inactive</span></p>
+          <p><strong>Simulation ID:</strong> <span id="sim-id">--</span></p>
+          <p><strong>Steps Executed:</strong> <span id="sim-steps">0</span></p>
+          <p><strong>Memory Usage:</strong> <span id="sim-memory">0 KB</span></p>
+          <button id="terminate-simulation" class="btn danger">Terminate Simulation</button>
+        </div>
       </section>
     </main>
   </div>

@@ -17,6 +17,7 @@
       <nav class="nav">
         <a href="/index.html" class="nav-link">Home</a>
         <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
         <a href="/modes.html" class="nav-link">Modes</a>
         <a href="/settings.html" class="nav-link active">Settings</a>
         <a href="/about.html" class="nav-link">About</a>
@@ -103,7 +104,6 @@
               </div>
             </div>
           </div>
-
           <div class="setting-item">
             <div class="setting-info">
               <label class="setting-label">Mode Selection</label>
@@ -130,6 +130,7 @@
                 <button type="button" class="settings-dropdown-item" role="option" data-value="analyst">Analyst</button>
                 <button type="button" class="settings-dropdown-item" role="option" data-value="visual">Visual</button>
                 <button type="button" class="settings-dropdown-item" role="option" data-value="lore">Lore</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="simulation">Simulation</button>
               </div>
             </div>
           </div>
@@ -250,6 +251,76 @@
         </section>
 
         <!-- DATA MANAGEMENT -->
+        <section class="settings-section">
+          <h3 class="section-title">
+            <span class="section-icon">🧪</span>
+            Simulation Mode
+          </h3>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Default Simulation Rules</label>
+              <span class="setting-description">Seed rules applied when Simulation Mode initializes</span>
+            </div>
+            <input
+              type="text"
+              id="simulation-default-rules"
+              class="setting-input"
+              placeholder="domain: system-state; time: linear; entities: bounded"
+            />
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Max Simulation Depth</label>
+              <span class="setting-description">Maximum recursive state depth per run</span>
+            </div>
+            <input type="number" id="simulation-max-depth" class="setting-input" value="8" min="1" max="64" />
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Max Steps Per Simulation</label>
+              <span class="setting-description">Upper bound for state transitions</span>
+            </div>
+            <input type="number" id="simulation-max-steps" class="setting-input" value="64" min="1" max="500" />
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Auto-reset</label>
+              <span class="setting-description">Reset simulation state automatically at max steps</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="simulation-auto-reset" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Logging Verbosity</label>
+              <span class="setting-description">Amount of simulation log detail</span>
+            </div>
+            <div class="settings-dropdown-control" id="simulation-verbosity-dropdown">
+              <button type="button" class="settings-dropdown-btn" id="simulation-verbosity-btn" aria-haspopup="listbox" aria-expanded="false">Balanced</button>
+              <div class="settings-dropdown-menu" role="listbox" id="simulation-verbosity-menu">
+                <button type="button" class="settings-dropdown-item" role="option" data-value="quiet">Quiet</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="balanced">Balanced</button>
+                <button type="button" class="settings-dropdown-item" role="option" data-value="verbose">Verbose</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Reset Simulation Settings</label>
+              <span class="setting-description">Restore Simulation Mode defaults</span>
+            </div>
+            <button id="reset-simulation-settings" class="btn-danger">Reset</button>
+          </div>
+        </section>
+
         <section class="settings-section">
           <h3 class="section-title">
             <span class="section-icon">💾</span>

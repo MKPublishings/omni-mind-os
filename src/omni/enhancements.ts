@@ -222,6 +222,16 @@ export function buildModeTemplate(options: PromptTemplateOptions): string {
     ].join("\n");
   }
 
+  if (mode === "simulation") {
+    return [
+      "Simulation Mode is active.",
+      "Primary profile: system-state simulator.",
+      "Model a contained environment with explicit state transitions and rule adherence.",
+      "Return output with: current state, transitions executed, and concise simulation log entries.",
+      "If rules are missing, ask for constraints before broad assumptions."
+    ].join("\n");
+  }
+
   return "";
 }
 
@@ -255,6 +265,7 @@ export function inferTaskType(latestUserText: string, mode: string): TaskType {
 export function chooseModelForTask(requestedModel: string, latestUserText: string, mode: string): RouteSelection {
   const normalized = normalizeText(requestedModel).toLowerCase() || "auto";
   const taskType = inferTaskType(latestUserText, mode);
+  const normalizedMode = normalizeText(mode).toLowerCase();
 
   if (normalized !== "auto") {
     return {
@@ -262,6 +273,10 @@ export function chooseModelForTask(requestedModel: string, latestUserText: strin
       taskType,
       reason: "manual-model-selection"
     };
+  }
+
+  if (normalizedMode === "simulation") {
+    return { selectedModel: "omni", taskType, reason: "auto-route:simulation" };
   }
 
   if (taskType === "coding") {

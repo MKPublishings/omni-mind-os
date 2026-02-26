@@ -34,3 +34,12 @@ async function loadTools() {
 refreshToolsBtn?.addEventListener("click", loadTools);
 
 loadTools();
+
+document.querySelectorAll("[data-send-chat]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const prompt = btn.getAttribute("data-send-chat") || "";
+    if (!prompt) return;
+    localStorage.setItem("omni-tools-prompt", prompt);
+    window.location.href = "/chat.html";
+  });
+});

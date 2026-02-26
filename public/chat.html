@@ -17,6 +17,7 @@
       <nav class="nav">
         <a href="/index.html" class="nav-link">Home</a>
         <a href="/chat.html" class="nav-link active">Chat</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
         <a href="/modes.html" class="nav-link">Modes</a>
         <a href="/settings.html" class="nav-link">Settings</a>
         <a href="/about.html" class="nav-link">About</a>
@@ -59,6 +60,7 @@
               <button type="button" class="chat-dropdown-item" role="option" data-value="coding">Coding</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="knowledge">Knowledge</button>
               <button type="button" class="chat-dropdown-item" role="option" data-value="system-knowledge">System Knowledge</button>
+              <button type="button" class="chat-dropdown-item" role="option" data-value="simulation">Simulation</button>
             </div>
           </div>
           <button id="save-preferences-btn" type="button" class="chat-action-btn">Save Preferences</button>
@@ -69,10 +71,30 @@
       <section id="chat-area">
         <div id="mode-indicator">
           <span id="mode-label">Mode: Auto</span>
+          <span id="simulation-badge" class="simulation-badge" hidden>Simulation: Inactive</span>
           <span id="model-inspector">Model: pending</span>
           <span id="api-status" aria-live="polite">API: checking…</span>
         </div>
         <div id="chat-container"></div>
+
+        <details id="simulation-panel" class="simulation-panel" hidden>
+          <summary>Simulation Mode Controls</summary>
+          <div class="simulation-controls">
+            <button id="simulation-start-btn" type="button" class="chat-action-btn">Start Simulation</button>
+            <button id="simulation-pause-btn" type="button" class="chat-action-btn">Pause Simulation</button>
+            <button id="simulation-reset-btn" type="button" class="chat-action-btn">Reset Simulation</button>
+            <button id="simulation-export-btn" type="button" class="chat-action-btn">Export Simulation State</button>
+          </div>
+          <label for="simulation-rules-editor" class="simulation-rules-label">Simulation Mode Rules Editor</label>
+          <textarea id="simulation-rules-editor" class="simulation-rules-editor" rows="5" placeholder="rules:
+- domain: system-state
+- time: linear
+- entities: bounded"></textarea>
+          <div class="simulation-log-wrap">
+            <strong>Simulation Log</strong>
+            <div id="simulation-log" class="simulation-log" aria-live="polite"></div>
+          </div>
+        </details>
 
         <div id="input-area">
           <input
