@@ -1,6 +1,7 @@
 (() => {
   const scrollRoot = document.getElementById("main");
   const backToTopBtn = document.getElementById("docs-back-to-top");
+  const docsNavEl = document.getElementById("docs-nav");
   const navLinks = Array.from(document.querySelectorAll(".docs-nav-link[href^='#']"));
   const sections = navLinks
     .map((link) => {
@@ -16,24 +17,55 @@
     });
   }
 
-  if (sections.length) {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+  function getSectionById(id) {
+    return sections.find((section) => section.id === id) || null;
+  }
 
-        if (!visible) return;
-        setActiveById(visible.target.id);
-      },
-      {
-        root: scrollRoot || null,
-        rootMargin: "-15% 0px -68% 0px",
-        threshold: [0.2, 0.45, 0.7]
+  function syncSidebarProgress() {
+    if (!scrollRoot || !docsNavEl) return;
+
+    const pageScrollable = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight);
+    const navScrollable = Math.max(0, docsNavEl.scrollHeight - docsNavEl.clientHeight);
+    if (pageScrollable <= 0 || navScrollable <= 0) {
+      docsNavEl.scrollTop = 0;
+      return;
+    }
+
+    const progress = scrollRoot.scrollTop / pageScrollable;
+    docsNavEl.scrollTop = navScrollable * Math.min(1, Math.max(0, progress));
+  }
+
+  function computeActiveSectionId() {
+    if (!scrollRoot || !sections.length) return sections[0]?.id || "";
+
+    const currentY = scrollRoot.scrollTop;
+    const offset = 130;
+    let activeId = sections[0].id;
+
+    for (const section of sections) {
+      if (section.offsetTop - offset <= currentY) {
+        activeId = section.id;
+      } else {
+        break;
       }
-    );
+    }
 
-    sections.forEach((section) => observer.observe(section));
+    if (currentY + scrollRoot.clientHeight >= scrollRoot.scrollHeight - 2) {
+      activeId = sections[sections.length - 1].id;
+    }
+
+    return activeId;
+  }
+
+  function updateActiveFromScroll() {
+    const activeId = computeActiveSectionId();
+    if (activeId) setActiveById(activeId);
+    syncSidebarProgress();
+  }
+
+  if (scrollRoot && sections.length) {
+    scrollRoot.addEventListener("scroll", updateActiveFromScroll, { passive: true });
+    updateActiveFromScroll();
   }
 
   navLinks.forEach((link) => {
@@ -54,6 +86,19 @@
     });
   });
 
+  if (docsNavEl && scrollRoot) {
+    docsNavEl.addEventListener(
+      "wheel",
+      (event) => {
+        const navScrollable = Math.max(0, docsNavEl.scrollHeight - docsNavEl.clientHeight);
+        if (navScrollable <= 0) return;
+        event.preventDefault();
+        scrollRoot.scrollTop += event.deltaY;
+      },
+      { passive: false }
+    );
+  }
+
   if (scrollRoot && backToTopBtn) {
     const updateBackToTopVisibility = () => {
       const shouldShow = scrollRoot.scrollTop > 320;
@@ -67,5 +112,16 @@
       scrollRoot.scrollTo({ top: 0, behavior: "smooth" });
       setActiveById("overview");
     });
+  }
+
+  const hashId = window.location.hash.replace("#", "").trim();
+  if (hashId) {
+    const target = getSectionById(hashId);
+    if (target) {
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "auto", block: "start", inline: "nearest" });
+        setActiveById(hashId);
+      });
+    }
   }
 })();
