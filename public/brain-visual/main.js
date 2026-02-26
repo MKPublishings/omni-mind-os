@@ -613,7 +613,7 @@ function queueHideHoverLabel(delayMs = hoverLabelStickMs) {
 
 function updateHoverLabel() {
   if (!isPointerInside || !hoverTargets.length) {
-    queueHideHoverLabel();
+    hideHoverLabel();
     return;
   }
 
@@ -622,7 +622,7 @@ function updateHoverLabel() {
   const hit = intersections[0];
 
   if (!hit || !hit.object?.userData?.label) {
-    queueHideHoverLabel();
+    hideHoverLabel();
     return;
   }
 
@@ -731,7 +731,7 @@ canvas.addEventListener("pointerenter", () => {
 
 canvas.addEventListener("pointerleave", () => {
   isPointerInside = false;
-  queueHideHoverLabel();
+  hideHoverLabel();
 });
 
 loadShaders()
