@@ -15,9 +15,17 @@ const SETTINGS_KEYS = {
   SOUND: "omni-sound",
   SHOW_TIMESTAMPS: "omni-show-timestamps",
   COMPACT_MODE: "omni-compact-mode",
+  SEND_WITH_ENTER: "omni-send-with-enter",
+  SHOW_ASSISTANT_BADGES: "omni-show-assistant-badges",
+  AUTO_DETECT_MODE: "omni-auto-detect-mode",
+  PERSIST_MANUAL_MODE: "omni-persist-manual-mode",
+  HIGH_CONTRAST_MODE: "omni-high-contrast",
+  REDUCE_GLASS_BLUR: "omni-reduce-glass",
   API_ENDPOINT: "omni-endpoint",
   DEBUG_MODE: "omni-debug-mode",
   REQUEST_TIMEOUT: "omni-request-timeout",
+  API_HEALTH_INTERVAL: "omni-api-health-interval",
+  API_RETRIES: "omni-api-retries",
   SIMULATION_DEFAULT_RULES: "omni-simulation-default-rules",
   SIMULATION_MAX_DEPTH: "omni-simulation-max-depth",
   SIMULATION_MAX_STEPS: "omni-simulation-max-steps",
@@ -219,12 +227,28 @@ const fontSizeBtn = document.getElementById("font-size-btn");
 const fontSizeMenu = document.getElementById("font-size-menu");
 const fontSizeDropdown = dropdownMgr.initDropdown("font-size-btn", "font-size-menu", "font-size-dropdown");
 const clearHistoryBtn = document.getElementById("clear-history");
+const sendWithEnterToggle = document.getElementById("send-with-enter");
+const showAssistantBadgesToggle = document.getElementById("show-assistant-badges");
 
 
 if (autoScrollToggle) {
   autoScrollToggle.checked = getSettingBool(SETTINGS_KEYS.AUTO_SCROLL, true);
   autoScrollToggle.addEventListener("change", () => {
     setSettingBool(SETTINGS_KEYS.AUTO_SCROLL, autoScrollToggle.checked);
+  });
+}
+
+if (sendWithEnterToggle) {
+  sendWithEnterToggle.checked = getSettingBool(SETTINGS_KEYS.SEND_WITH_ENTER, true);
+  sendWithEnterToggle.addEventListener("change", () => {
+    setSettingBool(SETTINGS_KEYS.SEND_WITH_ENTER, sendWithEnterToggle.checked);
+  });
+}
+
+if (showAssistantBadgesToggle) {
+  showAssistantBadgesToggle.checked = getSettingBool(SETTINGS_KEYS.SHOW_ASSISTANT_BADGES, true);
+  showAssistantBadgesToggle.addEventListener("change", () => {
+    setSettingBool(SETTINGS_KEYS.SHOW_ASSISTANT_BADGES, showAssistantBadgesToggle.checked);
   });
 }
 
@@ -263,6 +287,8 @@ const defaultModeMenu = document.getElementById("default-mode-menu");
 const defaultModeSetting = document.getElementById("default-mode-setting");
 const responseLengthDropdown = dropdownMgr.initDropdown("response-length-btn", "response-length-menu", "response-length-dropdown");
 const responseLengthMenu = document.getElementById("response-length-menu");
+const autoDetectModeToggle = document.getElementById("auto-detect-mode");
+const persistManualModeToggle = document.getElementById("persist-manual-mode");
 const simulationVerbosityDropdown = dropdownMgr.initDropdown("simulation-verbosity-btn", "simulation-verbosity-menu", "simulation-verbosity-dropdown");
 const simulationVerbosityMenu = document.getElementById("simulation-verbosity-menu");
 
@@ -320,6 +346,20 @@ if (responseLengthDropdown && responseLengthMenu) {
   });
 }
 
+if (autoDetectModeToggle) {
+  autoDetectModeToggle.checked = getSettingBool(SETTINGS_KEYS.AUTO_DETECT_MODE, true);
+  autoDetectModeToggle.addEventListener("change", () => {
+    setSettingBool(SETTINGS_KEYS.AUTO_DETECT_MODE, autoDetectModeToggle.checked);
+  });
+}
+
+if (persistManualModeToggle) {
+  persistManualModeToggle.checked = getSettingBool(SETTINGS_KEYS.PERSIST_MANUAL_MODE, true);
+  persistManualModeToggle.addEventListener("change", () => {
+    setSettingBool(SETTINGS_KEYS.PERSIST_MANUAL_MODE, persistManualModeToggle.checked);
+  });
+}
+
 if (simulationVerbosityDropdown && simulationVerbosityMenu) {
   simulationVerbosityDropdown.setActive(getSetting(SETTINGS_KEYS.SIMULATION_LOG_VERBOSITY, "balanced"));
   simulationVerbosityMenu.addEventListener("click", (e) => {
@@ -368,6 +408,38 @@ window.addEventListener("storage", (e) => {
     if (responseLengthDropdown) responseLengthDropdown.setActive(val);
     if (responseLengthBtn) responseLengthBtn.textContent = val.charAt(0).toUpperCase() + val.slice(1);
   }
+
+  if (e.key === SETTINGS_KEYS.SEND_WITH_ENTER && sendWithEnterToggle) {
+    sendWithEnterToggle.checked = getSettingBool(SETTINGS_KEYS.SEND_WITH_ENTER, true);
+  }
+
+  if (e.key === SETTINGS_KEYS.SHOW_ASSISTANT_BADGES && showAssistantBadgesToggle) {
+    showAssistantBadgesToggle.checked = getSettingBool(SETTINGS_KEYS.SHOW_ASSISTANT_BADGES, true);
+  }
+
+  if (e.key === SETTINGS_KEYS.AUTO_DETECT_MODE && autoDetectModeToggle) {
+    autoDetectModeToggle.checked = getSettingBool(SETTINGS_KEYS.AUTO_DETECT_MODE, true);
+  }
+
+  if (e.key === SETTINGS_KEYS.PERSIST_MANUAL_MODE && persistManualModeToggle) {
+    persistManualModeToggle.checked = getSettingBool(SETTINGS_KEYS.PERSIST_MANUAL_MODE, true);
+  }
+
+  if (e.key === SETTINGS_KEYS.HIGH_CONTRAST_MODE && highContrastModeToggle) {
+    highContrastModeToggle.checked = getSettingBool(SETTINGS_KEYS.HIGH_CONTRAST_MODE, false);
+  }
+
+  if (e.key === SETTINGS_KEYS.REDUCE_GLASS_BLUR && reduceGlassBlurToggle) {
+    reduceGlassBlurToggle.checked = getSettingBool(SETTINGS_KEYS.REDUCE_GLASS_BLUR, false);
+  }
+
+  if (e.key === SETTINGS_KEYS.API_HEALTH_INTERVAL && apiHealthIntervalInput) {
+    apiHealthIntervalInput.value = getSetting(SETTINGS_KEYS.API_HEALTH_INTERVAL, "30");
+  }
+
+  if (e.key === SETTINGS_KEYS.API_RETRIES && apiRetriesInput) {
+    apiRetriesInput.value = getSetting(SETTINGS_KEYS.API_RETRIES, "1");
+  }
 });
 
 // ==============================================
@@ -378,6 +450,8 @@ const animationsToggle = document.getElementById("toggle-animations");
 const soundToggle = document.getElementById("toggle-sound");
 const showTimestampsToggle = document.getElementById("show-timestamps");
 const compactModeToggle = document.getElementById("compact-mode");
+const highContrastModeToggle = document.getElementById("high-contrast-mode");
+const reduceGlassBlurToggle = document.getElementById("reduce-glass-blur");
 
 if (animationsToggle) {
   animationsToggle.checked = getSettingBool(SETTINGS_KEYS.ANIMATIONS, true);
@@ -407,6 +481,20 @@ if (compactModeToggle) {
   });
 }
 
+if (highContrastModeToggle) {
+  highContrastModeToggle.checked = getSettingBool(SETTINGS_KEYS.HIGH_CONTRAST_MODE, false);
+  highContrastModeToggle.addEventListener("change", () => {
+    setSettingBool(SETTINGS_KEYS.HIGH_CONTRAST_MODE, highContrastModeToggle.checked);
+  });
+}
+
+if (reduceGlassBlurToggle) {
+  reduceGlassBlurToggle.checked = getSettingBool(SETTINGS_KEYS.REDUCE_GLASS_BLUR, false);
+  reduceGlassBlurToggle.addEventListener("change", () => {
+    setSettingBool(SETTINGS_KEYS.REDUCE_GLASS_BLUR, reduceGlassBlurToggle.checked);
+  });
+}
+
 // ==============================================
 // API CONFIGURATION
 // ==============================================
@@ -414,6 +502,8 @@ if (compactModeToggle) {
 const apiEndpointInput = document.getElementById("api-endpoint");
 const debugModeToggle = document.getElementById("debug-mode");
 const requestTimeoutInput = document.getElementById("request-timeout");
+const apiHealthIntervalInput = document.getElementById("api-health-interval");
+const apiRetriesInput = document.getElementById("api-retries");
 const simulationDefaultRulesInput = document.getElementById("simulation-default-rules");
 const simulationMaxDepthInput = document.getElementById("simulation-max-depth");
 const simulationMaxStepsInput = document.getElementById("simulation-max-steps");
@@ -445,6 +535,32 @@ if (requestTimeoutInput) {
     } else {
       alert("Timeout must be between 10 and 300 seconds.");
       requestTimeoutInput.value = getSetting(SETTINGS_KEYS.REQUEST_TIMEOUT, "60");
+    }
+  });
+}
+
+if (apiHealthIntervalInput) {
+  apiHealthIntervalInput.value = getSetting(SETTINGS_KEYS.API_HEALTH_INTERVAL, "30");
+  apiHealthIntervalInput.addEventListener("change", () => {
+    const value = parseInt(apiHealthIntervalInput.value, 10);
+    if (Number.isFinite(value) && value >= 10 && value <= 120) {
+      setSetting(SETTINGS_KEYS.API_HEALTH_INTERVAL, String(value));
+    } else {
+      alert("Health check interval must be between 10 and 120 seconds.");
+      apiHealthIntervalInput.value = getSetting(SETTINGS_KEYS.API_HEALTH_INTERVAL, "30");
+    }
+  });
+}
+
+if (apiRetriesInput) {
+  apiRetriesInput.value = getSetting(SETTINGS_KEYS.API_RETRIES, "1");
+  apiRetriesInput.addEventListener("change", () => {
+    const value = parseInt(apiRetriesInput.value, 10);
+    if (Number.isFinite(value) && value >= 0 && value <= 4) {
+      setSetting(SETTINGS_KEYS.API_RETRIES, String(value));
+    } else {
+      alert("Retry attempts must be between 0 and 4.");
+      apiRetriesInput.value = getSetting(SETTINGS_KEYS.API_RETRIES, "1");
     }
   });
 }

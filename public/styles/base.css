@@ -116,6 +116,14 @@ p {
   pointer-events: none;
 }
 
+.page.page-no-motion,
+.page.page-no-motion.page-leave {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
 @keyframes page-enter {
   from {
     transform: translateY(6px);
@@ -186,4 +194,41 @@ p {
 .divider,
 #mode-indicator {
   background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(15, 82, 186, 0.46) 36%, rgba(84, 132, 207, 0.5) 58%, rgba(255, 255, 255, 0.34) 78%, rgba(0, 0, 0, 0) 100%) !important;
+}
+
+body.page-high-contrast {
+  --text: #ffffff;
+  --text-dim: #f5f8ff;
+  --text-primary: #ffffff;
+  --text-secondary: #f0f4ff;
+  --border: rgba(255, 255, 255, 0.34);
+}
+
+body.page-high-contrast .mode-section,
+body.page-high-contrast .settings-section,
+body.page-high-contrast .mode-card,
+body.page-high-contrast .feature-spec,
+body.page-high-contrast .home-intro,
+body.page-high-contrast .modes-footer,
+body.page-high-contrast .home-footer,
+body.page-high-contrast #chat-area,
+body.page-high-contrast #sidebar,
+body.page-high-contrast .chat-dropdown,
+body.page-high-contrast .settings-dropdown-menu {
+  border-color: rgba(255, 255, 255, 0.34) !important;
+}
+
+body.page-reduce-glass .mode-section,
+body.page-reduce-glass .settings-section,
+body.page-reduce-glass .mode-card,
+body.page-reduce-glass .feature-spec,
+body.page-reduce-glass .home-intro,
+body.page-reduce-glass .modes-footer,
+body.page-reduce-glass .home-footer,
+body.page-reduce-glass #chat-area,
+body.page-reduce-glass #sidebar,
+body.page-reduce-glass .chat-dropdown,
+body.page-reduce-glass .settings-dropdown-menu {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }

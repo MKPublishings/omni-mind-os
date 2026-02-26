@@ -61,7 +61,13 @@
     SOUND: "omni-sound",
     SHOW_TIMESTAMPS: "omni-show-timestamps",
     COMPACT_MODE: "omni-compact-mode",
-    REQUEST_TIMEOUT: "omni-request-timeout"
+    SEND_WITH_ENTER: "omni-send-with-enter",
+    SHOW_ASSISTANT_BADGES: "omni-show-assistant-badges",
+    AUTO_DETECT_MODE: "omni-auto-detect-mode",
+    PERSIST_MANUAL_MODE: "omni-persist-manual-mode",
+    REQUEST_TIMEOUT: "omni-request-timeout",
+    API_HEALTH_INTERVAL: "omni-api-health-interval",
+    API_RETRIES: "omni-api-retries"
   };
   const KNOWN_MODELS = ["auto", "omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
   const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore", "reasoning", "coding", "knowledge", "system-knowledge", "simulation"];
@@ -92,7 +98,12 @@
     soundEnabled: false,
     showTimestamps: false,
     compactMode: false,
-    requestTimeoutSeconds: 60
+    sendWithEnter: true,
+    showAssistantBadges: true,
+    autoDetectMode: true,
+    requestTimeoutSeconds: 60,
+    apiHealthIntervalSeconds: 30,
+    apiRetries: 1
   };
 
   function getSetting(key, fallback = "") {
@@ -113,6 +124,8 @@
   function loadRuntimeSettings() {
     const fontSize = String(getSetting(SETTINGS_KEYS.FONT_SIZE, "medium") || "medium").trim().toLowerCase();
     const timeoutRaw = Number(getSetting(SETTINGS_KEYS.REQUEST_TIMEOUT, "60"));
+    const healthIntervalRaw = Number(getSetting(SETTINGS_KEYS.API_HEALTH_INTERVAL, "30"));
+    const retriesRaw = Number(getSetting(SETTINGS_KEYS.API_RETRIES, "1"));
 
     runtimeSettings = {
       autoScroll: getSettingBool(SETTINGS_KEYS.AUTO_SCROLL, true),
@@ -120,9 +133,18 @@
       soundEnabled: getSettingBool(SETTINGS_KEYS.SOUND, false),
       showTimestamps: getSettingBool(SETTINGS_KEYS.SHOW_TIMESTAMPS, false),
       compactMode: getSettingBool(SETTINGS_KEYS.COMPACT_MODE, false),
+      sendWithEnter: getSettingBool(SETTINGS_KEYS.SEND_WITH_ENTER, true),
+      showAssistantBadges: getSettingBool(SETTINGS_KEYS.SHOW_ASSISTANT_BADGES, true),
+      autoDetectMode: getSettingBool(SETTINGS_KEYS.AUTO_DETECT_MODE, true),
       requestTimeoutSeconds: Number.isFinite(timeoutRaw)
         ? Math.max(10, Math.min(300, Math.floor(timeoutRaw)))
-        : 60
+        : 60,
+      apiHealthIntervalSeconds: Number.isFinite(healthIntervalRaw)
+        ? Math.max(10, Math.min(120, Math.floor(healthIntervalRaw)))
+        : 30,
+      apiRetries: Number.isFinite(retriesRaw)
+        ? Math.max(0, Math.min(4, Math.floor(retriesRaw)))
+        : 1
     };
   }
 
@@ -817,7 +839,7 @@
       header.appendChild(timestampEl);
     }
 
-    if (role === "assistant" && (meta.model || meta.mode)) {
+    if (runtimeSettings.showAssistantBadges && role === "assistant" && (meta.model || meta.mode)) {
       const badge = document.createElement("span");
       badge.className = "message-badge";
       
@@ -1049,7 +1071,11 @@
     checkApiStatus();
     apiCheckTimer = setInterval(() => {
       checkApiStatus();
-    }, 30000);
+    }, Math.max(10, runtimeSettings.apiHealthIntervalSeconds) * 1000);
+  }
+
+  function isRetryableStatus(status) {
+    return status === 408 || status === 425 || status === 429 || (status >= 500 && status <= 599);
   }
 
   async function streamOmniResponse(session, assistantBodyEl, onChunk, onMeta) {
@@ -1071,19 +1097,44 @@
       }
     }, timeoutMs);
 
+    const maxAttempts = 1 + Math.max(0, runtimeSettings.apiRetries);
     let res;
+    let lastError = null;
+    let attempt = 0;
+
     try {
-      res = await fetch(getApiEndpoint(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
+      while (attempt < maxAttempts) {
+        attempt += 1;
+        try {
+          res = await fetch(getApiEndpoint(), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+
+          if (res.ok && res.body) {
+            break;
+          }
+
+          if (!isRetryableStatus(res.status) || attempt >= maxAttempts) {
+            break;
+          }
+        } catch (error) {
+          lastError = error;
+          if (attempt >= maxAttempts) {
+            throw error;
+          }
+        }
+      }
     } finally {
       clearTimeout(timeoutHandle);
     }
 
-    if (!res.ok || !res.body) {
+    if (!res || !res.ok || !res.body) {
+      if (lastError) {
+        throw lastError;
+      }
       throw new Error("Bad response from Omni backend");
     }
 
@@ -1310,7 +1361,7 @@
     let activeMode = getActiveMode(session);
     
     // Auto-detect mode based on user content
-    if (activeMode === "auto") {
+    if (activeMode === "auto" && runtimeSettings.autoDetectMode) {
       const detectedMode = detectModeFromContent(trimmed);
       if (detectedMode) {
         activeMode = detectedMode;
@@ -1628,7 +1679,12 @@
   }
 
   function handleInputKeydown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
+    const shouldSendWithEnter = runtimeSettings.sendWithEnter;
+    const wantsSend = shouldSendWithEnter
+      ? e.key === "Enter" && !e.shiftKey
+      : e.key === "Enter" && (e.ctrlKey || e.metaKey);
+
+    if (wantsSend) {
       e.preventDefault();
       handleSendClick();
     }
@@ -1861,11 +1917,19 @@
         key === SETTINGS_KEYS.SOUND ||
         key === SETTINGS_KEYS.SHOW_TIMESTAMPS ||
         key === SETTINGS_KEYS.COMPACT_MODE ||
-        key === SETTINGS_KEYS.REQUEST_TIMEOUT
+        key === SETTINGS_KEYS.SEND_WITH_ENTER ||
+        key === SETTINGS_KEYS.SHOW_ASSISTANT_BADGES ||
+        key === SETTINGS_KEYS.AUTO_DETECT_MODE ||
+        key === SETTINGS_KEYS.REQUEST_TIMEOUT ||
+        key === SETTINGS_KEYS.API_HEALTH_INTERVAL ||
+        key === SETTINGS_KEYS.API_RETRIES
       ) {
         loadRuntimeSettings();
         applyRuntimeSettings();
         renderActiveSessionMessages();
+        if (key === SETTINGS_KEYS.API_HEALTH_INTERVAL) {
+          startApiChecks();
+        }
       }
 
       if (key === SETTINGS_KEYS.DEFAULT_MODEL) {
@@ -1922,11 +1986,14 @@
         setMode(normalizeMode(optionBtn.dataset.value) || getSelectedModeFromSettings());
         const session = getActiveSession();
         if (!session) return;
-        try {
-          localStorage.setItem(SETTINGS_KEYS.MODE_SELECTION, "manual");
-          localStorage.setItem(SETTINGS_KEYS.DEFAULT_MODE, session.mode);
-        } catch {
-          // ignore
+        const shouldPersistManualMode = getSettingBool(SETTINGS_KEYS.PERSIST_MANUAL_MODE, true);
+        if (shouldPersistManualMode) {
+          try {
+            localStorage.setItem(SETTINGS_KEYS.MODE_SELECTION, "manual");
+            localStorage.setItem(SETTINGS_KEYS.DEFAULT_MODE, session.mode);
+          } catch {
+            // ignore
+          }
         }
         closeAllDropdowns();
       });

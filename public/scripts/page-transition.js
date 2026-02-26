@@ -2,8 +2,51 @@
   const page = document.body;
   if (!page) return;
 
+  const SETTINGS_KEYS = {
+    ANIMATIONS: "omni-animations",
+    HIGH_CONTRAST_MODE: "omni-high-contrast",
+    REDUCE_GLASS_BLUR: "omni-reduce-glass"
+  };
+
+  function getSettingBool(key, fallback = false) {
+    try {
+      const value = localStorage.getItem(key);
+      if (value === null) return fallback;
+      return value === "true";
+    } catch {
+      return fallback;
+    }
+  }
+
+  function applyInterfaceFlags() {
+    page.classList.toggle("page-high-contrast", getSettingBool(SETTINGS_KEYS.HIGH_CONTRAST_MODE, false));
+    page.classList.toggle("page-reduce-glass", getSettingBool(SETTINGS_KEYS.REDUCE_GLASS_BLUR, false));
+  }
+
+  applyInterfaceFlags();
+
+  window.addEventListener("storage", (event) => {
+    if (
+      event.key === SETTINGS_KEYS.HIGH_CONTRAST_MODE ||
+      event.key === SETTINGS_KEYS.REDUCE_GLASS_BLUR
+    ) {
+      applyInterfaceFlags();
+    }
+  });
+
+  window.addEventListener("omni-settings-changed", (event) => {
+    const key = event?.detail?.key;
+    if (key === SETTINGS_KEYS.HIGH_CONTRAST_MODE || key === SETTINGS_KEYS.REDUCE_GLASS_BLUR) {
+      applyInterfaceFlags();
+    }
+  });
+
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (prefersReducedMotion) return;
+  const animationsEnabled = getSettingBool(SETTINGS_KEYS.ANIMATIONS, true);
+  if (prefersReducedMotion || !animationsEnabled) {
+    page.classList.add("page-no-motion");
+    return;
+  }
 
   const rawMs = getComputedStyle(page).getPropertyValue("--site-transition-ms");
   const transitionMs = Number.parseFloat(rawMs) || 140;

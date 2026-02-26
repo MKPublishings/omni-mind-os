@@ -75,6 +75,28 @@
 
           <div class="setting-item">
             <div class="setting-info">
+              <label class="setting-label">Send with Enter</label>
+              <span class="setting-description">Press Enter to send, Shift+Enter for newline</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="send-with-enter" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Show Assistant Badges</label>
+              <span class="setting-description">Display model/mode badges in assistant messages</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="show-assistant-badges" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
               <label class="setting-label">Clear Chat History</label>
               <span class="setting-description">Remove all messages from local storage</span>
             </div>
@@ -149,6 +171,28 @@
               </div>
             </div>
           </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Auto-detect Mode from Prompt</label>
+              <span class="setting-description">Infer a mode from the latest user message in Auto mode</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="auto-detect-mode" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Persist Manual Mode</label>
+              <span class="setting-description">Save manual mode selection as new default mode</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="persist-manual-mode" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </section>
 
         <!-- INTERFACE SETTINGS -->
@@ -201,6 +245,28 @@
               <span class="toggle-slider"></span>
             </label>
           </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">High Contrast Mode</label>
+              <span class="setting-description">Increase text and border contrast across pages</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="high-contrast-mode" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Reduce Glass Blur</label>
+              <span class="setting-description">Lower backdrop blur effects for clearer panel surfaces</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="reduce-glass-blur" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </section>
 
         <!-- API CONFIGURATION -->
@@ -246,6 +312,36 @@
               value="60" 
               min="10" 
               max="300"
+            />
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">API Health Check Interval</label>
+              <span class="setting-description">How often chat pings API status (seconds)</span>
+            </div>
+            <input
+              type="number"
+              id="api-health-interval"
+              class="setting-input"
+              value="30"
+              min="10"
+              max="120"
+            />
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label class="setting-label">Request Retry Attempts</label>
+              <span class="setting-description">Retries for temporary network failures</span>
+            </div>
+            <input
+              type="number"
+              id="api-retries"
+              class="setting-input"
+              value="1"
+              min="0"
+              max="4"
             />
           </div>
         </section>
