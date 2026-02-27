@@ -357,6 +357,33 @@
   color: #ffd0d0;
 }
 
+.admin-access-indicator {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.04);
+  white-space: nowrap;
+}
+
+.admin-access-indicator.is-checking {
+  border-color: rgba(165, 198, 255, 0.5);
+  color: rgba(220, 234, 255, 0.95);
+}
+
+.admin-access-indicator.is-granted {
+  border-color: rgba(132, 216, 164, 0.5);
+  color: #bdeccf;
+}
+
+.admin-access-indicator.is-denied {
+  border-color: rgba(255, 170, 170, 0.5);
+  color: #ffd0d0;
+}
+
 .mind-timeline-entry {
   font-size: 12px;
   color: var(--text-dim);

@@ -43,6 +43,7 @@
   const savePreferencesBtn = document.getElementById("save-preferences-btn");
   const resetMemoryBtn = document.getElementById("reset-memory-btn");
   const adminKeyInputEl = document.getElementById("admin-key-input");
+  const adminAccessIndicatorEl = document.getElementById("admin-access-indicator");
   const releaseReadinessBtn = document.getElementById("release-readiness-btn");
 
   const sessionsSidebarEl = document.getElementById("sessions-sidebar");
@@ -1058,9 +1059,62 @@
     try {
       if (key) {
         localStorage.setItem(SETTINGS_KEYS.ADMIN_KEY, key);
+      } else {
+        localStorage.removeItem(SETTINGS_KEYS.ADMIN_KEY);
       }
     } catch {
       // ignore
+    }
+  }
+
+  function getAdminAuthHeaders(baseHeaders = {}) {
+    const headers = { ...baseHeaders };
+    const adminKey = getAdminKey();
+    if (adminKey) {
+      headers["x-omni-admin-key"] = adminKey;
+    }
+    return headers;
+  }
+
+  function setAdminAccessIndicator(status, message = "") {
+    if (!adminAccessIndicatorEl) return;
+
+    adminAccessIndicatorEl.classList.remove("is-checking", "is-granted", "is-denied");
+
+    if (status === "checking") {
+      adminAccessIndicatorEl.classList.add("is-checking");
+      adminAccessIndicatorEl.textContent = "Access: checking...";
+      return;
+    }
+
+    if (status === "granted") {
+      adminAccessIndicatorEl.classList.add("is-granted");
+      adminAccessIndicatorEl.textContent = "Access: granted";
+      return;
+    }
+
+    if (status === "denied") {
+      adminAccessIndicatorEl.classList.add("is-denied");
+      adminAccessIndicatorEl.textContent = message ? `Access: denied (${message})` : "Access: denied";
+      return;
+    }
+
+    if (status === "saved") {
+      adminAccessIndicatorEl.textContent = "Access: key saved";
+      return;
+    }
+
+    adminAccessIndicatorEl.textContent = "Access: not set";
+  }
+
+  async function applyAdminKeyFromInput({ triggerReadiness = false } = {}) {
+    if (!adminKeyInputEl) return;
+    const adminKey = String(adminKeyInputEl.value || "").trim();
+    setAdminKey(adminKey);
+    setAdminAccessIndicator(adminKey ? "saved" : "idle");
+
+    if (triggerReadiness) {
+      await runReleaseReadinessCheck();
     }
   }
 
@@ -1105,6 +1159,11 @@
     const session = getActiveSession();
     const adminKey = getAdminKey();
     setAdminKey(adminKey);
+    if (!adminKey) {
+      setAdminAccessIndicator("idle");
+    } else {
+      setAdminAccessIndicator("checking");
+    }
 
     const headers = {};
     if (adminKey) {
@@ -1126,6 +1185,7 @@
 
       if (!res.ok) {
         const reason = String(payload?.error || `HTTP ${res.status}`);
+        setAdminAccessIndicator("denied", reason);
         renderReleaseReadiness(null, reason);
         updateModelInspector("auto", `readiness-${res.status}`);
         if (session) {
@@ -1137,6 +1197,7 @@
       }
 
       renderReleaseReadiness(payload);
+  setAdminAccessIndicator("granted");
       updateModelInspector("auto", payload?.ready ? "release-ready" : "release-not-ready");
       if (session) {
         appendMindTimeline(session, `release-readiness: ${payload?.ready ? "ready" : "not-ready"}`);
@@ -1144,6 +1205,7 @@
         saveState();
       }
     } catch {
+      setAdminAccessIndicator("denied", "network");
       renderReleaseReadiness(null, "Network error");
       updateModelInspector("auto", "readiness-network-error");
       if (session) {
@@ -1215,7 +1277,7 @@
 
     const res = await fetch(getImageEndpoint(), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(payload)
     });
 
@@ -1317,7 +1379,7 @@
         try {
           res = await fetch(getApiEndpoint(), {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(payload),
             signal: controller.signal
           });
@@ -2131,7 +2193,19 @@
     updateSimulationUI();
     if (adminKeyInputEl) {
       adminKeyInputEl.value = getSetting(SETTINGS_KEYS.ADMIN_KEY, "");
-      adminKeyInputEl.addEventListener("change", () => setAdminKey(adminKeyInputEl.value));
+      setAdminAccessIndicator(adminKeyInputEl.value.trim() ? "saved" : "idle");
+      adminKeyInputEl.addEventListener("change", () => {
+        applyAdminKeyFromInput({ triggerReadiness: false }).catch(() => {});
+      });
+      adminKeyInputEl.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        applyAdminKeyFromInput({ triggerReadiness: true }).catch(() => {});
+      });
+
+      if (adminKeyInputEl.value.trim()) {
+        runReleaseReadinessCheck().catch(() => {});
+      }
     }
 
     // Listen for settings changes from other tabs or same page
