@@ -1935,6 +1935,72 @@ type Phase1VideoGenerationPayload = {
   createdAt: number;
 };
 
+function isSafetyVideoErrorMessage(value: unknown): boolean {
+  const text = String(value || "").toLowerCase();
+  if (!text) return false;
+  return /illegal|age-restricted|blocked|forbidden|explicit sexual/.test(text);
+}
+
+function buildVideoFallbackKeyframeUrls(prompt: string, count = 6): string[] {
+  const frameCount = Math.max(3, Math.min(12, Number(count) || 6));
+  const safePrompt = sanitizePromptText(String(prompt || "Generated video preview")).slice(0, 220) || "Generated video preview";
+  const urls: string[] = [];
+
+  for (let i = 0; i < frameCount; i += 1) {
+    const shift = (i * 18) % 360;
+    const label = `Frame ${i + 1}/${frameCount}`;
+    const progress = Math.round(((i + 1) / frameCount) * 100);
+    const barWidth = Math.round((360 * progress) / 100);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${(218 + shift) % 360},75%,17%)"/><stop offset="52%" stop-color="hsl(${(244 + shift) % 360},78%,23%)"/><stop offset="100%" stop-color="hsl(${(194 + shift) % 360},82%,26%)"/></linearGradient><linearGradient id="scan" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(125,230,255,0.15)"/><stop offset="100%" stop-color="rgba(125,230,255,0.45)"/></linearGradient></defs><rect width="512" height="512" fill="url(#bg)"/><rect x="18" y="18" width="476" height="476" rx="22" ry="22" fill="rgba(4,8,18,0.52)" stroke="rgba(138,224,255,0.32)"/><rect x="28" y="28" width="456" height="30" rx="10" fill="rgba(10,18,32,0.72)"/><text x="42" y="48" fill="#bdefff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="700">OMNI VIDEO SYNTH</text><text x="355" y="48" fill="#c6f4ff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13">${label}</text><rect x="36" y="74" width="440" height="328" rx="14" fill="rgba(0,0,0,0.34)" stroke="rgba(138,224,255,0.22)"/><rect x="36" y="240" width="440" height="18" fill="url(#scan)" opacity="0.65"/><foreignObject x="50" y="96" width="412" height="220"><div xmlns="http://www.w3.org/1999/xhtml" style="color:#e9fbff;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:20px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden;">${safePrompt}</div></foreignObject><rect x="76" y="420" width="360" height="10" rx="5" fill="rgba(255,255,255,0.2)"/><rect x="76" y="420" width="${barWidth}" height="10" rx="5" fill="#7de6ff"/><text x="76" y="446" fill="#c6f4ff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Rendering visual fallback • ${progress}%</text><text x="76" y="468" fill="#9bcdd9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Style: Omni cinematic neon</text></svg>`;
+    urls.push(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+  }
+
+  return urls;
+}
+
+function buildFallbackPhase1VideoPayload(
+  prompt: string,
+  body: VideoPhase1RequestBody,
+  reason = "Video pipeline unavailable"
+): Phase1VideoGenerationPayload {
+  const durationSec = clamp(Number((body as VideoGenerateRequestBody)?.durationSeconds ?? body?.durationSec ?? 4), 2, 8);
+  const width = clamp(Number((body as VideoGenerateRequestBody)?.width || 512), 256, 768);
+  const height = clamp(Number((body as VideoGenerateRequestBody)?.height || 512), 256, 768);
+  const fps = clamp(Number((body as VideoGenerateRequestBody)?.fps || 12), 8, 24);
+  const keyframeUrls = buildVideoFallbackKeyframeUrls(prompt, 6);
+
+  const result = {
+    id: `fallback-${crypto.randomUUID()}`,
+    mp4Url: undefined,
+    gifUrl: undefined,
+    sizeMB: {
+      mp4: undefined,
+      gif: undefined
+    },
+    meta: {
+      durationSec,
+      resolution: { width, height },
+      fps,
+      sceneGraph: null,
+      shots: [],
+      keyframes: keyframeUrls.map((imageUrl, index) => ({
+        id: `fallback-kf-${index + 1}`,
+        imageId: `fallback-img-${index + 1}`,
+        imageUrl,
+        timeSec: Number(((index / Math.max(1, keyframeUrls.length - 1)) * durationSec).toFixed(3)),
+        description: prompt
+      })),
+      fallbackReason: String(reason || "Video pipeline unavailable")
+    }
+  };
+
+  return {
+    result,
+    previews: { keyframeUrls },
+    createdAt: Date.now()
+  };
+}
+
 function videoJobKey(jobId: string): string {
   return `${VIDEO_JOB_KEY_PREFIX}${jobId}`;
 }
@@ -2117,12 +2183,33 @@ async function processVideoJob(
     await saveVideoJob(env, succeeded);
   } catch (error: any) {
     logger.error("video_job_processing_error", error);
-    const failed: OmniVideoJob = {
+    const message = String(error?.message || "Video generation failed");
+    if (isSafetyVideoErrorMessage(message)) {
+      const failed: OmniVideoJob = {
+        ...running,
+        status: "failed",
+        errorMessage: message
+      };
+      await saveVideoJob(env, failed);
+      return;
+    }
+
+    const fallbackPayload = buildFallbackPhase1VideoPayload(running.prompt, body, message);
+    const fallbackResult = fallbackPayload.result;
+    const succeededWithFallback: OmniVideoJob = {
       ...running,
-      status: "failed",
-      errorMessage: String(error?.message || "Video generation failed")
+      status: "succeeded",
+      durationSeconds: Number(fallbackResult?.meta?.durationSec || running.durationSeconds || 4),
+      width: Number(fallbackResult?.meta?.resolution?.width || running.width || 512),
+      height: Number(fallbackResult?.meta?.resolution?.height || running.height || 512),
+      fps: Number(fallbackResult?.meta?.fps || running.fps || 12),
+      mp4Url: undefined,
+      gifUrl: undefined,
+      thumbnailUrl: fallbackPayload.previews.keyframeUrls[0] || undefined,
+      keyframePreviewUrls: fallbackPayload.previews.keyframeUrls,
+      errorMessage: `Recovered with fallback: ${message}`
     };
-    await saveVideoJob(env, failed);
+    await saveVideoJob(env, succeededWithFallback);
   }
 }
 
@@ -2944,41 +3031,41 @@ export default {
       }
 
       if (url.pathname === "/api/video/phase1" && request.method === "POST") {
-        try {
-          const body = (await request.json()) as VideoPhase1RequestBody;
-          const safetyProfile = normalizeSafetyProfile(body?.safetyProfile);
-          const prompt = sanitizePromptText(String(body?.prompt || ""));
+        const body = (await request.json().catch(() => ({}))) as VideoPhase1RequestBody;
+        const safetyProfile = normalizeSafetyProfile(body?.safetyProfile);
+        const prompt = sanitizePromptText(String(body?.prompt || ""));
 
-          if (!prompt) {
-            return new Response(JSON.stringify({ error: "Prompt is required" }), {
-              status: 400,
+        if (!prompt) {
+          return new Response(JSON.stringify({ error: "Prompt is required" }), {
+            status: 400,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const safetyDecision = evaluateSexualSafetyPrompt(prompt, safetyProfile);
+        if (safetyDecision.blocked) {
+          return new Response(
+            JSON.stringify({
+              error:
+                safetyDecision.reason === "illegal-content-blocked"
+                  ? "Illegal sexual content is blocked for all access tiers."
+                  : "Explicit sexual content is age-restricted and unavailable for this profile.",
+              code: safetyDecision.reason
+            }),
+            {
+              status: 403,
               headers: {
                 ...CORS_HEADERS,
                 "Content-Type": "application/json"
               }
-            });
-          }
+            }
+          );
+        }
 
-          const safetyDecision = evaluateSexualSafetyPrompt(prompt, safetyProfile);
-          if (safetyDecision.blocked) {
-            return new Response(
-              JSON.stringify({
-                error:
-                  safetyDecision.reason === "illegal-content-blocked"
-                    ? "Illegal sexual content is blocked for all access tiers."
-                    : "Explicit sexual content is age-restricted and unavailable for this profile.",
-                code: safetyDecision.reason
-              }),
-              {
-                status: 403,
-                headers: {
-                  ...CORS_HEADERS,
-                  "Content-Type": "application/json"
-                }
-              }
-            );
-          }
-
+        try {
           const payload = await runPhase1VideoGeneration(env, prompt, body);
           const responsePayload = {
             ok: true,
@@ -2995,13 +3082,34 @@ export default {
           });
         } catch (videoErr: any) {
           logger.error("video_phase1_error", videoErr);
-          return new Response(JSON.stringify({ error: "Video Phase 1 generation failed" }), {
-            status: 500,
-            headers: {
-              ...CORS_HEADERS,
-              "Content-Type": "application/json"
+          const message = String(videoErr?.message || "Video Phase 1 generation failed");
+          if (isSafetyVideoErrorMessage(message)) {
+            return new Response(JSON.stringify({ error: message }), {
+              status: 403,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            });
+          }
+
+          const fallbackPayload = buildFallbackPhase1VideoPayload(prompt, body, message);
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              degraded: true,
+              fallbackReason: message,
+              result: fallbackPayload.result,
+              previews: fallbackPayload.previews,
+              createdAt: fallbackPayload.createdAt
+            }),
+            {
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
             }
-          });
+          );
         }
       }
 

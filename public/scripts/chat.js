@@ -732,6 +732,70 @@
     };
   }
 
+  function isSafetyBlockedVideoError(message) {
+    const text = String(message || "").toLowerCase();
+    if (!text) return false;
+    return /illegal|age-restricted|blocked|forbidden|explicit sexual/.test(text);
+  }
+
+  function buildVideoFallbackKeyframeDataUrls(prompt, count = 6) {
+    const safePrompt = String(prompt || "Generated video preview").trim() || "Generated video preview";
+    const frames = [];
+    const frameCount = Math.max(3, Math.min(12, Number(count) || 6));
+
+    for (let index = 0; index < frameCount; index += 1) {
+      const shift = (index * 18) % 360;
+      const label = `Frame ${index + 1}/${frameCount}`;
+      const progress = Math.round(((index + 1) / frameCount) * 100);
+      const barWidth = Math.round((360 * progress) / 100);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${(218 + shift) % 360},75%,17%)"/><stop offset="52%" stop-color="hsl(${(244 + shift) % 360},78%,23%)"/><stop offset="100%" stop-color="hsl(${(194 + shift) % 360},82%,26%)"/></linearGradient><linearGradient id="scan" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(125,230,255,0.15)"/><stop offset="100%" stop-color="rgba(125,230,255,0.45)"/></linearGradient></defs><rect width="512" height="512" fill="url(#bg)"/><rect x="18" y="18" width="476" height="476" rx="22" ry="22" fill="rgba(4,8,18,0.52)" stroke="rgba(138,224,255,0.32)"/><rect x="28" y="28" width="456" height="30" rx="10" fill="rgba(10,18,32,0.72)"/><text x="42" y="48" fill="#bdefff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="700">OMNI VIDEO SYNTH</text><text x="355" y="48" fill="#c6f4ff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13">${label}</text><rect x="36" y="74" width="440" height="328" rx="14" fill="rgba(0,0,0,0.34)" stroke="rgba(138,224,255,0.22)"/><rect x="36" y="240" width="440" height="18" fill="url(#scan)" opacity="0.65"/><foreignObject x="50" y="96" width="412" height="220"><div xmlns="http://www.w3.org/1999/xhtml" style="color:#e9fbff;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:20px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden;">${safePrompt}</div></foreignObject><rect x="76" y="420" width="360" height="10" rx="5" fill="rgba(255,255,255,0.2)"/><rect x="76" y="420" width="${barWidth}" height="10" rx="5" fill="#7de6ff"/><text x="76" y="446" fill="#c6f4ff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Rendering visual fallback • ${progress}%</text><text x="76" y="468" fill="#9bcdd9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Style: Omni cinematic neon</text></svg>`;
+      frames.push(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+    }
+
+    return frames;
+  }
+
+  function buildVideoFallbackResult(payload, reason = "") {
+    const prompt = String(payload?.prompt || "Generated video preview").trim() || "Generated video preview";
+    const durationSec = Math.max(2, Math.min(8, Number(payload?.durationSeconds || 4)));
+    const width = Math.max(256, Math.min(768, Number(payload?.width || 512)));
+    const height = Math.max(256, Math.min(768, Number(payload?.height || 512)));
+    const fps = Math.max(8, Math.min(24, Number(payload?.fps || 12)));
+    const keyframeUrls = buildVideoFallbackKeyframeDataUrls(prompt, 6);
+
+    return {
+      id: `fallback-${Date.now()}`,
+      mp4Url: undefined,
+      gifUrl: undefined,
+      sizeMB: {
+        mp4: undefined,
+        gif: undefined
+      },
+      meta: {
+        durationSec,
+        resolution: {
+          width,
+          height
+        },
+        fps,
+        sceneGraph: null,
+        shots: [],
+        keyframes: keyframeUrls.map((url, index) => ({
+          id: `fallback-kf-${index + 1}`,
+          imageId: `fallback-img-${index + 1}`,
+          imageUrl: url,
+          timeSec: Number(((index / Math.max(1, keyframeUrls.length - 1)) * durationSec).toFixed(3)),
+          description: prompt
+        }))
+      },
+      previews: {
+        keyframeUrls
+      },
+      createdAt: Date.now(),
+      fallbackReason: String(reason || "Video pipeline unavailable")
+    };
+  }
+
   async function requestVideoJobStatus(jobId) {
     const response = await fetch(`/api/video/job/${encodeURIComponent(String(jobId || "").trim())}`, {
       method: "GET"
@@ -789,6 +853,10 @@
     }
 
     if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error(String(data?.error || "Video request blocked by safety policy"));
+      }
+
       if (onStatus) {
         onStatus({ status: "running", detail: "Using legacy phase1 video path..." });
       }
@@ -816,7 +884,15 @@
       }
 
       if (!fallbackResponse.ok || !fallbackData?.ok) {
-        throw new Error(String(fallbackData?.error || data?.error || "Video generation failed"));
+        const message = String(fallbackData?.error || data?.error || "Video generation failed");
+        if (fallbackResponse.status === 403 || isSafetyBlockedVideoError(message)) {
+          throw new Error(message);
+        }
+        const localFallback = buildVideoFallbackResult(payload, message);
+        if (onStatus) {
+          onStatus({ status: "succeeded", detail: "Video fallback generated from local keyframes." });
+        }
+        return localFallback;
       }
 
       const fallbackResult = fallbackData.result || null;
@@ -848,10 +924,15 @@
         return mapVideoJobToResult(latest);
       }
       if (latest.status === "failed") {
-        if (onStatus) {
-          onStatus({ status: "failed", detail: String(latest.errorMessage || "Video generation failed") });
+        const message = String(latest.errorMessage || "Video generation failed");
+        if (isSafetyBlockedVideoError(message)) {
+          throw new Error(message);
         }
-        throw new Error(String(latest.errorMessage || "Video generation failed"));
+        const localFallback = buildVideoFallbackResult(payload, message);
+        if (onStatus) {
+          onStatus({ status: "succeeded", detail: "Video fallback generated from local keyframes." });
+        }
+        return localFallback;
       }
 
       if (onStatus) {
@@ -866,10 +947,10 @@
     }
 
     if (onStatus) {
-      onStatus({ status: "failed", detail: "Video generation timed out." });
+      onStatus({ status: "succeeded", detail: "Video fallback generated after timeout." });
     }
 
-    throw new Error("Video generation timed out while waiting for completion");
+    return buildVideoFallbackResult(payload, "Video generation timed out while waiting for completion");
   }
 
   function toModelLabel(model) {
@@ -1665,12 +1746,25 @@
     info.className = "generated-image-meta";
     const duration = Number(meta.videoDurationSec);
     const resolution = String(meta.videoResolution || "").trim();
+    const qualityMode = String(meta.videoQualityMode || "").trim().toUpperCase();
+    const format = String(meta.videoFormat || "").trim().toLowerCase();
+    const fallbackReason = String(meta.videoFallbackReason || "").trim();
     info.textContent = [
       Number.isFinite(duration) && duration > 0 ? `${duration.toFixed(2)}s` : "",
       resolution,
+      qualityMode,
+      format ? `format:${format}` : "",
+      fallbackReason ? "fallback" : "",
       createdLabel ? `Created: ${createdLabel}` : ""
     ].filter(Boolean).join(" • ");
     actions.appendChild(info);
+
+    if (fallbackReason) {
+      const note = document.createElement("div");
+      note.className = "generated-image-meta";
+      note.textContent = `Fallback reason: ${fallbackReason}`;
+      actions.appendChild(note);
+    }
 
     card.appendChild(viewer);
     card.appendChild(actions);
@@ -2430,6 +2524,7 @@
               const keyframeCount = Array.isArray(result?.meta?.keyframes) ? result.meta.keyframes.length : 0;
               const shotCount = Array.isArray(result?.meta?.shots) ? result.meta.shots.length : 0;
               lines.push(`- Shots: **${shotCount}** | Keyframes: **${keyframeCount}**`);
+              if (result?.fallbackReason) lines.push(`- Fallback: **${String(result.fallbackReason)}**`);
 
               assistantText = lines.join("\n");
               assistantMediaMeta = {
@@ -2439,7 +2534,10 @@
                 videoGifUrl: String(result?.gifUrl || ""),
                 videoDurationSec: Number(result?.meta?.durationSec || 0),
                 videoResolution: `${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}`,
-                videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : []
+                videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : [],
+                videoQualityMode: String(videoCommand?.qualityMode || "BALANCED").toUpperCase(),
+                videoFormat: String(videoCommand?.format || "both").toLowerCase(),
+                videoFallbackReason: String(result?.fallbackReason || "")
               };
             }
           } catch (error) {
@@ -2604,6 +2702,7 @@
         ];
         if (result?.mp4Url) lines.push(`- MP4: ${result.mp4Url}`);
         if (result?.gifUrl) lines.push(`- GIF: ${result.gifUrl}`);
+          if (result?.fallbackReason) lines.push(`- Fallback: **${String(result.fallbackReason)}**`);
 
         updateAssistantMessageBody(assistantBodyEl, lines.join("\n"));
 
@@ -2615,7 +2714,10 @@
             videoGifUrl: String(result?.gifUrl || ""),
             videoDurationSec: Number(result?.meta?.durationSec || 0),
             videoResolution: `${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}`,
-            videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : []
+            videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : [],
+            videoQualityMode: "BALANCED",
+            videoFormat: mediaIntent.format === "gif" ? "gif" : "both",
+            videoFallbackReason: String(result?.fallbackReason || "")
           });
           if (mediaCard) {
             const spacer = document.createElement("div");
@@ -2636,6 +2738,9 @@
           videoDurationSec: Number(result?.meta?.durationSec || 0),
           videoResolution: `${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}`,
           videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : [],
+          videoQualityMode: "BALANCED",
+          videoFormat: mediaIntent.format === "gif" ? "gif" : "both",
+          videoFallbackReason: String(result?.fallbackReason || ""),
           timestamp: Date.now()
         });
         updateSessionMetaFromMessages(session);
