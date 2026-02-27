@@ -1,0 +1,411 @@
+{
+  "mode": "balanced",
+  "format": "mp4",
+  "budget": {
+    "maxSizeMB": 2,
+    "width": 640,
+    "height": 640,
+    "fps": 12,
+    "durationSec": 2.5,
+    "estimatedSizeMB": 0.171
+  },
+  "context": {
+    "theme": "A lone explorer walks through a neon ruin at dusk. Wind moves dust in arcs.",
+    "mood": "cinematic",
+    "location": "prompt-defined",
+    "timeOfDay": "night",
+    "durationSec": 2.5,
+    "styleHints": [
+      "cinematic",
+      "high contrast"
+    ]
+  },
+  "sceneGraph": {
+    "summary": "A lone explorer walks through a neon ruin at dusk. Wind moves dust in arcs.",
+    "entities": [
+      {
+        "id": "entity_2",
+        "label": "lone"
+      },
+      {
+        "id": "entity_3",
+        "label": "explorer"
+      },
+      {
+        "id": "entity_4",
+        "label": "walks"
+      },
+      {
+        "id": "entity_5",
+        "label": "through"
+      }
+    ],
+    "mood": "cinematic",
+    "lighting": "balanced",
+    "physics": {
+      "gravity": [
+        0,
+        -9.8,
+        0
+      ]
+    }
+  },
+  "entityTracks": [
+    {
+      "entityId": "entity_2",
+      "label": "lone",
+      "states": [
+        {
+          "shotId": "shot_1",
+          "position": {
+            "x": 0,
+            "y": 0.45,
+            "z": 0.2
+          },
+          "state": "introduce"
+        },
+        {
+          "shotId": "shot_2",
+          "position": {
+            "x": 0.07,
+            "y": 0.37,
+            "z": 0.2
+          },
+          "state": "continue"
+        }
+      ]
+    },
+    {
+      "entityId": "entity_3",
+      "label": "explorer",
+      "states": [
+        {
+          "shotId": "shot_1",
+          "position": {
+            "x": 0.12,
+            "y": 0.45,
+            "z": 0.23
+          },
+          "state": "introduce"
+        },
+        {
+          "shotId": "shot_2",
+          "position": {
+            "x": 0.19,
+            "y": 0.37,
+            "z": 0.23
+          },
+          "state": "continue"
+        }
+      ]
+    },
+    {
+      "entityId": "entity_4",
+      "label": "walks",
+      "states": [
+        {
+          "shotId": "shot_1",
+          "position": {
+            "x": 0.24,
+            "y": 0.45,
+            "z": 0.26
+          },
+          "state": "introduce"
+        },
+        {
+          "shotId": "shot_2",
+          "position": {
+            "x": 0.31,
+            "y": 0.37,
+            "z": 0.26
+          },
+          "state": "continue"
+        }
+      ]
+    },
+    {
+      "entityId": "entity_5",
+      "label": "through",
+      "states": [
+        {
+          "shotId": "shot_1",
+          "position": {
+            "x": 0.36,
+            "y": 0.45,
+            "z": 0.29
+          },
+          "state": "introduce"
+        },
+        {
+          "shotId": "shot_2",
+          "position": {
+            "x": 0.43,
+            "y": 0.37,
+            "z": 0.29
+          },
+          "state": "continue"
+        }
+      ]
+    }
+  ],
+  "shots": [
+    {
+      "id": "shot_1",
+      "description": "A lone explorer walks through a neon ruin at dusk",
+      "durationSec": 1.25,
+      "camera": "static",
+      "dialogueWindow": {
+        "startSec": 0,
+        "endSec": 1.1,
+        "emotion": "focused"
+      }
+    },
+    {
+      "id": "shot_2",
+      "description": "Wind moves dust in arcs",
+      "durationSec": 1.25,
+      "camera": "static"
+    }
+  ],
+  "physicsChannels": [
+    {
+      "shotId": "shot_1",
+      "gravity": [
+        0,
+        -9.8,
+        0
+      ],
+      "velocity": [
+        0.8,
+        0,
+        0
+      ],
+      "collisionHint": "none",
+      "motionField": {
+        "mode": "linear",
+        "intensity": 0.8
+      }
+    },
+    {
+      "shotId": "shot_2",
+      "gravity": [
+        0,
+        -9.8,
+        0
+      ],
+      "velocity": [
+        0.8,
+        0,
+        0
+      ],
+      "collisionHint": "none",
+      "motionField": {
+        "mode": "linear",
+        "intensity": 0.8
+      }
+    }
+  ],
+  "dialogueTimeline": [
+    {
+      "lineId": "line_1",
+      "shotId": "shot_1",
+      "speaker": "explorer",
+      "emotion": "focused",
+      "text": "We keep moving.",
+      "timing": {
+        "startSec": 0,
+        "endSec": 1.1,
+        "reactionBeforeSec": 0.13,
+        "reactionAfterSec": 0.15
+      },
+      "visemeHints": [
+        {
+          "token": "We",
+          "startSec": 0,
+          "endSec": 0.2,
+          "viseme": "open"
+        },
+        {
+          "token": "keep",
+          "startSec": 0.25,
+          "endSec": 0.45,
+          "viseme": "open"
+        },
+        {
+          "token": "moving.",
+          "startSec": 0.5,
+          "endSec": 0.7,
+          "viseme": "open"
+        }
+      ]
+    }
+  ],
+  "storyboard": [
+    {
+      "shotId": "shot_1",
+      "durationSec": 1.25,
+      "description": "A lone explorer walks through a neon ruin at dusk",
+      "transitionIn": "cold-open",
+      "cameraPath": {
+        "type": "static",
+        "from": [
+          0,
+          0,
+          1
+        ],
+        "to": [
+          0,
+          0,
+          1
+        ],
+        "fov": 44
+      },
+      "keyframes": [
+        {
+          "index": 0,
+          "timestampSec": 0,
+          "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_1_a_lone_explorer_walks_through_a_neon_640x640.png"
+        },
+        {
+          "index": 1,
+          "timestampSec": 0.63,
+          "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_2_a_lone_explorer_walks_through_a_neon_640x640.png"
+        },
+        {
+          "index": 2,
+          "timestampSec": 1.25,
+          "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_3_a_lone_explorer_walks_through_a_neon_640x640.png"
+        }
+      ]
+    },
+    {
+      "shotId": "shot_2",
+      "durationSec": 1.25,
+      "description": "Wind moves dust in arcs",
+      "transitionIn": "gentle-dissolve",
+      "cameraPath": {
+        "type": "static",
+        "from": [
+          0,
+          0,
+          1
+        ],
+        "to": [
+          0,
+          0,
+          1
+        ],
+        "fov": 44
+      },
+      "keyframes": [
+        {
+          "index": 0,
+          "timestampSec": 0,
+          "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_4_a_lone_explorer_walks_through_a_neon_640x640.png"
+        },
+        {
+          "index": 1,
+          "timestampSec": 0.63,
+          "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_5_a_lone_explorer_walks_through_a_neon_640x640.png"
+        },
+        {
+          "index": 2,
+          "timestampSec": 1.25,
+          "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_6_a_lone_explorer_walks_through_a_neon_640x640.png"
+        }
+      ]
+    }
+  ],
+  "optimization": {
+    "targetMaxSizeMB": 2,
+    "strictSize": true,
+    "runtimeCache": {
+      "enabled": true,
+      "scope": "process"
+    },
+    "modelHints": {
+      "distillationTarget": "short-form-student",
+      "quantizationTarget": "int8-ready"
+    },
+    "adaptiveTiers": [
+      {
+        "name": "current",
+        "width": 640,
+        "height": 640,
+        "fps": 12,
+        "durationSec": 2.5
+      },
+      {
+        "name": "fps-reduced",
+        "width": 640,
+        "height": 640,
+        "fps": 10,
+        "durationSec": 2.5
+      },
+      {
+        "name": "resolution-reduced",
+        "width": 544,
+        "height": 544,
+        "fps": 10,
+        "durationSec": 2.5
+      },
+      {
+        "name": "duration-reduced",
+        "width": 544,
+        "height": 544,
+        "fps": 10,
+        "durationSec": 1.88
+      }
+    ]
+  },
+  "keyframes": [
+    {
+      "shotId": "shot_1",
+      "index": 0,
+      "timestampSec": 0,
+      "prompt": "A lone explorer walks through a neon ruin at dusk. Wind moves dust in arcs. | shot: A lone explorer walks through a neon ruin at dusk | camera: static | moment: start | style: cinematic, high contrast",
+      "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_1_a_lone_explorer_walks_through_a_neon_640x640.png",
+      "cached": false
+    },
+    {
+      "shotId": "shot_1",
+      "index": 1,
+      "timestampSec": 0.63,
+      "prompt": "A lone explorer walks through a neon ruin at dusk. Wind moves dust in arcs. | shot: A lone explorer walks through a neon ruin at dusk | camera: static | moment: mid | style: cinematic, high contrast",
+      "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_2_a_lone_explorer_walks_through_a_neon_640x640.png",
+      "cached": false
+    },
+    {
+      "shotId": "shot_1",
+      "index": 2,
+      "timestampSec": 1.25,
+      "prompt": "A lone explorer walks through a neon ruin at dusk. Wind moves dust in arcs. | shot: A lone explorer walks through a neon ruin at dusk | camera: static | moment: end | style: cinematic, high contrast",
+      "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_3_a_lone_explorer_walks_through_a_neon_640x640.png",
+      "cached": false
+    },
+    {
+      "shotId": "shot_2",
+      "index": 0,
+      "timestampSec": 0,
+      "prompt": "A lone explorer walks through a neon ruin at dusk. Wind moves dust in arcs. | shot: Wind moves dust in arcs | camera: static | moment: start | style: cinematic, high contrast",
+      "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_4_a_lone_explorer_walks_through_a_neon_640x640.png",
+      "cached": false
+    },
+    {
+      "shotId": "shot_2",
+      "index": 1,
+      "timestampSec": 0.63,
+      "prompt": "A lone explorer walks through a neon ruin at dusk. Wind moves dust in arcs. | shot: Wind moves dust in arcs | camera: static | moment: mid | style: cinematic, high contrast",
+      "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_5_a_lone_explorer_walks_through_a_neon_640x640.png",
+      "cached": false
+    },
+    {
+      "shotId": "shot_2",
+      "index": 2,
+      "timestampSec": 1.25,
+      "prompt": "A lone explorer walks through a neon ruin at dusk. Wind moves dust in arcs. | shot: Wind moves dust in arcs | camera: static | moment: end | style: cinematic, high contrast",
+      "filePath": "C:\\Users\\Slizz\\OneDrive\\Documents\\GitHub\\website\\omni-mind-os\\omni_image_exports\\mock_frame_6_a_lone_explorer_walks_through_a_neon_640x640.png",
+      "cached": false
+    }
+  ]
+}

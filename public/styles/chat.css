@@ -933,3 +933,20 @@
   background: rgba(255, 255, 255, 0.07);
   box-shadow: 0 0 0 2px rgba(15, 82, 186, 0.18), 0 0 12px var(--accent-glow);
 }
+
+.age-gate-composer-notice {
+  margin: 0 16px 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.typing-indicator {
+  margin: 0 16px 10px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-style: italic;
+}

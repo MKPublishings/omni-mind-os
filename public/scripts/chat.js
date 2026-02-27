@@ -16,6 +16,7 @@
   const messagesEl = document.getElementById("chat-messages") || document.getElementById("chat-container");
   const inputEl = document.getElementById("chat-input") || document.getElementById("user-input");
   const videoQuickBtn = document.getElementById("video-quick-btn");
+  const ageGateComposerNoticeEl = document.getElementById("age-gate-composer-notice");
   const sendBtn = document.getElementById("send-btn");
   const modelDropdown = document.getElementById("model-dropdown");
   const modelBtn = document.getElementById("model-btn");
@@ -292,6 +293,16 @@
     }
   }
 
+  function hasVerifiedAgeProfile() {
+    const profile = getAgeProfile();
+    return Boolean(profile && profile.verified && profile.humanVerified);
+  }
+
+  function updateAgeGateComposerNotice() {
+    if (!ageGateComposerNoticeEl) return;
+    ageGateComposerNoticeEl.hidden = hasVerifiedAgeProfile();
+  }
+
   function buildSafetyProfile() {
     const profile = getAgeProfile() || {};
     const ageTier = String(profile.ageTier || "minor").toLowerCase() === "adult" ? "adult" : "minor";
@@ -319,10 +330,46 @@
       };
     }
 
+    const explicitSexualPattern = /\b(nsfw|porn|explicit|erotic|nude|nudity|fetish)\b/i;
+    if (explicitSexualPattern.test(value) && !Boolean(safetyProfile?.explicitAllowed)) {
+      return {
+        blocked: true,
+        reason: "age-gated",
+        message: "Request blocked. Explicit content is disabled for your current safety profile."
+      };
+    }
+
     return {
       blocked: false,
       reason: "safe"
     };
+  }
+
+  function preflightMediaGenerationCheck(promptText, mediaKind = "image") {
+    const prompt = String(promptText || "").trim();
+
+    if (!prompt) {
+      return {
+        ok: false,
+        message: `A prompt is required to generate a ${mediaKind}.`
+      };
+    }
+
+    if (!hasVerifiedAgeProfile()) {
+      return {
+        ok: false,
+        message: "Age verification is required before generating images or videos. Complete the age gate and try again."
+      };
+    }
+
+    if (prompt.length > 1600) {
+      return {
+        ok: false,
+        message: "Prompt is too long for generation. Please shorten it and retry."
+      };
+    }
+
+    return { ok: true };
   }
 
   function detectAutoMediaIntent(text) {
@@ -695,6 +742,11 @@
   }
 
   async function requestPhase1Video(payload, hooks = {}) {
+    const preflight = preflightMediaGenerationCheck(payload?.prompt || "", "video");
+    if (!preflight.ok) {
+      throw new Error(preflight.message);
+    }
+
     const onStatus = typeof hooks?.onStatus === "function" ? hooks.onStatus : null;
 
     if (onStatus) {
@@ -1856,6 +1908,11 @@
   }
 
   async function requestGeneratedImage(session, prompt, safetyProfile = null) {
+    const preflight = preflightMediaGenerationCheck(prompt, "image");
+    if (!preflight.ok) {
+      throw new Error(preflight.message);
+    }
+
     const selectedStyle = getActiveImageStyle(session);
     const selectedCamera = getActiveCameraProfile(session);
     const selectedLighting = getActiveLightingProfile(session);
@@ -1886,7 +1943,11 @@
 
     if (!res.ok) {
       const reason = data?.error || "Image backend returned an error";
-      throw new Error(reason);
+      const code = String(data?.code || "").trim();
+      const withCode = code ? `${reason} (${code})` : reason;
+      const details = String(data?.details || "").trim();
+      const finalMessage = details && runtimeSettings?.showAssistantBadges ? `${withCode}: ${details}` : withCode;
+      throw new Error(finalMessage);
     }
 
     const imageDataUrl = String(data?.imageDataUrl || "").trim();
@@ -1945,7 +2006,7 @@
     return status === 408 || status === 425 || status === 429 || (status >= 500 && status <= 599);
   }
 
-  async function streamOmniResponse(session, assistantBodyEl, onChunk, onMeta, safetyProfile = null) {
+  async function streamOmniResponse(session, onChunk, onMeta, safetyProfile = null) {
     const activeMode = getActiveMode(session);
     const payload = {
       messages: session.messages,
@@ -2678,7 +2739,6 @@
     try {
       await streamOmniResponse(
         session,
-        assistantBodyEl,
         (chunk) => {
           if (chunk && typeof chunk === "object") {
             const payload = chunk;
@@ -3117,6 +3177,7 @@
     updateModelInspector("auto", "router-ready");
     loadPreferences();
     updateSimulationUI();
+    updateAgeGateComposerNotice();
 
     // Listen for settings changes from other tabs or same page
     window.addEventListener("storage", (e) => {
@@ -3158,6 +3219,10 @@
           syncSelectorsFromSession();
           renderSessionsSidebar();
         }
+      }
+
+      if (e.key === AGE_PROFILE_KEY) {
+        updateAgeGateComposerNotice();
       }
     });
 
@@ -3211,6 +3276,13 @@
           renderSessionsSidebar();
         }
       }
+    });
+
+    window.addEventListener("omni-age-profile-changed", () => {
+      const session = getActiveSession();
+      updateAgeGateComposerNotice();
+      if (!session) return;
+      updateMindStateUI(session);
     });
 
     if (modelBtn && modelDropdown) {

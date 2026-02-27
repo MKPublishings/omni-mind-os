@@ -541,6 +541,70 @@ function evaluateSexualSafetyPrompt(text: string, safetyProfile: SafetyProfile):
   return { blocked: false, reason: "allowed" };
 }
 
+function normalizeImageGenerationError(err: any): {
+  status: number;
+  code: string;
+  message: string;
+  details?: string;
+} {
+  const rawMessage = String(err?.message || err?.error || "").trim();
+  const value = rawMessage.toLowerCase();
+
+  if (
+    value.includes("moderat") ||
+    value.includes("safety") ||
+    value.includes("policy") ||
+    value.includes("unsafe") ||
+    value.includes("content blocked")
+  ) {
+    return {
+      status: 422,
+      code: "provider-policy-blocked",
+      message: "Image provider rejected this prompt under policy constraints.",
+      details: rawMessage || undefined
+    };
+  }
+
+  if (
+    value.includes("too long") ||
+    value.includes("context length") ||
+    value.includes("max tokens") ||
+    value.includes("input is too large")
+  ) {
+    return {
+      status: 400,
+      code: "prompt-too-long",
+      message: "Prompt is too long for the image provider. Shorten the prompt and retry.",
+      details: rawMessage || undefined
+    };
+  }
+
+  if (value.includes("timeout") || value.includes("timed out") || value.includes("deadline")) {
+    return {
+      status: 504,
+      code: "provider-timeout",
+      message: "Image generation timed out. Please retry.",
+      details: rawMessage || undefined
+    };
+  }
+
+  if (value.includes("unavailable") || value.includes("overloaded") || value.includes("rate limit")) {
+    return {
+      status: 503,
+      code: "provider-unavailable",
+      message: "Image provider is temporarily unavailable. Retry shortly.",
+      details: rawMessage || undefined
+    };
+  }
+
+  return {
+    status: 500,
+    code: "image-generation-failed",
+    message: "Image generation failed.",
+    details: rawMessage || undefined
+  };
+}
+
 const INTERNET_MODE_PROFILES: Record<string, InternetSearchProfile> = {
   auto: { queryPrefix: "overview", querySuffix: "latest", limit: 4 },
   architect: { queryPrefix: "architecture patterns", querySuffix: "design tradeoffs", limit: 5 },
@@ -950,6 +1014,188 @@ function isAdminAuthorized(request: Request, env: Env): boolean {
 
   const provided = String(request.headers.get("x-omni-admin-key") || "").trim();
   return provided.length > 0 && provided === configured;
+}
+
+function resolveInternalMindMode(value: string): InternalMindMode | null {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "improvement" || normalized === "patch" || normalized === "tasks") {
+    return normalized;
+  }
+  return null;
+}
+
+function buildInternalMindImprovementResponse(payload: InternalMindRequestBody): Record<string, unknown> {
+  const evaluation = payload?.evaluation || {};
+  const sessionId = sanitizePromptText(String(evaluation.sessionId || "")).trim() || "unknown";
+  const score = clamp(Number(evaluation.score || 0.78), 0, 1);
+  const qualityScore = clamp(Number(evaluation.qualityScore || Math.min(1, score + 0.03)), 0, 1);
+  const latencyScore = clamp(Number(evaluation.latencyScore || Math.max(0, score - 0.05)), 0, 1);
+  const reliabilityScore = clamp(Number(evaluation.reliabilityScore || score), 0, 1);
+  const safetyScore = clamp(Number(evaluation.safetyScore || Math.min(1, score + 0.08)), 0, 1);
+
+  const issues = [
+    ...(Array.isArray(evaluation.issues) ? evaluation.issues : []),
+    ...(Array.isArray(evaluation.findings) ? evaluation.findings : [])
+  ]
+    .map((issue) => sanitizePromptText(String(issue || "")).trim())
+    .filter(Boolean)
+    .slice(0, 8);
+
+  const normalizedIssues = issues.length
+    ? issues
+    : [
+        "Session evaluation did not provide explicit issues; monitor next run for concrete drift signals."
+      ];
+
+  const proposals: Array<Record<string, unknown>> = [];
+  if (qualityScore < 0.8) {
+    proposals.push({
+      type: "prompt",
+      area: "response-quality",
+      summary: "Tighten response-executability guidance in system prompts",
+      details: "Require explicit file paths, concrete commands, and measurable acceptance criteria in generated plans.",
+      safeToApply: true
+    });
+  }
+
+  if (latencyScore < 0.72 || reliabilityScore < 0.9) {
+    proposals.push({
+      type: "task-token",
+      area: "runtime-reliability",
+      summary: "Create reliability hardening task token from mind evaluation",
+      details: "Track retries, transient failure handling, and fallback path consistency across critical routes.",
+      safeToApply: true,
+      taskToken: {
+        type: "refactor",
+        summary: "Harden reliability and fallback handling in critical routes",
+        contextFiles: ["src/index.ts", "src/mind/evaluators/sessionEvaluator.ts"],
+        acceptanceCriteria: [
+          "Reliability score recovers above 0.90 in subsequent sampled sessions",
+          "No repeated transient-failure issue appears in two consecutive evaluations"
+        ]
+      }
+    });
+  }
+
+  if (safetyScore < 0.98) {
+    proposals.push({
+      type: "task-token",
+      area: "safety",
+      summary: "Generate safety review token for policy boundary verification",
+      details: "Review moderation classification traces and policy gate ordering for consistency.",
+      safeToApply: false,
+      taskToken: {
+        type: "research",
+        summary: "Audit safety gate ordering and moderation traces",
+        contextFiles: ["src/index.ts", "codex/20-protocols.md"],
+        acceptanceCriteria: [
+          "Safety gate ordering documented",
+          "Policy boundary tests added to maintenance checklist"
+        ]
+      }
+    });
+  }
+
+  if (!proposals.length) {
+    proposals.push({
+      type: "task-token",
+      area: "codex-update",
+      summary: "Record healthy mind-evaluation snapshot",
+      details: "No immediate corrective action required; keep trend monitoring active.",
+      safeToApply: true,
+      taskToken: {
+        type: "codex-update",
+        summary: "Append healthy internal mind-evaluation snapshot",
+        contextFiles: ["codex/40-decisions"],
+        acceptanceCriteria: [
+          "Snapshot includes score breakdown and top findings",
+          "No unresolved high-priority token remains active"
+        ]
+      }
+    });
+  }
+
+  return {
+    mode: "improvement",
+    sessionId,
+    score,
+    metrics: {
+      qualityScore,
+      latencyScore,
+      reliabilityScore,
+      safetyScore
+    },
+    issues: normalizedIssues,
+    proposals
+  };
+}
+
+function buildInternalMindPatchResponse(payload: InternalMindRequestBody): Record<string, unknown> {
+  const errorLog = sanitizePromptText(String(payload?.errorLog || "")).trim() || "No error log provided.";
+  const contextFiles = Array.isArray(payload?.context?.files) ? payload.context.files : [];
+  const primaryFile = contextFiles
+    .map((file) => sanitizePromptText(String(file?.path || "")).trim())
+    .find(Boolean) || "src/index.ts";
+
+  const explanation =
+    "The failure likely comes from an unguarded assumption in the failing path; introduce validation guards and safe fallbacks before dereferencing optional fields.";
+
+  const diff = [
+    `diff --git a/${primaryFile} b/${primaryFile}`,
+    "index 0000000..1111111 100644",
+    `--- a/${primaryFile}`,
+    `+++ b/${primaryFile}`,
+    "@@ -1,3 +1,8 @@",
+    "+// TODO: apply targeted guard rails based on captured error trace",
+    "+// 1) validate required fields before use",
+    "+// 2) short-circuit with structured error response on invalid state",
+    "+// 3) preserve existing safety gates and public interfaces"
+  ].join("\n");
+
+  return {
+    mode: "patch",
+    explanation,
+    diff,
+    traceExcerpt: errorLog.slice(0, 1200)
+  };
+}
+
+function buildInternalMindTasksResponse(payload: InternalMindRequestBody): Record<string, unknown> {
+  const issues = [
+    ...(Array.isArray(payload?.issues) ? payload.issues : []),
+    ...(Array.isArray(payload?.codexGaps) ? payload.codexGaps : [])
+  ]
+    .map((entry) => sanitizePromptText(String(entry || "")).trim())
+    .filter(Boolean)
+    .slice(0, 8);
+
+  const taskSeeds = issues.length
+    ? issues
+    : [
+        "No explicit issues supplied; generate a codex maintenance and observability task."
+      ];
+
+  const tasks = taskSeeds.map((issue, index) => ({
+    type: index === 0 ? "feature" : "codex-update",
+    summary: issue.length > 140 ? `${issue.slice(0, 137)}...` : issue,
+    contextFiles: index === 0
+      ? ["src/mind/evaluators/sessionEvaluator.ts", "src/mind/evaluators/improvementProposer.ts"]
+      : ["codex/20-protocols.md"],
+    acceptanceCriteria: index === 0
+      ? [
+          "Issue is translated into a concrete implementation step",
+          "Result is traceable in codex decision history"
+        ]
+      : [
+          "Protocol documentation updated for the identified gap",
+          "Follow-up verification command is documented"
+        ]
+  }));
+
+  return {
+    mode: "tasks",
+    tasks
+  };
 }
 
 function getBackgroundReadinessStatus(env: Env): {
@@ -1933,8 +2179,9 @@ export default {
         url.pathname === "/api/stats" ||
         url.pathname === "/api/maintenance/run" ||
         url.pathname === "/api/maintenance/status" ||
-        url.pathname === "/api/release/spec";
-
+        url.pathname === "/api/release/spec" ||
+        url.pathname === "/internal/mind";
+        
       if (isApiRoute && request.method === "OPTIONS") {
         return new Response(null, {
           status: 204,
@@ -2354,6 +2601,49 @@ export default {
         });
       }
 
+      if (url.pathname === "/internal/mind" && request.method === "POST") {
+        if (!isAdminAuthorized(request, env)) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const body = (await request.json().catch(() => ({}))) as InternalMindRequestBody;
+        const mode = resolveInternalMindMode(String(body?.mode || ""));
+        if (!mode) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid mode. Expected one of: improvement, patch, tasks."
+            }),
+            {
+              status: 400,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
+        const payload =
+          mode === "improvement"
+            ? buildInternalMindImprovementResponse(body)
+            : mode === "patch"
+              ? buildInternalMindPatchResponse(body)
+              : buildInternalMindTasksResponse(body);
+
+        return new Response(JSON.stringify(payload), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
       if (url.pathname === "/api/video/generate" && request.method === "POST") {
         const body = (await request.json().catch(() => ({}))) as VideoGenerateRequestBody;
         const prompt = sanitizePromptText(String(body?.prompt || "")).trim();
@@ -2512,6 +2802,16 @@ export default {
       }
 
       if (url.pathname === "/api/video/phase1" && request.method !== "POST") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/internal/mind" && request.method !== "POST") {
         return new Response("Method Not Allowed", {
           status: 405,
           headers: {
@@ -2814,12 +3114,47 @@ export default {
             requestedHeight
           );
 
-          const rawImage = await env.AI.run(modelConfig.model, {
-            prompt: refined.data.finalPrompt,
-            width: modelConfig.width,
-            height: modelConfig.height,
-            seed: refined.finalOptions.seed
-          });
+          let fallbackUsed = false;
+          let fallbackReason: string | null = null;
+
+          const primaryPrompt = refined.data.finalPrompt;
+          const compactPrompt = [
+            orchestrated.userPrompt,
+            ...refined.data.styleTags.slice(0, 6),
+            ...refined.data.technicalTags.slice(0, 8)
+          ]
+            .filter(Boolean)
+            .join(", ")
+            .slice(0, 900);
+
+          let rawImage: any;
+          try {
+            rawImage = await env.AI.run(modelConfig.model, {
+              prompt: primaryPrompt,
+              width: modelConfig.width,
+              height: modelConfig.height,
+              seed: refined.finalOptions.seed
+            });
+          } catch (primaryErr: any) {
+            const normalizedPrimaryError = normalizeImageGenerationError(primaryErr);
+            const shouldRetryCompactPrompt =
+              normalizedPrimaryError.code === "prompt-too-long" ||
+              normalizedPrimaryError.code === "provider-timeout" ||
+              normalizedPrimaryError.code === "provider-unavailable";
+
+            if (!shouldRetryCompactPrompt || !compactPrompt) {
+              throw primaryErr;
+            }
+
+            fallbackUsed = true;
+            fallbackReason = normalizedPrimaryError.code;
+            rawImage = await env.AI.run(modelConfig.model, {
+              prompt: compactPrompt,
+              width: modelConfig.width,
+              height: modelConfig.height,
+              seed: refined.finalOptions.seed
+            });
+          }
 
           const normalized = await normalizeImageOutput(rawImage);
           const imageDataUrl = `data:${normalized.mimeType};base64,${bytesToBase64(normalized.bytes)}`;
@@ -2854,7 +3189,9 @@ export default {
                 technicalTags: refined.data.technicalTags,
                 styleTags: refined.data.styleTags,
                 negativeTags: refined.data.negativeTags,
-                finalPrompt: refined.data.finalPrompt
+                finalPrompt: refined.data.finalPrompt,
+                fallbackUsed,
+                fallbackReason
               },
               safety: {
                 ageTier: safetyProfile.ageTier,
@@ -2922,8 +3259,13 @@ export default {
           );
         } catch (imageErr: any) {
           logger.error("image_generation_error", imageErr);
-          return new Response(JSON.stringify({ error: "Image generation failed" }), {
-            status: 500,
+          const normalizedError = normalizeImageGenerationError(imageErr);
+          return new Response(JSON.stringify({
+            error: normalizedError.message,
+            code: normalizedError.code,
+            details: normalizedError.details
+          }), {
+            status: normalizedError.status,
             headers: {
               ...CORS_HEADERS,
               "Content-Type": "application/json"
@@ -3430,4 +3772,34 @@ export default {
       })
     );
   }
+};
+
+type InternalMindMode = "improvement" | "patch" | "tasks";
+
+type InternalMindPatchContextFile = {
+  path?: string;
+  content?: string;
+};
+
+type InternalMindEvaluationInput = {
+  sessionId?: string;
+  score?: number;
+  qualityScore?: number;
+  latencyScore?: number;
+  reliabilityScore?: number;
+  safetyScore?: number;
+  issues?: string[];
+  findings?: string[];
+  rawLog?: unknown;
+};
+
+type InternalMindRequestBody = {
+  mode?: string;
+  evaluation?: InternalMindEvaluationInput;
+  errorLog?: string;
+  context?: {
+    files?: InternalMindPatchContextFile[];
+  };
+  issues?: string[];
+  codexGaps?: string[];
 };

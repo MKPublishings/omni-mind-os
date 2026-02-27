@@ -14,6 +14,48 @@
       "command": "Write-Output 'Dev mode started: edit core/style configs for hot updates in your app runtime.'; Write-Output 'Use promptDiffViewer.js from UI integration to inspect prompt evolution.'",
       "isBackground": true,
       "problemMatcher": []
+    },
+    {
+      "label": "Omni: Mind Loop on Recent Logs",
+      "type": "shell",
+      "command": "node ./scripts/mind/runOnRecentLogs.js",
+      "problemMatcher": []
+    },
+    {
+      "label": "Omni: Auto-Debug",
+      "type": "shell",
+      "command": "node ./scripts/tools/runAutoDebug.js",
+      "problemMatcher": []
+    },
+    {
+      "label": "Omni: View Task Tokens",
+      "type": "shell",
+      "command": "node ./scripts/tools/printTaskTokens.js",
+      "problemMatcher": []
+    },
+    {
+      "label": "Omni: Set Task Token Status",
+      "type": "shell",
+      "command": "Write-Output 'Usage: npm run mind:tokens:set -- <tokenId> <open|in-progress|resolved>'",
+      "problemMatcher": []
+    },
+    {
+      "label": "Omni: View Active Task Tokens",
+      "type": "shell",
+      "command": "node ./scripts/tools/printActiveTaskTokens.js",
+      "problemMatcher": []
+    },
+    {
+      "label": "Omni: Next Actionable Task Token",
+      "type": "shell",
+      "command": "node ./scripts/tools/printNextTaskToken.js",
+      "problemMatcher": []
+    },
+    {
+      "label": "Omni: Maintain Task Token Queue",
+      "type": "shell",
+      "command": "node ./scripts/tools/runTaskTokenMaintenance.js",
+      "problemMatcher": []
     }
   ]
 }

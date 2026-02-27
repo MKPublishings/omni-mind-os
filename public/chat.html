@@ -101,6 +101,10 @@
         </div>
         <div id="chat-container"></div>
 
+        <div id="typing-indicator" class="typing-indicator" aria-live="polite" style="display: none;">
+          Omni is typing…
+        </div>
+
         <details id="simulation-panel" class="simulation-panel" hidden>
           <summary>Simulation Mode Controls</summary>
           <div class="simulation-controls">
@@ -129,6 +133,9 @@
           />
           <button id="video-quick-btn" type="button">Video</button>
           <button id="send-btn">Send</button>
+        </div>
+        <div id="age-gate-composer-notice" class="age-gate-composer-notice" hidden aria-live="polite">
+          Age verification required for image/video generation.
         </div>
       </section>
     </main>

@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "evaluationThreshold": 0.8,
+  "maxRetries": 3,
+  "logSampleRate": 0.2,
+  "autoApplySafeChanges": true
+}
