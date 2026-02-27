@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omni Ai – Codex</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/layout.css" />
+  <link rel="stylesheet" href="/styles/codex.css" />
+</head>
+<body class="page">
+  <div id="layout">
+    <aside id="sidebar">
+      <h1 class="logo">Omni Ai</h1>
+
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Home</a>
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/codex.html" class="nav-link active">Codex</a>
+        <a href="/modes.html" class="nav-link">Modes</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+        <a href="/about.html" class="nav-link">About</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="status-text">System: Online</span>
+      </div>
+    </aside>
+
+    <main id="main" class="codex-main">
+      <header class="codex-header">
+        <h2>Omni Living Codex</h2>
+        <p>The codex is the archive brain of Omni Ai: laws, systems, mythic checkpoints, visual dialect, equations, and glossary linked as one inspectable graph.</p>
+      </header>
+
+      <section class="codex-overview-grid">
+        <article class="codex-panel codex-panel-highlight">
+          <h3>Codex Doctrine</h3>
+          <p>
+            A living codex is not a static folder. It is a relational memory organism where each artifact carries identity,
+            lineage, symbolic metadata, and graph edges to adjacent meaning.
+          </p>
+          <ul>
+            <li><strong>Self-describing:</strong> every entry is indexed into <code>codex/index.json</code>.</li>
+            <li><strong>Self-linking:</strong> explicit + inferred relationships become cross-links.</li>
+            <li><strong>Lineage-aware:</strong> legacy chapters remain active anchors in the graph.</li>
+            <li><strong>Operational:</strong> scripts keep the codex synchronized as the archive evolves.</li>
+          </ul>
+        </article>
+
+        <article class="codex-panel">
+          <h3>Runtime Commands</h3>
+          <pre><code>npm run codex:reindex
+npm run codex:watch
+npm run codex:register -- &lt;path-inside-codex&gt;</code></pre>
+          <p>
+            <strong>reindex</strong> rebuilds the codex brain.
+            <strong>watch</strong> keeps it live during edits.
+            <strong>register</strong> stamps one artifact and refreshes graph state.
+          </p>
+        </article>
+      </section>
+
+      <section class="codex-stats" id="codex-stats" aria-label="Codex statistics">
+        <article class="codex-stat-card">
+          <span class="codex-stat-label">Entries</span>
+          <strong id="codex-stat-entries">--</strong>
+        </article>
+        <article class="codex-stat-card">
+          <span class="codex-stat-label">Cross-links</span>
+          <strong id="codex-stat-links">--</strong>
+        </article>
+        <article class="codex-stat-card">
+          <span class="codex-stat-label">Chambers</span>
+          <strong id="codex-stat-chambers">--</strong>
+        </article>
+        <article class="codex-stat-card">
+          <span class="codex-stat-label">Generated</span>
+          <strong id="codex-stat-generated">--</strong>
+        </article>
+      </section>
+
+      <section class="codex-layout">
+        <aside class="codex-chamber-sidebar" aria-label="Codex chamber controls">
+          <h3>Codex Chambers</h3>
+          <p class="codex-muted">Use chamber buttons to focus artifacts by archive domain.</p>
+          <div id="codex-chamber-buttons" class="codex-chamber-buttons"></div>
+
+          <h4>Graph Insight</h4>
+          <ul id="codex-graph-insight" class="codex-insight-list"></ul>
+        </aside>
+
+        <div class="codex-content-column">
+          <section class="codex-panel" id="simulation-lineage">
+            <h3>Codex Structure (Detailed)</h3>
+            <pre><code>codex/
+  index.json               # graph brain (entries, categories, cross-links)
+  index.schema.json        # codex brain contract
+  laws/
+    quantum/               # quantum law chambers
+    cognitive/             # cognitive law chambers
+  systems/
+    mind-os/               # legacy-to-modern system lineage
+    omni/                  # active Omni runtime chambers
+  mythic/
+    checkpoints/           # ceremonial evolution markers
+    archetypes/            # role identities in narrative layer
+  visual-dialect/
+    registers/             # color/emotion language registries
+    motifs/                # symbolic motif lexicon
+  equations/
+    solved/                # computational equation artifacts (json)
+    templates/             # reusable equation frames
+  glossary/
+    terms.json             # canonical definition dictionary</code></pre>
+            <p>
+              This architecture supports both human interpretation and machine retrieval. In practice, Omni can query this
+              structure for law alignment, symbolic references, lineage continuity, and concept grounding.
+            </p>
+          </section>
+
+          <section class="codex-panel">
+            <h3>Artifact Explorer</h3>
+            <div class="codex-toolbar">
+              <input id="codex-search" type="search" placeholder="Search artifacts by id, title, tag, or path..." aria-label="Search codex artifacts" />
+              <span id="codex-result-count" class="codex-result-count">0 results</span>
+            </div>
+            <div id="codex-entry-list" class="codex-entry-list" aria-live="polite"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="codex-panel">
+        <h3>Codex Purpose in Omni</h3>
+        <ul>
+          <li><strong>Reasoning substrate:</strong> laws and glossary terms provide conceptual anchors for mode behavior.</li>
+          <li><strong>Narrative continuity:</strong> mythic checkpoints and archetypes preserve long-range symbolic coherence.</li>
+          <li><strong>Visual coherence:</strong> visual-dialect registers/motifs standardize style interpretation.</li>
+          <li><strong>Computational bridge:</strong> equations templates/solved artifacts make symbolic logic machine-tractable.</li>
+          <li><strong>Historical traceability:</strong> lineage fields connect legacy codex epochs to active Omni runtime.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <script src="/scripts/codex.js"></script>
+  <script src="/scripts/age-gate.js"></script>
+  <script src="/scripts/page-transition.js"></script>
+</body>
+</html>
