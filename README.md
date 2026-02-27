@@ -413,6 +413,15 @@ OMNI_AUTONOMY_LEVEL = "balanced" # conservative | balanced | aggressive
 OMNI_ADMIN_KEY = "replace-with-strong-secret"
 ```
 
+### **Optional MP4 Encoding (ffmpeg)**
+
+MP4 video encoding in the phase-1 video pipeline is optional and capability-gated.
+
+- Enable with environment variable: `OMNI_VIDEO_ENABLE_MP4_ENCODING=true` (also accepts `1`, `yes`, `on`).
+- Requires a Node/server runtime with `ffmpeg` available on `PATH`.
+- If disabled or unavailable, the pipeline safely falls back to non-encoded placeholder MP4 output.
+- GIF visual output remains available through the JS encoder path.
+
 ---
 
 ### **🖥 Omni Ai Frontend Integration (Phase 6)**

@@ -1972,6 +1972,16 @@ function coerceVideoFormat(value: unknown): VideoFormat {
     : "both";
 }
 
+function isBrowserPlayableVideoUrl(value: unknown): boolean {
+  const url = String(value || "").trim();
+  if (!url) return false;
+  if (url.startsWith("data:video/") || url.startsWith("data:image/gif")) return true;
+  if (url.startsWith("blob:") || url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")) {
+    return true;
+  }
+  return false;
+}
+
 async function runPhase1VideoGeneration(
   env: Env,
   prompt: string,
@@ -1980,6 +1990,7 @@ async function runPhase1VideoGeneration(
   const qualityMode = coerceVideoQualityMode(body?.qualityMode);
   const format = coerceVideoFormat(body?.format);
   const maxSizeMB = clamp(Number(body?.maxSizeMB || 2), 0.3, 8);
+  const requestedDurationSec = clamp(Number((body as VideoGenerateRequestBody)?.durationSeconds ?? body?.durationSec ?? 4), 2, 8);
   const referenceImages = Array.isArray(body?.referenceImages)
     ? body.referenceImages.map((item) => sanitizePromptText(String(item || ""))).filter(Boolean)
     : [];
@@ -2052,6 +2063,7 @@ async function runPhase1VideoGeneration(
     prompt,
     dialogueScript: body?.dialogueScript,
     referenceImages,
+    durationSec: requestedDurationSec,
     qualityMode,
     maxSizeMB,
     format
@@ -2097,8 +2109,8 @@ async function processVideoJob(
       width: Number(result?.meta?.resolution?.width || running.width || 512),
       height: Number(result?.meta?.resolution?.height || running.height || 512),
       fps: Number(result?.meta?.fps || running.fps || 12),
-      mp4Url: String(result?.mp4Url || "") || undefined,
-      gifUrl: String(result?.gifUrl || "") || undefined,
+      mp4Url: isBrowserPlayableVideoUrl(result?.mp4Url) ? String(result?.mp4Url || "") : undefined,
+      gifUrl: isBrowserPlayableVideoUrl(result?.gifUrl) ? String(result?.gifUrl || "") : undefined,
       thumbnailUrl: payload.previews.keyframeUrls[0] || undefined,
       keyframePreviewUrls: payload.previews.keyframeUrls
     };
@@ -2676,7 +2688,7 @@ export default {
           );
         }
 
-        const durationRequested = clamp(Number(body?.durationSeconds || 2), 1, 6);
+        const durationRequested = clamp(Number(body?.durationSeconds || 4), 2, 8);
         const widthRequested = clamp(Number(body?.width || 512), 256, 768);
         const heightRequested = clamp(Number(body?.height || 512), 256, 768);
         const fpsRequested = clamp(Number(body?.fps || 12), 8, 24);

@@ -9,6 +9,9 @@
 - `OMNI_ENV=production`
 - `OMNI_ADMIN_KEY=<strong secret (16+ chars)>`
 - `OMNI_AUTONOMY_LEVEL=balanced` (or `conservative` / `aggressive`)
+- If MP4 encoding is desired in server runtime:
+  - `OMNI_VIDEO_ENABLE_MP4_ENCODING=true` (also supports `1`, `yes`, `on`)
+  - Ensure `ffmpeg` is installed and available on `PATH`
 - Optionally tune:
   - `OMNI_MEMORY_RETENTION_DAYS`
   - `OMNI_SESSION_MAX_AGE_HOURS`

@@ -1,3 +1,6 @@
+import * as UPNG from "upng-js";
+import { GIFEncoder, applyPalette, quantize } from "gifenc";
+
 export type VideoQualityMode = "CRISP_SHORT" | "BALANCED" | "LONG_SOFT";
 export type VideoFormat = "mp4" | "gif" | "both";
 
@@ -5,6 +8,7 @@ export interface GenerateVideoClipRequest {
   prompt: string;
   dialogueScript?: DialogueScript;
   referenceImages?: string[];
+  durationSec?: number;
   qualityMode?: VideoQualityMode;
   maxSizeMB?: number;
   format?: VideoFormat;
@@ -150,6 +154,7 @@ export interface KeyframeSpec {
   timeSec: number;
   description: string;
   imageId?: string;
+  imageUrl?: string;
 }
 
 export interface GenerateVideoClipPhase1Request extends GenerateVideoClipRequest {}
@@ -185,6 +190,7 @@ export interface OmniImageEngine {
 export interface Frame {
   timeSec: number;
   imageId: string;
+  imageUrl: string;
 }
 
 export interface FrameInterpolator {
@@ -771,7 +777,8 @@ export async function renderKeyframes(
 
     rendered.push({
       ...kf,
-      imageId: res.id
+      imageId: res.id,
+      imageUrl: res.url
     });
   }
 
@@ -785,10 +792,11 @@ export async function buildFramesFromKeyframes(
   interpolator: FrameInterpolator
 ): Promise<Frame[]> {
   const frames: Frame[] = keyframes
-    .filter((kf): kf is KeyframeSpec & { imageId: string } => Boolean(kf.imageId))
+    .filter((kf): kf is KeyframeSpec & { imageId: string; imageUrl: string } => Boolean(kf.imageId && kf.imageUrl))
     .map((kf) => ({
       timeSec: kf.timeSec,
-      imageId: kf.imageId
+      imageId: kf.imageId,
+      imageUrl: kf.imageUrl
     }));
 
   if (!frames.length) {
@@ -813,7 +821,8 @@ export class LinearHoldFrameInterpolator implements FrameInterpolator {
 
       out.push({
         timeSec,
-        imageId: sorted[cursor].imageId
+        imageId: sorted[cursor].imageId,
+        imageUrl: sorted[cursor].imageUrl
       });
     }
 
@@ -835,6 +844,196 @@ function estimateGifSizeMB(width: number, height: number, fps: number, durationS
   const bitsPerPixelPerFrame = 1.6 * colorPaletteFactor;
   const totalBits = pixels * fps * durationSec * bitsPerPixelPerFrame;
   return totalBits / 8 / 1024 / 1024;
+}
+
+function decodeBase64(input: string): Uint8Array {
+  if (typeof Buffer !== "undefined") {
+    return new Uint8Array(Buffer.from(input, "base64"));
+  }
+
+  const binary = atob(input);
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    out[i] = binary.charCodeAt(i);
+  }
+  return out;
+}
+
+function encodeBase64(bytes: Uint8Array): string {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(bytes).toString("base64");
+  }
+
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function parseDataUrl(dataUrl: string): { mime: string; bytes: Uint8Array } | null {
+  const value = String(dataUrl || "").trim();
+  const match = value.match(/^data:([^;,]+);base64,(.+)$/i);
+  if (!match?.[1] || !match?.[2]) return null;
+  return {
+    mime: String(match[1] || "").toLowerCase(),
+    bytes: decodeBase64(match[2])
+  };
+}
+
+function isMp4EncodingEnabled(): boolean {
+  if (typeof process === "undefined" || !process?.env) return false;
+  const raw = String(process.env.OMNI_VIDEO_ENABLE_MP4_ENCODING || process.env.OMNI_VIDEO_ENABLE_ENCODING || "")
+    .trim()
+    .toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
+}
+
+function isNodeRuntime(): boolean {
+  return typeof process !== "undefined" && Boolean(process?.versions?.node);
+}
+
+async function importNodeModule(specifier: string): Promise<any> {
+  const dynamicImport = Function("s", "return import(s)") as (s: string) => Promise<any>;
+  return dynamicImport(specifier);
+}
+
+async function encodeMp4WithFfmpeg(frames: Frame[], fps: number): Promise<{ dataUrl: string; sizeMB: number } | null> {
+  if (!isMp4EncodingEnabled() || !isNodeRuntime() || !frames.length) {
+    return null;
+  }
+
+  try {
+    const [{ mkdtemp, writeFile, readFile, rm }, { tmpdir }, { join }, { spawn }] = await Promise.all([
+      importNodeModule("node:fs/promises"),
+      importNodeModule("node:os"),
+      importNodeModule("node:path"),
+      importNodeModule("node:child_process")
+    ]);
+
+    const workingDir = await mkdtemp(join(tmpdir(), "omni-video-"));
+
+    try {
+      let written = 0;
+      for (const frame of frames) {
+        const parsed = parseDataUrl(frame.imageUrl);
+        if (!parsed || parsed.mime !== "image/png") {
+          continue;
+        }
+
+        const filename = `frame_${String(written).padStart(5, "0")}.png`;
+        await writeFile(join(workingDir, filename), parsed.bytes);
+        written += 1;
+      }
+
+      if (written < 2) {
+        return null;
+      }
+
+      const outputPath = join(workingDir, "output.mp4");
+      const args = [
+        "-y",
+        "-framerate",
+        String(Math.max(1, Math.floor(fps))),
+        "-i",
+        join(workingDir, "frame_%05d.png"),
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-movflags",
+        "+faststart",
+        outputPath
+      ];
+
+      const exitCode = await new Promise<number>((resolve) => {
+        const child = spawn("ffmpeg", args, { stdio: "ignore" });
+        child.on("error", () => resolve(-1));
+        child.on("close", (code: number | null) => resolve(typeof code === "number" ? code : -1));
+      });
+
+      if (exitCode !== 0) {
+        return null;
+      }
+
+      const mp4Bytes = new Uint8Array(await readFile(outputPath));
+      const dataUrl = `data:video/mp4;base64,${encodeBase64(mp4Bytes)}`;
+      return {
+        dataUrl,
+        sizeMB: Number((mp4Bytes.byteLength / 1024 / 1024).toFixed(3))
+      };
+    } finally {
+      await rm(workingDir, { recursive: true, force: true });
+    }
+  } catch {
+    return null;
+  }
+}
+
+function encodeGifFromFrames(frames: Frame[], fps: number): { dataUrl: string; width: number; height: number } | null {
+  const decodedFrames: Uint8Array[] = [];
+  let width = 0;
+  let height = 0;
+
+  for (const frame of frames) {
+    const parsed = parseDataUrl(frame.imageUrl);
+    if (!parsed || !parsed.mime.startsWith("image/")) continue;
+
+    try {
+      const arrayBuffer = Uint8Array.from(parsed.bytes).buffer;
+      const decoded = UPNG.decode(arrayBuffer);
+      const rgbaFrames = UPNG.toRGBA8(decoded);
+      if (!Array.isArray(rgbaFrames) || !rgbaFrames.length) continue;
+
+      const rgba = new Uint8Array(rgbaFrames[0]);
+      const frameWidth = Number(decoded?.width || 0);
+      const frameHeight = Number(decoded?.height || 0);
+      if (!frameWidth || !frameHeight || rgba.length !== frameWidth * frameHeight * 4) continue;
+
+      if (!width || !height) {
+        width = frameWidth;
+        height = frameHeight;
+      }
+
+      if (frameWidth !== width || frameHeight !== height) {
+        continue;
+      }
+
+      decodedFrames.push(rgba);
+    } catch {
+      continue;
+    }
+  }
+
+  if (!decodedFrames.length || !width || !height) return null;
+
+  const allPixels = new Uint8Array(decodedFrames.length * width * height * 4);
+  let offset = 0;
+  for (const rgba of decodedFrames) {
+    allPixels.set(rgba, offset);
+    offset += rgba.length;
+  }
+
+  const palette = quantize(allPixels, 256);
+  const encoder = GIFEncoder();
+  const delay = Math.max(4, Math.round(100 / Math.max(1, fps)));
+
+  for (const rgba of decodedFrames) {
+    const indexed = applyPalette(rgba, palette);
+    encoder.writeFrame(indexed, width, height, {
+      palette,
+      delay
+    });
+  }
+
+  encoder.finish();
+  const gifBytes = encoder.bytesView();
+  const base64 = encodeBase64(gifBytes);
+  return {
+    dataUrl: `data:image/gif;base64,${base64}`,
+    width,
+    height
+  };
 }
 
 export class BudgetAwareEstimatorEncoder implements VideoEncoder {
@@ -887,20 +1086,24 @@ export class BudgetAwareEstimatorEncoder implements VideoEncoder {
       mp4Size = estimateMp4SizeMB(width, height, fps, durationSec, options.qualityMode);
     }
 
+    const encodedMp4 = wantsMp4 ? await encodeMp4WithFfmpeg(frames, fps) : null;
     const gifFps = Math.min(8, fps);
-    const gifSize = wantsGif ? estimateGifSizeMB(width, height, gifFps, durationSec) : undefined;
+    const encodedGif = wantsGif ? encodeGifFromFrames(frames, gifFps) : null;
+    const gifWidth = encodedGif?.width || width;
+    const gifHeight = encodedGif?.height || height;
+    const gifSize = wantsGif ? estimateGifSizeMB(gifWidth, gifHeight, gifFps, durationSec) : undefined;
 
     const mediaId = makeId("video");
 
     return {
-      mp4Url: wantsMp4 ? `omni://video/${mediaId}.mp4` : undefined,
-      gifUrl: wantsGif ? `omni://video/${mediaId}.gif` : undefined,
+      mp4Url: wantsMp4 ? encodedMp4?.dataUrl || `omni://video/${mediaId}.mp4` : undefined,
+      gifUrl: wantsGif ? encodedGif?.dataUrl || `omni://video/${mediaId}.gif` : undefined,
       sizeMB: {
-        mp4: wantsMp4 ? Number((mp4Size ?? 0).toFixed(3)) : undefined,
+        mp4: wantsMp4 ? encodedMp4?.sizeMB ?? Number((mp4Size ?? 0).toFixed(3)) : undefined,
         gif: wantsGif ? Number((gifSize ?? 0).toFixed(3)) : undefined
       },
       durationSec: Number(durationSec.toFixed(3)),
-      resolution: { width, height },
+      resolution: { width: gifWidth, height: gifHeight },
       fps
     };
   }
@@ -941,6 +1144,7 @@ export class OmniVideoEnginePhase1Impl implements OmniVideoEnginePhase1, OmniVid
       prompt,
       dialogueScript,
       referenceImages,
+      durationSec: requestedDurationSec,
       qualityMode = "BALANCED",
       maxSizeMB = 2,
       format = "both"
@@ -957,7 +1161,10 @@ export class OmniVideoEnginePhase1Impl implements OmniVideoEnginePhase1, OmniVid
 
     const { sceneGraph, shots } = planned;
     const shot = shots[0];
-    const durationSec = Math.max(1, Math.min(2, Number(shot.durationSec || 1.5)));
+    const plannedDurationSec = Math.max(1, Math.min(8, Number(shot.durationSec || 1.5)));
+    const durationSec = Number.isFinite(Number(requestedDurationSec))
+      ? Math.max(2, Math.min(8, Number(requestedDurationSec)))
+      : Math.max(2, Math.min(8, plannedDurationSec));
 
     const keyframes = createKeyframesForShot(shot);
     const renderedKeyframes = await renderKeyframes(

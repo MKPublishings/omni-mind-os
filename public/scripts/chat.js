@@ -15,7 +15,6 @@
   // =========================
   const messagesEl = document.getElementById("chat-messages") || document.getElementById("chat-container");
   const inputEl = document.getElementById("chat-input") || document.getElementById("user-input");
-  const videoQuickBtn = document.getElementById("video-quick-btn");
   const ageGateComposerNoticeEl = document.getElementById("age-gate-composer-notice");
   const sendBtn = document.getElementById("send-btn");
   const modelDropdown = document.getElementById("model-dropdown");
@@ -543,6 +542,7 @@
     let qualityMode = "BALANCED";
     let format = "both";
     let maxSizeMB = 2;
+    let durationSeconds = 4;
 
     const qualityMatch = raw.match(/--quality\s*=\s*(crisp_short|balanced|long_soft)/i);
     if (qualityMatch?.[1]) {
@@ -565,6 +565,15 @@
       prompt = prompt.replace(maxMatch[0], " ").trim();
     }
 
+    const durationMatch = raw.match(/--(?:duration|length)\s*=\s*([0-9]+(?:\.[0-9]+)?)/i);
+    if (durationMatch?.[1]) {
+      const parsed = Number(durationMatch[1]);
+      if (Number.isFinite(parsed)) {
+        durationSeconds = Math.max(2, Math.min(8, parsed));
+      }
+      prompt = prompt.replace(durationMatch[0], " ").trim();
+    }
+
     prompt = prompt.replace(/\s+/g, " ").trim();
     if (!prompt) {
       return { action: "help" };
@@ -575,7 +584,8 @@
       prompt,
       qualityMode,
       format,
-      maxSizeMB
+      maxSizeMB,
+      durationSeconds
     };
   }
 
@@ -763,7 +773,7 @@
         qualityMode: String(payload?.qualityMode || "BALANCED").toUpperCase(),
         format: String(payload?.format || "both").toLowerCase(),
         maxSizeMB: Number(payload?.maxSizeMB || 2),
-        durationSeconds: Number(payload?.durationSeconds || 2),
+        durationSeconds: Number(payload?.durationSeconds || 4),
         width: Number(payload?.width || 512),
         height: Number(payload?.height || 512),
         fps: Number(payload?.fps || 12),
@@ -793,6 +803,7 @@
           qualityMode: String(payload?.qualityMode || "BALANCED").toUpperCase(),
           format: String(payload?.format || "both").toLowerCase(),
           maxSizeMB: Number(payload?.maxSizeMB || 2),
+          durationSeconds: Number(payload?.durationSeconds || 4),
           safetyProfile: buildSafetyProfile()
         })
       });
@@ -1487,6 +1498,16 @@
     return new Date(ts).toLocaleString();
   }
 
+  function isBrowserPlayableMediaUrl(value) {
+    const url = String(value || "").trim();
+    if (!url) return false;
+    if (url.startsWith("data:video/") || url.startsWith("data:image/gif")) return true;
+    if (url.startsWith("blob:") || url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")) {
+      return true;
+    }
+    return false;
+  }
+
   function createGeneratedImageCard(meta = {}) {
     const imageDataUrl = String(meta.imageDataUrl || "").trim();
     if (!imageDataUrl.startsWith("data:image/")) {
@@ -1537,11 +1558,15 @@
   function createGeneratedMediaCard(meta = {}) {
     const generatedAt = Number(meta.generatedAt || Date.now());
     const createdLabel = formatGeneratedTimestamp(generatedAt);
-    const mp4Url = String(meta.videoMp4Url || "").trim();
-    const gifUrl = String(meta.videoGifUrl || "").trim();
+    const mp4UrlRaw = String(meta.videoMp4Url || "").trim();
+    const gifUrlRaw = String(meta.videoGifUrl || "").trim();
+    const mp4Url = isBrowserPlayableMediaUrl(mp4UrlRaw) ? mp4UrlRaw : "";
+    const gifUrl = isBrowserPlayableMediaUrl(gifUrlRaw) ? gifUrlRaw : "";
     const keyframeUrls = Array.isArray(meta.videoKeyframeUrls) ? meta.videoKeyframeUrls.map((item) => String(item || "").trim()).filter(Boolean) : [];
-    const hasGif = /\.gif($|\?)/i.test(gifUrl) || gifUrl.startsWith("data:image/gif");
-    const hasMp4 = /\.mp4($|\?)/i.test(mp4Url) || mp4Url.startsWith("data:video/");
+    const hasGif = Boolean(gifUrl) && (/\.gif($|\?)/i.test(gifUrl) || gifUrl.startsWith("data:image/gif"));
+    const hasMp4 =
+      Boolean(mp4Url) &&
+      (/\.mp4($|\?)/i.test(mp4Url) || mp4Url.startsWith("data:video/") || /^https?:\/\//i.test(mp4Url) || mp4Url.startsWith("/") || mp4Url.startsWith("blob:"));
     const hasPlayableVideo = hasMp4 || keyframeUrls.length > 0;
 
     if (!hasPlayableVideo && !hasGif) {
@@ -2360,7 +2385,7 @@
         }
       } else if (videoCommand) {
         if (videoCommand.action === "help") {
-          assistantText = "Usage: `/video <prompt> [--quality=CRISP_SHORT|BALANCED|LONG_SOFT] [--format=mp4|gif|both] [--max=2]`. Example: `/video neon rooftop close-up of Aiko --quality=CRISP_SHORT --format=mp4 --max=2`.";
+          assistantText = "Usage: `/video <prompt> [--quality=CRISP_SHORT|BALANCED|LONG_SOFT] [--format=mp4|gif|both] [--max=2] [--duration=4]`. Example: `/video neon rooftop close-up of Aiko --quality=BALANCED --format=both --duration=4 --max=2`.";
         } else {
           try {
             const liveAssistant = appendMessage("assistant", "Video job: Queued...", {
@@ -2992,20 +3017,6 @@
     sendMessage(content);
   }
 
-  function primeVideoCommandInput() {
-    if (!inputEl) return;
-
-    const current = String(inputEl.value || "").trim();
-    if (!current) {
-      inputEl.value = "/video ";
-    } else if (!current.toLowerCase().startsWith("/video")) {
-      inputEl.value = `/video ${current}`;
-    }
-
-    autoResizeInput();
-    inputEl.focus();
-  }
-
   function handleInputKeydown(e) {
     const shouldSendWithEnter = runtimeSettings.sendWithEnter;
     const wantsSend = shouldSendWithEnter
@@ -3390,9 +3401,6 @@
 
     if (sendBtn) {
       sendBtn.addEventListener("click", handleSendClick);
-    }
-    if (videoQuickBtn) {
-      videoQuickBtn.addEventListener("click", primeVideoCommandInput);
     }
     if (inputEl) {
       inputEl.addEventListener("keydown", handleInputKeydown);

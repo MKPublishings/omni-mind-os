@@ -35,5 +35,9 @@
     "globals": "^17.3.0",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.56.1"
+  },
+  "dependencies": {
+    "gifenc": "^1.0.3",
+    "upng-js": "^2.1.0"
   }
 }
