@@ -406,6 +406,38 @@
     return { action: "search", query };
   }
 
+  function parseWeatherCommand(content) {
+    const text = String(content || "").trim();
+    if (!text.toLowerCase().startsWith("/weather")) return null;
+    const location = text.slice(8).trim();
+    return {
+      action: location ? "lookup" : "help",
+      location
+    };
+  }
+
+  function parseInspectCommand(content) {
+    const text = String(content || "").trim();
+    if (!text.toLowerCase().startsWith("/inspect")) return null;
+    const targetUrl = text.slice(8).trim();
+    return {
+      action: targetUrl ? "inspect" : "help",
+      targetUrl
+    };
+  }
+
+  function parseLearnCommand(content) {
+    const text = String(content || "").trim();
+    const lower = text.toLowerCase();
+    if (!lower.startsWith("/learn")) return null;
+
+    const query = text.slice(6).trim();
+    return {
+      action: "status",
+      query
+    };
+  }
+
   function formatAvailableStyles() {
     return KNOWN_RENDER_STYLES.join(", ");
   }
@@ -449,6 +481,72 @@
       mode: String(data?.mode || "auto"),
       profile: data?.profile || null,
       hits: Array.isArray(data?.hits) ? data.hits : []
+    };
+  }
+
+  async function requestWeather(location) {
+    const params = new URLSearchParams();
+    if (String(location || "").trim()) {
+      params.set("location", String(location).trim());
+    }
+
+    const response = await fetch(`/api/internet/weather?${params.toString()}`, { method: "GET" });
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok || !data?.ok) {
+      throw new Error(String(data?.error || "Weather lookup failed"));
+    }
+
+    return data.weather || null;
+  }
+
+  async function requestSiteInspection(urlValue) {
+    const params = new URLSearchParams({ url: String(urlValue || "").trim() });
+    const response = await fetch(`/api/internet/inspect?${params.toString()}`, { method: "GET" });
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok || !data?.ok) {
+      throw new Error(String(data?.error || "Site inspection failed"));
+    }
+
+    return data.inspection || null;
+  }
+
+  async function requestLearningStatus(mode, query = "") {
+    const params = new URLSearchParams();
+    if (String(mode || "").trim()) {
+      params.set("mode", String(mode).trim());
+    }
+    if (String(query || "").trim()) {
+      params.set("q", String(query).trim());
+    }
+
+    const response = await fetch(`/api/internet/learning?${params.toString()}`, { method: "GET" });
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok || !data?.ok) {
+      throw new Error(String(data?.error || "Learning memory request failed"));
+    }
+
+    return {
+      updatedAt: Number(data.updatedAt || 0),
+      count: Number(data.count || 0),
+      entries: Array.isArray(data.entries) ? data.entries : []
     };
   }
 
@@ -1507,7 +1605,10 @@
     const lightCommand = parseLightCommand(trimmed);
     const materialsCommand = parseMaterialsCommand(trimmed);
     const webCommand = parseWebCommand(trimmed);
-    if (styleCommand || cameraCommand || lightCommand || materialsCommand || webCommand) {
+    const weatherCommand = parseWeatherCommand(trimmed);
+    const inspectCommand = parseInspectCommand(trimmed);
+    const learnCommand = parseLearnCommand(trimmed);
+    if (styleCommand || cameraCommand || lightCommand || materialsCommand || webCommand || weatherCommand || inspectCommand || learnCommand) {
       const commandTimestamp = Date.now();
       session.messages.push({ role: "user", content: trimmed, timestamp: commandTimestamp });
       updateSessionMetaFromMessages(session);
@@ -1605,7 +1706,7 @@
         }
       } else if (webCommand) {
         if (webCommand.action === "help") {
-          assistantText = "Usage: `/web <query>` to search the internet with your current mode profile.";
+          assistantText = "Usage: `/web <query>` to search the internet with your current mode profile. Also available: `/weather <location>` and `/inspect <url>`.";
         } else {
           try {
             const currentMode = getActiveMode(session);
@@ -1626,6 +1727,72 @@
           } catch (error) {
             assistantText = `Internet search failed: ${error instanceof Error ? error.message : "unknown error"}`;
           }
+        }
+      } else if (weatherCommand) {
+        if (weatherCommand.action === "help") {
+          assistantText = "Usage: `/weather <location>` for live weather snapshots. Example: `/weather Tokyo`.";
+        } else {
+          try {
+            const weather = await requestWeather(weatherCommand.location);
+            if (!weather) {
+              assistantText = `No weather data found for **${weatherCommand.location}**.`;
+            } else {
+              assistantText = [
+                `Live weather for **${weather.location}**:`,
+                `- Temperature: **${weather.temperatureC}°C**`,
+                `- Wind: **${weather.windSpeedKmh} km/h**`,
+                `- Weather code: **${weather.weatherCode}**`,
+                `- Time: **${weather.observationTime}** (${weather.timezone || "local"})`
+              ].join("\n");
+            }
+          } catch (error) {
+            assistantText = `Weather lookup failed: ${error instanceof Error ? error.message : "unknown error"}`;
+          }
+        }
+      } else if (inspectCommand) {
+        if (inspectCommand.action === "help") {
+          assistantText = "Usage: `/inspect <url>` to retrieve title, excerpt, and page content preview.";
+        } else {
+          try {
+            const inspection = await requestSiteInspection(inspectCommand.targetUrl);
+            if (!inspection) {
+              assistantText = `Site inspection failed for **${inspectCommand.targetUrl}**.`;
+            } else {
+              assistantText = [
+                `Inspection for **${inspection.url}**`,
+                `Title: **${inspection.title || "Untitled"}**`,
+                `Excerpt: ${inspection.excerpt || "No excerpt available."}`,
+                "",
+                String(inspection.contentPreview || "No content preview available.").slice(0, 900)
+              ].join("\n");
+            }
+          } catch (error) {
+            assistantText = `Site inspection failed: ${error instanceof Error ? error.message : "unknown error"}`;
+          }
+        }
+      } else if (learnCommand) {
+        try {
+          const currentMode = getActiveMode(session);
+          const learning = await requestLearningStatus(currentMode, learnCommand.query || "");
+          const updatedLabel = Number.isFinite(learning.updatedAt) && learning.updatedAt > 0
+            ? new Date(learning.updatedAt).toLocaleString()
+            : "unknown";
+          const preview = learning.entries
+            .slice(0, 3)
+            .map((entry, index) => {
+              const fact = Array.isArray(entry?.facts) && entry.facts.length ? entry.facts[0] : null;
+              return `${index + 1}. **${String(entry?.query || "(no query)")}** (${String(entry?.mode || "auto")})${fact ? `\n   - ${String(fact.title || "fact")}` : ""}`;
+            })
+            .join("\n");
+
+          assistantText = [
+            `Internet learning memory status (mode: **${currentMode}**)`,
+            `- Entries: **${learning.count}**`,
+            `- Updated: **${updatedLabel}**`,
+            preview ? `\nRecent learned entries:\n${preview}` : "\nNo learned entries found yet."
+          ].join("\n");
+        } catch (error) {
+          assistantText = `Learning memory lookup failed: ${error instanceof Error ? error.message : "unknown error"}`;
         }
       } else {
         assistantText = "Rendering command received.";

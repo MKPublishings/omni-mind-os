@@ -132,6 +132,47 @@ type InternetSearchHit = {
   source: "duckduckgo" | "wikipedia";
 };
 
+type InternetWeatherResult = {
+  location: string;
+  latitude: number;
+  longitude: number;
+  temperatureC: number;
+  windSpeedKmh: number;
+  weatherCode: number;
+  observationTime: string;
+  timezone: string;
+};
+
+type InternetInspectResult = {
+  url: string;
+  title: string;
+  excerpt: string;
+  contentPreview: string;
+};
+
+type InternetLearningFact = {
+  title: string;
+  snippet: string;
+  url: string;
+  source: "duckduckgo" | "wikipedia";
+};
+
+type InternetLearningEntry = {
+  id: string;
+  ts: number;
+  mode: string;
+  query: string;
+  facts: InternetLearningFact[];
+};
+
+type InternetLearningStore = {
+  updatedAt: number;
+  entries: InternetLearningEntry[];
+};
+
+const INTERNET_LEARNING_KEY = "omni_internet_learning_v1";
+const INTERNET_LEARNING_MAX_ENTRIES = 120;
+
 type InternetSearchProfile = {
   queryPrefix: string;
   querySuffix: string;
@@ -568,6 +609,241 @@ function shouldUseInternetSearch(userText: string, mode: string): boolean {
   if (normalizeInternetMode(mode) === "simulation") return false;
   const intentPattern = /\b(latest|current|today|news|recent|what is|how to|documentation|docs|guide|compare|vs\.?|benchmark|release|update)\b/i;
   return intentPattern.test(value) || value.length > 24;
+}
+
+function shouldUseWeatherContext(userText: string): boolean {
+  const value = String(userText || "").trim().toLowerCase();
+  if (!value) return false;
+  return /\b(weather|temperature|forecast|rain|snow|humidity|wind|climate)\b/i.test(value);
+}
+
+function inferWeatherLocation(userText: string, request: Request): string {
+  const value = String(userText || "").trim();
+  const match = value.match(/\b(?:in|for|at)\s+([a-zA-Z][a-zA-Z\s\-]{1,64})\??$/i);
+  if (match && match[1]) {
+    return sanitizePromptText(match[1]);
+  }
+
+  const cf = (request as any)?.cf || {};
+  const city = sanitizePromptText(String(cf?.city || "")).trim();
+  const region = sanitizePromptText(String(cf?.region || "")).trim();
+  const country = sanitizePromptText(String(cf?.country || "")).trim();
+  if (city && country) {
+    return `${city}, ${country}`;
+  }
+  if (region && country) {
+    return `${region}, ${country}`;
+  }
+  return "New York";
+}
+
+async function fetchWeatherForLocation(location: string): Promise<InternetWeatherResult | null> {
+  const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`;
+  const geoResponse = await fetch(geoUrl, { method: "GET" });
+  if (!geoResponse.ok) return null;
+
+  const geoData = (await geoResponse.json()) as any;
+  const first = Array.isArray(geoData?.results) ? geoData.results[0] : null;
+  if (!first) return null;
+
+  const latitude = Number(first.latitude);
+  const longitude = Number(first.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+  const locationLabel = [first.name, first.admin1, first.country].filter(Boolean).join(", ");
+  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`;
+  const weatherResponse = await fetch(weatherUrl, { method: "GET" });
+  if (!weatherResponse.ok) return null;
+
+  const weatherData = (await weatherResponse.json()) as any;
+  const current = weatherData?.current_weather;
+  if (!current) return null;
+
+  return {
+    location: sanitizePromptText(String(locationLabel || location)),
+    latitude,
+    longitude,
+    temperatureC: Number(current.temperature),
+    windSpeedKmh: Number(current.windspeed),
+    weatherCode: Number(current.weathercode),
+    observationTime: sanitizePromptText(String(current.time || "")),
+    timezone: sanitizePromptText(String(weatherData?.timezone || ""))
+  };
+}
+
+function stripHtmlToText(html: string): string {
+  return String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeInspectUrl(rawUrl: string): string | null {
+  const value = String(rawUrl || "").trim();
+  if (!value) return null;
+  try {
+    const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    const url = new URL(withScheme);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+async function inspectWebsite(urlInput: string): Promise<InternetInspectResult | null> {
+  const normalizedUrl = normalizeInspectUrl(urlInput);
+  if (!normalizedUrl) return null;
+
+  const response = await fetch(normalizedUrl, {
+    method: "GET",
+    headers: {
+      "User-Agent": "OmniAi/1.0 (+internet-inspector)"
+    }
+  });
+  if (!response.ok) return null;
+
+  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+  const bodyText = await response.text();
+  const titleMatch = bodyText.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const title = sanitizePromptText(titleMatch?.[1] || normalizedUrl);
+
+  const text = contentType.includes("html") ? stripHtmlToText(bodyText) : sanitizePromptText(bodyText);
+  const excerpt = text.slice(0, 280);
+  const contentPreview = text.slice(0, 1600);
+
+  return {
+    url: normalizedUrl,
+    title: title || normalizedUrl,
+    excerpt,
+    contentPreview
+  };
+}
+
+function toLearningFacts(hits: InternetSearchHit[]): InternetLearningFact[] {
+  return (hits || []).slice(0, 5).map((hit) => ({
+    title: sanitizePromptText(String(hit.title || "")).slice(0, 180),
+    snippet: sanitizePromptText(String(hit.snippet || "")).slice(0, 420),
+    url: sanitizePromptText(String(hit.url || "")).slice(0, 360),
+    source: hit.source
+  })).filter((fact) => Boolean(fact.title && fact.url));
+}
+
+async function loadInternetLearningStore(env: Env): Promise<InternetLearningStore> {
+  if (!env.MEMORY) {
+    return { updatedAt: Date.now(), entries: [] };
+  }
+
+  const raw = await env.MEMORY.get(INTERNET_LEARNING_KEY);
+  if (!raw) {
+    return { updatedAt: Date.now(), entries: [] };
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as InternetLearningStore;
+    const entries = Array.isArray(parsed?.entries) ? parsed.entries : [];
+    return {
+      updatedAt: Number(parsed?.updatedAt || Date.now()),
+      entries: entries
+        .map((entry) => ({
+          id: sanitizePromptText(String(entry?.id || "")).slice(0, 90),
+          ts: Number(entry?.ts || 0),
+          mode: sanitizePromptText(String(entry?.mode || "auto")).toLowerCase(),
+          query: sanitizePromptText(String(entry?.query || "")).slice(0, 300),
+          facts: Array.isArray(entry?.facts)
+            ? entry.facts.map((fact): InternetLearningFact => ({
+                title: sanitizePromptText(String(fact?.title || "")).slice(0, 180),
+                snippet: sanitizePromptText(String(fact?.snippet || "")).slice(0, 420),
+                url: sanitizePromptText(String(fact?.url || "")).slice(0, 360),
+                source: fact?.source === "wikipedia" ? "wikipedia" : "duckduckgo"
+              })).filter((fact) => Boolean(fact.title && fact.url))
+            : []
+        }))
+        .filter((entry) => Boolean(entry.id && entry.query))
+    };
+  } catch {
+    return { updatedAt: Date.now(), entries: [] };
+  }
+}
+
+async function saveInternetLearningStore(env: Env, store: InternetLearningStore): Promise<void> {
+  if (!env.MEMORY) return;
+  await env.MEMORY.put(INTERNET_LEARNING_KEY, JSON.stringify(store));
+}
+
+async function recordInternetLearning(env: Env, mode: string, query: string, hits: InternetSearchHit[]): Promise<void> {
+  if (!env.MEMORY) return;
+  const normalizedQuery = sanitizePromptText(String(query || "")).trim();
+  if (!normalizedQuery) return;
+
+  const facts = toLearningFacts(hits);
+  if (!facts.length) return;
+
+  const store = await loadInternetLearningStore(env);
+  const entry: InternetLearningEntry = {
+    id: crypto.randomUUID(),
+    ts: Date.now(),
+    mode: normalizeInternetMode(mode),
+    query: normalizedQuery,
+    facts
+  };
+
+  const nextEntries = [entry, ...(store.entries || [])].slice(0, INTERNET_LEARNING_MAX_ENTRIES);
+  await saveInternetLearningStore(env, {
+    updatedAt: Date.now(),
+    entries: nextEntries
+  });
+}
+
+function tokenizeForLearning(text: string): string[] {
+  return String(text || "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 4)
+    .slice(0, 30);
+}
+
+function scoreLearningEntry(entry: InternetLearningEntry, mode: string, queryTokens: string[]): number {
+  let score = 0;
+  if (entry.mode === normalizeInternetMode(mode)) score += 3;
+
+  const haystack = `${entry.query} ${entry.facts.map((fact) => `${fact.title} ${fact.snippet}`).join(" ")}`.toLowerCase();
+  for (const token of queryTokens) {
+    if (haystack.includes(token)) score += 1;
+  }
+
+  return score;
+}
+
+async function getInternetLearningContext(env: Env, mode: string, query: string, limit = 4): Promise<string> {
+  const store = await loadInternetLearningStore(env);
+  const entries = Array.isArray(store.entries) ? store.entries : [];
+  if (!entries.length) return "";
+
+  const tokens = tokenizeForLearning(query);
+  const ranked = entries
+    .map((entry) => ({ entry, score: scoreLearningEntry(entry, mode, tokens) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(1, limit));
+
+  if (!ranked.length) return "";
+
+  return ranked
+    .map(({ entry }, index) => {
+      const topFacts = entry.facts.slice(0, 2)
+        .map((fact) => `- [${fact.source}] ${fact.title}: ${fact.snippet} (${fact.url})`)
+        .join("\n");
+      return `(${index + 1}) mode=${entry.mode}, query=${entry.query}\n${topFacts}`;
+    })
+    .join("\n\n---\n\n");
 }
 
 function makeContextSystemMessage(label: string, content: string): OmniMessage {
@@ -1376,6 +1652,9 @@ export default {
         url.pathname === "/api/omni" ||
         url.pathname === "/api/image" ||
         url.pathname === "/api/internet/search" ||
+        url.pathname === "/api/internet/learning" ||
+        url.pathname === "/api/internet/weather" ||
+        url.pathname === "/api/internet/inspect" ||
         url.pathname === "/api/human-verify" ||
         url.pathname === "/api/human-verify/config" ||
         url.pathname === "/api/human-verify/challenge" ||
@@ -1432,6 +1711,7 @@ export default {
         }
 
         const { profile, hits } = await performModeAwareInternetSearch(mode, query);
+        await recordInternetLearning(env, mode, query, hits);
         return new Response(
           JSON.stringify({
             query,
@@ -1439,6 +1719,107 @@ export default {
             profile,
             count: hits.length,
             hits
+          }),
+          {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      }
+
+      if (url.pathname === "/api/internet/learning" && request.method === "GET") {
+        const mode = sanitizePromptText(String(url.searchParams.get("mode") || "")).trim().toLowerCase();
+        const query = sanitizePromptText(String(url.searchParams.get("q") || "")).trim();
+        const store = await loadInternetLearningStore(env);
+        const allEntries = Array.isArray(store.entries) ? store.entries : [];
+
+        const filtered = allEntries.filter((entry) => {
+          const modePass = mode ? entry.mode === normalizeInternetMode(mode) : true;
+          const queryPass = query
+            ? `${entry.query} ${entry.facts.map((fact) => `${fact.title} ${fact.snippet}`).join(" ")}`
+                .toLowerCase()
+                .includes(query.toLowerCase())
+            : true;
+          return modePass && queryPass;
+        });
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            updatedAt: store.updatedAt,
+            count: filtered.length,
+            entries: filtered.slice(0, 25)
+          }),
+          {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      }
+
+      if (url.pathname === "/api/internet/weather" && request.method === "GET") {
+        const location = sanitizePromptText(String(url.searchParams.get("location") || "")).trim();
+        const fallbackLocation = inferWeatherLocation(location || "weather", request);
+        const weather = await fetchWeatherForLocation(location || fallbackLocation);
+
+        if (!weather) {
+          return new Response(
+            JSON.stringify({ ok: false, error: "Weather lookup failed for the requested location." }),
+            {
+              status: 404,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            weather
+          }),
+          {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      }
+
+      if (url.pathname === "/api/internet/inspect" && request.method === "GET") {
+        const target = sanitizePromptText(String(url.searchParams.get("url") || "")).trim();
+        if (!target) {
+          return new Response(JSON.stringify({ ok: false, error: "A url query parameter is required." }), {
+            status: 400,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const inspection = await inspectWebsite(target);
+        if (!inspection) {
+          return new Response(JSON.stringify({ ok: false, error: "Unable to inspect requested site." }), {
+            status: 400,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            inspection
           }),
           {
             headers: {
@@ -1756,6 +2137,36 @@ export default {
       }
 
       if (url.pathname === "/api/internet/search" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/internet/learning" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/internet/weather" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/internet/inspect" && request.method !== "GET") {
         return new Response("Method Not Allowed", {
           status: 405,
           headers: {
@@ -2207,6 +2618,42 @@ export default {
           promptSystemMessages.push(makeContextSystemMessage("Mode Template", modeTemplate));
         }
 
+        const internetLearningContext = await getInternetLearningContext(env, normalizedMode, latestUserText, 4);
+        if (internetLearningContext) {
+          promptSystemMessages.push(
+            makeContextSystemMessage(
+              "Internet Learning Memory",
+              [
+                "The following learned internet findings were collected from prior searches.",
+                "Use them as supplemental context and prefer fresher direct retrieval when conflicts appear.",
+                "",
+                internetLearningContext
+              ].join("\n")
+            )
+          );
+        }
+
+        if (shouldUseWeatherContext(latestUserText)) {
+          const weatherLocation = inferWeatherLocation(latestUserText, request);
+          const weather = await fetchWeatherForLocation(weatherLocation);
+          if (weather) {
+            promptSystemMessages.push(
+              makeContextSystemMessage(
+                "Live Weather",
+                [
+                  `Location: ${weather.location}`,
+                  `Temperature (C): ${weather.temperatureC}`,
+                  `Wind (km/h): ${weather.windSpeedKmh}`,
+                  `Weather code: ${weather.weatherCode}`,
+                  `Observation time: ${weather.observationTime}`,
+                  `Timezone: ${weather.timezone}`,
+                  "Use this weather context for current-condition questions and be explicit that it is a point-in-time snapshot."
+                ].join("\n")
+              )
+            );
+          }
+        }
+
         const shouldUseKnowledge = shouldUseKnowledgeRetrieval(latestUserText, normalizedMode);
         if (shouldUseKnowledge) {
           const hits = await searchKnowledge(env, request, latestUserText, 4);
@@ -2240,6 +2687,7 @@ export default {
 
         if (shouldUseInternetSearch(latestUserText, normalizedMode)) {
           const internet = await performModeAwareInternetSearch(normalizedMode, latestUserText);
+          await recordInternetLearning(env, normalizedMode, latestUserText, internet.hits);
           internetProfileUsed = internet.profile;
           internetHitCount = internet.hits.length;
           if (internet.hits.length) {

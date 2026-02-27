@@ -31,7 +31,7 @@
     <main id="main" class="docs-main">
       <header class="docs-header">
         <h2>Omni Ai Documentation</h2>
-        <p>Public technical brain of Omni: architecture, physics, cognition, simulation, and engineering philosophy.</p>
+        <p>Public technical brain of Omni: architecture, cognition, simulation, safety/access, internet retrieval, learning memory, multimodal generation, and deployment operations.</p>
       </header>
 
       <div class="docs-shell">
@@ -48,6 +48,13 @@
             <a href="#memory-system" class="docs-nav-link">Memory System</a>
             <a href="#tools-extensions" class="docs-nav-link">Tools & Extensions</a>
             <a href="#api-prompts" class="docs-nav-link">API & Prompts</a>
+            <a href="#access-verification" class="docs-nav-link">Access Verification</a>
+            <a href="#internet-stack" class="docs-nav-link">Internet Stack</a>
+            <a href="#command-reference" class="docs-nav-link">Command Reference</a>
+            <a href="#learning-memory" class="docs-nav-link">Learning Memory</a>
+            <a href="#video-engine" class="docs-nav-link">Video Engine</a>
+            <a href="#safety-policy" class="docs-nav-link">Safety Policy</a>
+            <a href="#ops-telemetry" class="docs-nav-link">Ops & Telemetry</a>
             <a href="#ui-ux-philosophy" class="docs-nav-link">UI/UX Philosophy</a>
             <a href="#deployment-pipeline" class="docs-nav-link">Deployment Pipeline</a>
             <a href="#research-inspirations" class="docs-nav-link">Research & Inspirations</a>
@@ -499,6 +506,160 @@ rules:
               <li>Mode prompt (cognitive profile)</li>
               <li>Simulation prompt (rules + state + logs)</li>
               <li>User context + memory injection</li>
+            </ul>
+          </section>
+
+          <section id="access-verification" class="docs-section">
+            <h3>Access Verification</h3>
+            <p>Omni now ships with a site-wide age and human verification gate at first load. The gate enforces age-tier access while preserving global legality constraints for all users.</p>
+
+            <h4>Verification Methods</h4>
+            <ul>
+              <li><strong>Cloudflare Turnstile:</strong> primary human verification when site key and secret are configured.</li>
+              <li><strong>Fallback Human Challenge:</strong> server-issued one-time challenge backed by KV, used when Turnstile is unavailable or as alternative completion path.</li>
+              <li><strong>Date-of-birth validation:</strong> month/day/year check with UTC age calculation for 18+ eligibility.</li>
+            </ul>
+
+            <h4>Access Outcomes</h4>
+            <ul>
+              <li><strong>Adult profile:</strong> age tier set to <code>adult</code> when user is 18+ and human verification succeeds.</li>
+              <li><strong>Minor profile:</strong> age tier set to <code>minor</code> and strict-safe behavior remains active.</li>
+              <li><strong>Illegal-content block:</strong> always enforced, independent of age tier.</li>
+            </ul>
+
+            <h4>Verification Endpoints</h4>
+            <pre><code>GET  /api/human-verify/config
+GET  /api/human-verify/challenge
+POST /api/human-verify</code></pre>
+          </section>
+
+          <section id="internet-stack" class="docs-section">
+            <h3>Internet Stack</h3>
+            <p>Omni is internet-connected through explicit API modules and mode-aware retrieval logic. Internet access is not a hidden behavior: it is routed, inspectable, and exposed to the UI.</p>
+
+            <h4>Core Capabilities</h4>
+            <div class="docs-grid">
+              <div class="docs-card"><strong>Mode-Aware Search</strong><p>Queries are shaped by the active cognitive mode profile for broader or narrower retrieval behavior.</p></div>
+              <div class="docs-card"><strong>Live Weather</strong><p>Weather snapshots from geocoding + meteorological APIs for current-condition responses.</p></div>
+              <div class="docs-card"><strong>Website Inspection</strong><p>URL fetch with title extraction, excerpting, and text preview for research workflows.</p></div>
+              <div class="docs-card"><strong>Retrieval Telemetry</strong><p>Response headers expose internet-mode profile and hit counts for transparent inspection.</p></div>
+            </div>
+
+            <h4>Internet Endpoints</h4>
+            <pre><code>GET /api/internet/search?q=&amp;mode=
+GET /api/internet/weather?location=
+GET /api/internet/inspect?url=
+GET /api/internet/learning?mode=&amp;q=</code></pre>
+          </section>
+
+          <section id="command-reference" class="docs-section">
+            <h3>Command Reference</h3>
+            <p>Chat now includes direct command paths for internet operations and runtime inspection.</p>
+
+            <h4>Internet Commands</h4>
+            <ul>
+              <li><code>/web &lt;query&gt;</code> — mode-shaped internet search with source previews.</li>
+              <li><code>/weather &lt;location&gt;</code> — live weather snapshot (temperature, wind, code, time).</li>
+              <li><code>/inspect &lt;url&gt;</code> — website title, excerpt, and content preview extraction.</li>
+              <li><code>/learn [query]</code> — inspect internet learning-memory status and recent entries.</li>
+            </ul>
+
+            <h4>Visual / Image Control Commands</h4>
+            <ul>
+              <li><code>/style &lt;name&gt;</code>, <code>/camera &lt;profile&gt;</code>, <code>/light &lt;profile&gt;</code>, <code>/materials a,b,c</code></li>
+              <li>Session-aware style controls integrate with image-generation routing and metadata.</li>
+            </ul>
+          </section>
+
+          <section id="learning-memory" class="docs-section">
+            <h3>Learning Memory</h3>
+            <p>Omni now performs retrieval-based continual learning from internet search results. This is memory-augmented learning, not direct model-weight mutation.</p>
+
+            <h4>Learning Lifecycle</h4>
+            <ul>
+              <li>Search results are normalized into compact facts (title/snippet/source/url).</li>
+              <li>Facts are persisted to KV under an internet-learning store.</li>
+              <li>Future prompts retrieve ranked relevant entries by mode + lexical overlap.</li>
+              <li>Retrieved learning context is injected as a system message before generation.</li>
+            </ul>
+
+            <h4>Store Schema (Summary)</h4>
+            <pre><code>{
+  "updatedAt": 0,
+  "entries": [
+    {
+      "id": "...",
+      "ts": 0,
+      "mode": "analyst",
+      "query": "...",
+      "facts": [
+        { "title": "...", "snippet": "...", "url": "...", "source": "duckduckgo|wikipedia" }
+      ]
+    }
+  ]
+}</code></pre>
+
+            <p>This mechanism allows Omni to get smarter with use while preserving auditability and reversibility of learned context.</p>
+          </section>
+
+          <section id="video-engine" class="docs-section">
+            <h3>Video Engine</h3>
+            <p>The Omni video pipeline is now scaffolded as a phased system optimized for very small output budgets and rapid iteration.</p>
+
+            <h4>Current Phases Implemented</h4>
+            <ul>
+              <li><strong>Phase 1:</strong> keyframe-driven micro-clip planning and manifest export.</li>
+              <li><strong>Phase 2:</strong> physics-conditioning metadata (gravity/velocity/collision hints).</li>
+              <li><strong>Phase 3:</strong> context/entity continuity, dialogue timing, storyboard structure.</li>
+              <li><strong>Phase 4:</strong> adaptive optimization tiers and runtime keyframe cache.</li>
+              <li><strong>Phase 5:</strong> strict contract validation and deterministic smoke tests.</li>
+              <li><strong>Phase 6:</strong> release validator coverage for image+video module integrity.</li>
+            </ul>
+
+            <h4>Output Strategy</h4>
+            <ul>
+              <li>Always produce a deterministic manifest in <code>omni_video_exports</code>.</li>
+              <li>Optionally encode <code>mp4/gif</code> via ffmpeg when enabled and available.</li>
+              <li>Automatically fallback to manifest-only mode when encoding is unavailable or over budget.</li>
+            </ul>
+          </section>
+
+          <section id="safety-policy" class="docs-section">
+            <h3>Safety Policy</h3>
+            <p>Omni enforces layered safety in frontend and backend paths, including age-tier controls and non-negotiable legality filters.</p>
+
+            <h4>Policy Layers</h4>
+            <ul>
+              <li><strong>Prompt sanitization:</strong> inbound text normalized and validated before orchestration.</li>
+              <li><strong>Age-tier gating:</strong> explicit sexual content restricted for under-18 profiles.</li>
+              <li><strong>Illegal-content block:</strong> prohibited content denied for all profiles and routes.</li>
+              <li><strong>Response safeguards:</strong> final output constrained via safety filters and bounded output caps.</li>
+            </ul>
+
+            <h4>Policy Scope</h4>
+            <p>Safety checks apply consistently to chat requests, image requests, and internet-enhanced prompts to prevent bypass through alternate pathways.</p>
+          </section>
+
+          <section id="ops-telemetry" class="docs-section">
+            <h3>Ops & Telemetry</h3>
+            <p>Omni exposes runtime routing and cognitive telemetry via response headers and UI inspectors.</p>
+
+            <h4>Notable Runtime Headers</h4>
+            <pre><code>X-Omni-Model-Used
+X-Omni-Route-Reason
+X-Omni-Orchestrator-Route
+X-Omni-Persona-Tone
+X-Omni-Emotion-User
+X-Omni-Emotion-Omni
+X-Omni-Internet-Mode
+X-Omni-Internet-Profile
+X-Omni-Internet-Count</code></pre>
+
+            <h4>Inspector Panels</h4>
+            <ul>
+              <li><strong>Mind State panel:</strong> route/persona/emotion timeline per session.</li>
+              <li><strong>Internet Mode Inspector:</strong> active internet profile, query tracking, and source counts.</li>
+              <li><strong>Simulation panel:</strong> state controls, logs, and backend sync metrics.</li>
             </ul>
           </section>
 
