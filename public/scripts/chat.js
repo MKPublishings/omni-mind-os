@@ -38,13 +38,8 @@
   const mindPersonaEl = document.getElementById("mind-persona");
   const mindEmotionEl = document.getElementById("mind-emotion");
   const mindTimelineEl = document.getElementById("mind-timeline");
-  const releaseReadinessSummaryEl = document.getElementById("release-readiness-summary");
-  const releaseReadinessListEl = document.getElementById("release-readiness-list");
   const savePreferencesBtn = document.getElementById("save-preferences-btn");
   const resetMemoryBtn = document.getElementById("reset-memory-btn");
-  const adminKeyInputEl = document.getElementById("admin-key-input");
-  const adminAccessIndicatorEl = document.getElementById("admin-access-indicator");
-  const releaseReadinessBtn = document.getElementById("release-readiness-btn");
 
   const sessionsSidebarEl = document.getElementById("sessions-sidebar");
   const newSessionBtn = document.getElementById("new-session-btn");
@@ -76,8 +71,7 @@
     PERSIST_MANUAL_MODE: "omni-persist-manual-mode",
     REQUEST_TIMEOUT: "omni-request-timeout",
     API_HEALTH_INTERVAL: "omni-api-health-interval",
-    API_RETRIES: "omni-api-retries",
-    ADMIN_KEY: "omni-admin-key"
+    API_RETRIES: "omni-api-retries"
   };
   const KNOWN_MODELS = ["auto", "omni", "gpt-4o-mini", "gpt-4o", "deepseek"];
   const KNOWN_MODES = ["auto", "architect", "analyst", "visual", "lore", "reasoning", "coding", "knowledge", "system-knowledge", "simulation"];
@@ -1029,193 +1023,6 @@
     }
   }
 
-  function getReadinessEndpoint() {
-    const chatEndpoint = getApiEndpoint();
-    try {
-      const url = new URL(chatEndpoint, window.location.origin);
-      if (/\/api\/omni$/i.test(url.pathname)) {
-        url.pathname = url.pathname.replace(/\/api\/omni$/i, "/api/release/readiness");
-      } else {
-        url.pathname = "/api/release/readiness";
-      }
-      url.search = "";
-      if (url.origin === window.location.origin) {
-        return url.pathname;
-      }
-      return url.toString();
-    } catch {
-      return "/api/release/readiness";
-    }
-  }
-
-  function getAdminKey() {
-    const typed = String(adminKeyInputEl?.value || "").trim();
-    if (typed) return typed;
-    return String(getSetting(SETTINGS_KEYS.ADMIN_KEY, "") || "").trim();
-  }
-
-  function setAdminKey(value) {
-    const key = String(value || "").trim();
-    try {
-      if (key) {
-        localStorage.setItem(SETTINGS_KEYS.ADMIN_KEY, key);
-      } else {
-        localStorage.removeItem(SETTINGS_KEYS.ADMIN_KEY);
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  function getAdminAuthHeaders(baseHeaders = {}) {
-    const headers = { ...baseHeaders };
-    const adminKey = getAdminKey();
-    if (adminKey) {
-      headers["x-omni-admin-key"] = adminKey;
-    }
-    return headers;
-  }
-
-  function setAdminAccessIndicator(status, message = "") {
-    if (!adminAccessIndicatorEl) return;
-
-    adminAccessIndicatorEl.classList.remove("is-checking", "is-granted", "is-denied");
-
-    if (status === "checking") {
-      adminAccessIndicatorEl.classList.add("is-checking");
-      adminAccessIndicatorEl.textContent = "Access: checking...";
-      return;
-    }
-
-    if (status === "granted") {
-      adminAccessIndicatorEl.classList.add("is-granted");
-      adminAccessIndicatorEl.textContent = "Access: granted";
-      return;
-    }
-
-    if (status === "denied") {
-      adminAccessIndicatorEl.classList.add("is-denied");
-      adminAccessIndicatorEl.textContent = message ? `Access: denied (${message})` : "Access: denied";
-      return;
-    }
-
-    if (status === "saved") {
-      adminAccessIndicatorEl.textContent = "Access: key saved";
-      return;
-    }
-
-    adminAccessIndicatorEl.textContent = "Access: not set";
-  }
-
-  async function applyAdminKeyFromInput({ triggerReadiness = false } = {}) {
-    if (!adminKeyInputEl) return;
-    const adminKey = String(adminKeyInputEl.value || "").trim();
-    setAdminKey(adminKey);
-    setAdminAccessIndicator(adminKey ? "saved" : "idle");
-
-    if (triggerReadiness) {
-      await runReleaseReadinessCheck();
-    }
-  }
-
-  function renderReleaseReadiness(result, errorText = "") {
-    if (releaseReadinessSummaryEl) {
-      if (errorText) {
-        releaseReadinessSummaryEl.textContent = `Readiness: failed (${errorText})`;
-      } else {
-        releaseReadinessSummaryEl.textContent = `Readiness: ${result?.ready ? "ready" : "not ready"}`;
-      }
-    }
-
-    if (!releaseReadinessListEl) return;
-    releaseReadinessListEl.innerHTML = "";
-
-    if (errorText) {
-      const row = document.createElement("div");
-      row.className = "release-readiness-item fail";
-      row.textContent = errorText;
-      releaseReadinessListEl.appendChild(row);
-      return;
-    }
-
-    const checks = Array.isArray(result?.checks) ? result.checks : [];
-    if (!checks.length) {
-      const empty = document.createElement("div");
-      empty.className = "release-readiness-item";
-      empty.textContent = "No readiness checks returned.";
-      releaseReadinessListEl.appendChild(empty);
-      return;
-    }
-
-    for (const check of checks) {
-      const row = document.createElement("div");
-      row.className = `release-readiness-item ${check?.ok ? "ok" : "fail"}`;
-      row.textContent = `${check?.ok ? "✓" : "✗"} ${String(check?.name || "check")}: ${String(check?.detail || "")}`;
-      releaseReadinessListEl.appendChild(row);
-    }
-  }
-
-  async function runReleaseReadinessCheck() {
-    const session = getActiveSession();
-    const adminKey = getAdminKey();
-    setAdminKey(adminKey);
-    if (!adminKey) {
-      setAdminAccessIndicator("idle");
-    } else {
-      setAdminAccessIndicator("checking");
-    }
-
-    const headers = {};
-    if (adminKey) {
-      headers["x-omni-admin-key"] = adminKey;
-    }
-
-    try {
-      const res = await fetch(getReadinessEndpoint(), {
-        method: "GET",
-        headers
-      });
-
-      let payload = null;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
-
-      if (!res.ok) {
-        const reason = String(payload?.error || `HTTP ${res.status}`);
-        setAdminAccessIndicator("denied", reason);
-        renderReleaseReadiness(null, reason);
-        updateModelInspector("auto", `readiness-${res.status}`);
-        if (session) {
-          appendMindTimeline(session, `release-readiness failed: ${reason}`);
-          updateMindStateUI(session);
-          saveState();
-        }
-        return;
-      }
-
-      renderReleaseReadiness(payload);
-  setAdminAccessIndicator("granted");
-      updateModelInspector("auto", payload?.ready ? "release-ready" : "release-not-ready");
-      if (session) {
-        appendMindTimeline(session, `release-readiness: ${payload?.ready ? "ready" : "not-ready"}`);
-        updateMindStateUI(session);
-        saveState();
-      }
-    } catch {
-      setAdminAccessIndicator("denied", "network");
-      renderReleaseReadiness(null, "Network error");
-      updateModelInspector("auto", "readiness-network-error");
-      if (session) {
-        appendMindTimeline(session, "release-readiness failed: network-error");
-        updateMindStateUI(session);
-        saveState();
-      }
-    }
-  }
-
   function getImageEndpoint() {
     const chatEndpoint = getApiEndpoint();
     try {
@@ -1277,7 +1084,7 @@
 
     const res = await fetch(getImageEndpoint(), {
       method: "POST",
-      headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
@@ -1379,7 +1186,7 @@
         try {
           res = await fetch(getApiEndpoint(), {
             method: "POST",
-            headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
             signal: controller.signal
           });
@@ -2191,22 +1998,6 @@
     updateModelInspector("auto", "router-ready");
     loadPreferences();
     updateSimulationUI();
-    if (adminKeyInputEl) {
-      adminKeyInputEl.value = getSetting(SETTINGS_KEYS.ADMIN_KEY, "");
-      setAdminAccessIndicator(adminKeyInputEl.value.trim() ? "saved" : "idle");
-      adminKeyInputEl.addEventListener("change", () => {
-        applyAdminKeyFromInput({ triggerReadiness: false }).catch(() => {});
-      });
-      adminKeyInputEl.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter") return;
-        event.preventDefault();
-        applyAdminKeyFromInput({ triggerReadiness: true }).catch(() => {});
-      });
-
-      if (adminKeyInputEl.value.trim()) {
-        runReleaseReadinessCheck().catch(() => {});
-      }
-    }
 
     // Listen for settings changes from other tabs or same page
     window.addEventListener("storage", (e) => {
@@ -2364,10 +2155,6 @@
 
     if (resetMemoryBtn) {
       resetMemoryBtn.addEventListener("click", resetMemory);
-    }
-
-    if (releaseReadinessBtn) {
-      releaseReadinessBtn.addEventListener("click", runReleaseReadinessCheck);
     }
 
     if (simulationStartBtn) {

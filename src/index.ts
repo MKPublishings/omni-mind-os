@@ -243,12 +243,13 @@ function isAdminAuthorized(request: Request, env: Env): boolean {
   return provided.length > 0 && provided === configured;
 }
 
-function getReleaseHardeningStatus(env: Env): {
+function getBackgroundReadinessStatus(env: Env): {
   ready: boolean;
   checks: Array<{ name: string; ok: boolean; detail: string }>;
 } {
   const explicitEnv = String(env.OMNI_ENV || "").trim().toLowerCase();
   const isProduction = explicitEnv === "production";
+  const adminKey = String(env.OMNI_ADMIN_KEY || "").trim();
 
   const checks = [
     {
@@ -258,10 +259,10 @@ function getReleaseHardeningStatus(env: Env): {
     },
     {
       name: "admin-key",
-      ok: !isProduction || String(env.OMNI_ADMIN_KEY || "").trim().length >= 16,
+      ok: !isProduction || adminKey.length >= 16,
       detail:
-        !isProduction || String(env.OMNI_ADMIN_KEY || "").trim().length >= 16
-          ? "OMNI_ADMIN_KEY configured for protected maintenance endpoints"
+        !isProduction || adminKey.length >= 16
+          ? "OMNI_ADMIN_KEY configured for production protected endpoints"
           : "OMNI_ADMIN_KEY missing or weak for production"
     },
     {
@@ -286,8 +287,10 @@ function getReleaseHardeningStatus(env: Env): {
     }
   ];
 
-  const ready = checks.every((check) => check.ok);
-  return { ready, checks };
+  return {
+    ready: checks.every((check) => check.ok),
+    checks
+  };
 }
 
 async function getReleaseSpecPayload(env: Env): Promise<Record<string, unknown>> {
@@ -312,6 +315,14 @@ async function getReleaseSpecPayload(env: Env): Promise<Record<string, unknown>>
     autonomyStatus = null;
   }
 
+  const readiness = getBackgroundReadinessStatus(env);
+  const readinessSnapshot = {
+    ready: readiness.ready,
+    failedChecks: readiness.checks
+      .filter((check) => !check.ok)
+      .map((check) => ({ name: check.name, detail: check.detail }))
+  };
+
   return {
     release,
     capabilities: {
@@ -328,7 +339,6 @@ async function getReleaseSpecPayload(env: Env): Promise<Record<string, unknown>>
       image: "/api/image",
       maintenanceStatus: "/api/maintenance/status",
       maintenanceRun: "/api/maintenance/run",
-      releaseReadiness: "/api/release/readiness",
       releaseSpec: "/api/release/spec"
     },
     publicArtifacts: {
@@ -337,6 +347,13 @@ async function getReleaseSpecPayload(env: Env): Promise<Record<string, unknown>>
       specDoc: "/OMNI_AI_RELEASE_SPEC.md"
     },
     runtime: autonomyStatus
+      ? {
+          ...autonomyStatus,
+          readiness: readinessSnapshot
+        }
+      : {
+          readiness: readinessSnapshot
+        }
   };
 }
 
@@ -959,7 +976,35 @@ async function generateOmniImageFromPrompt(env: Env, userPrompt: string, options
 
 // Warmup connections on first request (non-blocking)
 let connectionsWarmedUp = false;
-let hardeningChecked = false;
+let lastReadinessAuditAt = 0;
+let lastReadinessSignature = "";
+const READINESS_AUDIT_INTERVAL_MS = 5 * 60 * 1000;
+
+function runBackgroundReadinessAudit(env: Env, logger: OmniLogger): void {
+  const now = Date.now();
+  if (now - lastReadinessAuditAt < READINESS_AUDIT_INTERVAL_MS) {
+    return;
+  }
+
+  lastReadinessAuditAt = now;
+
+  const readiness = getBackgroundReadinessStatus(env);
+  const failed = readiness.checks.filter((check) => !check.ok);
+  const signature = readiness.ready
+    ? "ready"
+    : failed.map((check) => `${check.name}:${check.detail}`).join("|");
+
+  if (signature === lastReadinessSignature && readiness.ready) {
+    return;
+  }
+
+  lastReadinessSignature = signature;
+  logger.log("release_readiness_background", {
+    ready: readiness.ready,
+    failedChecks: failed,
+    checkedAt: now
+  });
+}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -971,16 +1016,7 @@ export default {
       warmupConnections(env).catch(() => {}); // Fire and forget
     }
 
-    if (!hardeningChecked) {
-      hardeningChecked = true;
-      const hardening = getReleaseHardeningStatus(env);
-      if (!hardening.ready) {
-        logger.log("release_hardening_warning", {
-          ready: hardening.ready,
-          failedChecks: hardening.checks.filter((check) => !check.ok)
-        });
-      }
-    }
+    runBackgroundReadinessAudit(env, logger);
 
     try {
       const url = new URL(request.url);
@@ -993,7 +1029,6 @@ export default {
         url.pathname === "/api/stats" ||
         url.pathname === "/api/maintenance/run" ||
         url.pathname === "/api/maintenance/status" ||
-        url.pathname === "/api/release/readiness" ||
         url.pathname === "/api/release/spec";
 
       if (isApiRoute && request.method === "OPTIONS") {
@@ -1101,26 +1136,6 @@ export default {
         });
       }
 
-      if (url.pathname === "/api/release/readiness" && request.method === "GET") {
-        if (!isAdminAuthorized(request, env)) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: {
-              ...CORS_HEADERS,
-              "Content-Type": "application/json"
-            }
-          });
-        }
-
-        const hardening = getReleaseHardeningStatus(env);
-        return new Response(JSON.stringify(hardening), {
-          headers: {
-            ...CORS_HEADERS,
-            "Content-Type": "application/json"
-          }
-        });
-      }
-
       if (url.pathname === "/api/release/spec" && request.method === "GET") {
         const spec = await getReleaseSpecPayload(env);
         return new Response(JSON.stringify(spec), {
@@ -1220,16 +1235,6 @@ export default {
           headers: {
             ...CORS_HEADERS,
             "Allow": "POST, OPTIONS"
-          }
-        });
-      }
-
-      if (url.pathname === "/api/release/readiness" && request.method !== "GET") {
-        return new Response("Method Not Allowed", {
-          status: 405,
-          headers: {
-            ...CORS_HEADERS,
-            "Allow": "GET, OPTIONS"
           }
         });
       }

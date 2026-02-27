@@ -49,7 +49,6 @@ Omni Ai has been formally released as **Omni Ai v1.0.0** with identity continuit
 - `POST /api/image`
 - `GET /api/maintenance/status`
 - `POST /api/maintenance/run`
-- `GET /api/release/readiness`
 - `GET /api/release/spec`
 
 ## Release Artifacts
@@ -60,8 +59,8 @@ Omni Ai has been formally released as **Omni Ai v1.0.0** with identity continuit
 - `RELEASE_NOTES_1.0.0.md`
 
 ## Operational Notes
-- Production maintenance/readiness endpoints require `OMNI_ADMIN_KEY` when `OMNI_ENV=production`.
-- `GET /api/release/readiness` provides pass/fail checks for deploy hardening.
+- Production maintenance endpoints require `OMNI_ADMIN_KEY` when `OMNI_ENV=production`.
+- Release readiness is continuously audited in the background and surfaced in `GET /api/release/spec` under `runtime.readiness`.
 - Recommended pre-deploy review: `RELEASE_HARDENING_CHECKLIST.md`.
 
 ## Known Compatibility Notes

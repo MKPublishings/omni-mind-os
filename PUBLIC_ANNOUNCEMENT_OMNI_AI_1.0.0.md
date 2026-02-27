@@ -17,7 +17,6 @@ This release is backed by a transparent, inspectable architecture and machine-re
 ## Public Runtime Access
 
 - `GET /api/release/spec`
-- `GET /api/release/readiness`
 - `GET /api/maintenance/status`
 
 ## Release Artifacts

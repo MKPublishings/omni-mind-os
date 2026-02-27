@@ -18,12 +18,11 @@
 - Confirm maintenance endpoints require `x-omni-admin-key` in production:
   - `GET /api/maintenance/status`
   - `POST /api/maintenance/run`
-  - `GET /api/release/readiness`
 - Verify unauthorized requests return `401`.
 
-## 4) Release Readiness API
-- Call `GET /api/release/readiness` with admin key.
-- Proceed only when `ready: true` and all checks are `ok: true`.
+## 4) Release Readiness (Background)
+- Call `GET /api/release/spec` and inspect `runtime.readiness`.
+- Proceed only when `runtime.readiness.ready: true` and `failedChecks` is empty.
 
 ## 5) Functional Smoke
 - Chat route (`/api/omni`) works with streaming.
@@ -31,5 +30,5 @@
 - Maintenance run updates status telemetry and autonomy fields.
 
 ## 6) Post-Deploy Observe
-- Check logs for `release_hardening_warning` and resolve any failed checks.
+- Check logs for `release_readiness_background` and resolve any failed checks.
 - Confirm `/api/maintenance/status` shows healthy drift/autonomy metrics over time.

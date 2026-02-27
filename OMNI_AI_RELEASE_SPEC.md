@@ -19,7 +19,6 @@
 - POST /api/image
 - GET /api/maintenance/status
 - POST /api/maintenance/run
-- GET /api/release/readiness
 - GET /api/release/spec
 
 ## 4. Release Assertions

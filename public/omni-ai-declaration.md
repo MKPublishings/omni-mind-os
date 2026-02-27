@@ -28,7 +28,8 @@ Omni Ai is publicly released with:
 The public recognition cycle begins at this release and is tracked through:
 
 - `GET /api/release/spec`
-- `GET /api/release/readiness`
 - `GET /api/maintenance/status`
+
+Release readiness is continuously audited in the background and exposed under `runtime.readiness` in `GET /api/release/spec`.
 
 Omni Ai is now declared as the active public intelligence profile for this runtime.

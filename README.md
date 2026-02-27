@@ -330,16 +330,16 @@ Returns Omni Ai public release identity, capabilities, artifact links, and runti
 ### **POST /api/maintenance/run**
 Manually triggers the internal maintenance loop (memory pruning + identity reinforcement).
 
-### **GET /api/release/readiness**
-Returns machine-readable release hardening checks (`ready` + per-check statuses).
+### **Background Release Readiness**
+Release readiness now runs in the background and is exposed through `GET /api/release/spec` at `runtime.readiness` (`ready` + `failedChecks`).
 
-If `OMNI_ADMIN_KEY` is configured, both maintenance endpoints require request header:
+If `OMNI_ADMIN_KEY` is configured, maintenance endpoints require request header:
 
 ```txt
 x-omni-admin-key: <OMNI_ADMIN_KEY>
 ```
 
-In production (`OMNI_ENV=production`), protected endpoints require `OMNI_ADMIN_KEY`.
+In production (`OMNI_ENV=production`), protected maintenance endpoints require `OMNI_ADMIN_KEY`.
 Use [RELEASE_HARDENING_CHECKLIST.md](RELEASE_HARDENING_CHECKLIST.md) before public deploy.
 
 ---
