@@ -31,7 +31,7 @@
     <main id="main" class="docs-main">
       <header class="docs-header">
         <h2>Omni Ai Documentation</h2>
-        <p>Public technical brain of Omni: architecture, cognition, simulation, safety/access, internet retrieval, learning memory, multimodal generation, and deployment operations.</p>
+        <p>Public technical brain of Omni: full platform reference across architecture, cognition, memory, multimodal orchestration, safety, codex systems, API contracts, and deployment operations.</p>
         <p><strong>Last updated:</strong> 2026-02-27 (live codex + runtime refresh)</p>
       </header>
 
@@ -767,6 +767,195 @@ X-Omni-Internet-Count</code></pre>
               <li>Omni Ai evolution beyond single-session constraints</li>
               <li>Public release hardening and potential open-source modules</li>
             </ul>
+          </section>
+
+          <section id="full-platform-reference" class="docs-section">
+            <h3>Full Platform Reference</h3>
+            <p>This section consolidates Omni Ai capabilities into one complete operational map for build, debug, and deployment workflows.</p>
+
+            <h4>Feature Phases</h4>
+            <ul>
+              <li><strong>Phase 1:</strong> Identity kernel + layered reasoning stack + internal candidate simulation.</li>
+              <li><strong>Phase 2:</strong> Long-term memory (D1 optional), working memory, and scheduled maintenance loops.</li>
+              <li><strong>Phase 3:</strong> Multimodal orchestrator routes (`chat`, `image`, `memory`, `simulation`, `tool`) with route telemetry headers.</li>
+              <li><strong>Phase 4:</strong> Behavioral intelligence: persona shaping, emotional resonance, adaptive response modulation.</li>
+              <li><strong>Phase 5:</strong> Autonomy stack: self-healing checks, goals registry, and scheduler policy recommendations.</li>
+              <li><strong>Phase 6:</strong> Frontend runtime integration with route/behavior visibility and multimodal rendering support.</li>
+              <li><strong>Phase 7:</strong> Public release identity, declaration artifacts, and observable runtime readiness telemetry.</li>
+            </ul>
+
+            <h4>Core Modules</h4>
+            <pre><code>src/omni/intelligence/
+  identityKernel.ts
+  reasoningStack.ts
+  internalSimulation.ts
+
+src/omni/multimodal/
+  router.ts
+  visualReasoner.ts
+
+src/omni/behavior/
+  personaEngine.ts
+  emotionalResonance.ts
+  adaptiveBehavior.ts
+
+src/omni/autonomy/
+  selfHealing.ts
+  goalsRegistry.ts
+  schedulerPolicy.ts</code></pre>
+          </section>
+
+          <section id="complete-api-reference" class="docs-section">
+            <h3>Complete API Reference</h3>
+            <h4>Primary Runtime</h4>
+            <pre><code>POST /api/omni
+GET  /api/ping
+GET  /api/search?q=...
+GET  /api/modes
+GET  /api/modes/details
+GET  /api/modes/:id
+GET  /api/memory?key=...
+POST /api/memory
+DELETE /api/memory?key=...
+GET  /api/preferences
+POST /api/preferences
+DELETE /api/preferences</code></pre>
+
+            <h4>Maintenance / Release</h4>
+            <pre><code>GET  /api/maintenance/status
+POST /api/maintenance/run
+GET  /api/release/spec</code></pre>
+
+            <h4>Verification / Safety Access</h4>
+            <pre><code>GET  /api/human-verify/config
+GET  /api/human-verify/challenge
+POST /api/human-verify</code></pre>
+
+            <h4>Internet Stack</h4>
+            <pre><code>GET /api/internet/search?q=&amp;mode=
+GET /api/internet/weather?location=
+GET /api/internet/inspect?url=
+GET /api/internet/learning?mode=&amp;q=</code></pre>
+
+            <p>Protected maintenance endpoints require <code>x-omni-admin-key</code> when <code>OMNI_ADMIN_KEY</code> is configured, and are enforced in production profile.</p>
+          </section>
+
+          <section id="environment-bindings" class="docs-section">
+            <h3>Environment Bindings & Variables</h3>
+            <h4>Runtime Bindings</h4>
+            <pre><code>AI: Cloudflare AI binding
+MEMORY: KV namespace (persistent memory)
+MIND: KV namespace (cognitive state)
+OMNI_DB?: D1 database (long-term memory)
+OMNI_SESSION?: Durable Object namespace</code></pre>
+
+            <h4>Model Alias Variables</h4>
+            <pre><code>MODEL_OMNI
+MODEL_GPT_4O
+MODEL_GPT_4O_MINI
+MODEL_DEEPSEEK</code></pre>
+
+            <h4>Operational Variables</h4>
+            <pre><code>OMNI_SIMULATION_PATHS=2..4
+OMNI_MEMORY_RETENTION_DAYS=45
+OMNI_SESSION_MAX_AGE_HOURS=72
+OMNI_AUTONOMY_LEVEL=conservative|balanced|aggressive
+OMNI_ADMIN_KEY=...
+OMNI_VIDEO_ENABLE_MP4_ENCODING=true|false
+OMNI_VIDEO_FFMPEG_PATH=/custom/path/to/ffmpeg</code></pre>
+
+            <h4>ffmpeg Resolver Priority</h4>
+            <ul>
+              <li><code>OMNI_VIDEO_FFMPEG_PATH</code></li>
+              <li>Bundled <code>@ffmpeg-installer/ffmpeg</code></li>
+              <li>System <code>ffmpeg</code> on <code>PATH</code></li>
+            </ul>
+          </section>
+
+          <section id="project-structure-reference" class="docs-section">
+            <h3>Project Structure Reference</h3>
+            <pre><code>src/
+  index.ts
+  api/
+  llm/
+  omni/
+  memory/
+  maintenance/
+  stability/
+  logging/
+
+public/
+  chat.html
+  docs.html
+  modes.html
+  settings.html
+  system.html
+  scripts/
+  styles/
+
+codex/
+  laws/
+  systems/
+  mythic/
+  visual-dialect/
+  equations/
+  glossary/
+  index.json
+  index.schema.json</code></pre>
+          </section>
+
+          <section id="dev-deploy-ops" class="docs-section">
+            <h3>Development, Deploy, and Operations</h3>
+            <h4>Core Commands</h4>
+            <pre><code>npm run dev
+npm run lint
+npm run lint:code
+npm run typecheck
+npm run test
+npm run validate:engine
+npm run validate:video</code></pre>
+
+            <h4>Codex Commands</h4>
+            <pre><code>npm run codex:reindex
+npm run codex:watch
+npm run codex:register -- &lt;path-inside-codex&gt;</code></pre>
+
+            <h4>Mind Loop / Task Token Operations</h4>
+            <pre><code>npm run mind:loop
+npm run mind:auto-debug
+npm run mind:tokens
+npm run mind:tokens:set -- &lt;tokenId&gt; &lt;open|in-progress|resolved&gt;
+npm run mind:tokens:active
+npm run mind:tokens:next
+npm run mind:tokens:next:claim
+npm run mind:tokens:maintain</code></pre>
+
+            <h4>Deploy</h4>
+            <pre><code>wrangler deploy
+wrangler deploy --env staging
+wrangler deploy --env production</code></pre>
+          </section>
+
+          <section id="extending-omni" class="docs-section">
+            <h3>Extending Omni</h3>
+            <ul>
+              <li><strong>New Models:</strong> add route/provider logic in runtime router and alias config.</li>
+              <li><strong>New Cognitive Modes:</strong> extend mode profiles and prompt shaping contracts.</li>
+              <li><strong>New Memory Types:</strong> add namespace/schema and injection policy with safety boundaries.</li>
+              <li><strong>New Tools:</strong> add tool handler and orchestrator bridge integration.</li>
+              <li><strong>New Codex Chambers:</strong> add artifacts under <code>codex/</code> and run codex indexing commands.</li>
+            </ul>
+          </section>
+
+          <section id="release-artifacts" class="docs-section">
+            <h3>Release Artifacts</h3>
+            <pre><code>OMNI_AI_RELEASE_SPEC.md
+RELEASE_NOTES_1.0.0.md
+PUBLIC_ANNOUNCEMENT_OMNI_AI_1.0.0.md
+RELEASE_HARDENING_CHECKLIST.md
+public/omni-ai-release.json
+public/omni-ai-declaration.md</code></pre>
+            <p>Use the hardening checklist before public deploy and monitor runtime readiness in release spec telemetry.</p>
           </section>
 
           <section id="docs-disclaimer" class="docs-section docs-disclaimer" aria-label="Documentation disclaimer">
