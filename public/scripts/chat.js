@@ -44,6 +44,10 @@
   const internetCountEl = document.getElementById("internet-count");
   const internetQueryEl = document.getElementById("internet-query");
   const internetSourcesEl = document.getElementById("internet-sources");
+  const mediaFilterAllBtn = document.getElementById("media-filter-all");
+  const mediaFilterImagesBtn = document.getElementById("media-filter-images");
+  const mediaFilterGifsBtn = document.getElementById("media-filter-gifs");
+  const mediaFilterVideosBtn = document.getElementById("media-filter-videos");
   const savePreferencesBtn = document.getElementById("save-preferences-btn");
   const resetMemoryBtn = document.getElementById("reset-memory-btn");
 
@@ -116,6 +120,13 @@
     apiHealthIntervalSeconds: 30,
     apiRetries: 1
   };
+
+  let activeMediaFilter = "all";
+
+  function normalizeMediaFilter(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    return ["all", "images", "gifs", "videos"].includes(normalized) ? normalized : "all";
+  }
 
   function getSetting(key, fallback = "") {
     try {
@@ -659,7 +670,14 @@
       throw new Error(String(data?.error || "Video generation failed"));
     }
 
-    return data.result || null;
+    const result = data.result || null;
+    if (!result) return null;
+
+    result.previews = {
+      keyframeUrls: Array.isArray(data?.previews?.keyframeUrls) ? data.previews.keyframeUrls : []
+    };
+    result.createdAt = Number(data?.createdAt || Date.now());
+    return result;
   }
 
   function toModelLabel(model) {
@@ -1071,6 +1089,7 @@
       for (const session of Object.values(state.sessions)) {
         if (!session || typeof session !== "object") continue;
         session.mode = getActiveMode(session);
+        session.mediaFilter = normalizeMediaFilter(session.mediaFilter || "all");
         ensureSimulationState(session);
       }
 
@@ -1105,6 +1124,7 @@
       title: "New conversation",
       messages: [],
       mode: getSelectedModeFromSettings(),
+      mediaFilter: "all",
       model: getDefaultModelFromSettings(),
       createdAt: Date.now(),
       updatedAt: Date.now()
@@ -1121,6 +1141,9 @@
   function setActiveSession(id) {
     if (!state.sessions[id]) return;
     state.activeSessionId = id;
+    const session = state.sessions[id];
+    activeMediaFilter = normalizeMediaFilter(session?.mediaFilter || "all");
+    updateMediaFilterUI();
     saveState();
     renderSessionsSidebar();
     syncSelectorsFromSession();
@@ -1139,6 +1162,8 @@
     updateModeButton(activeMode);
     setActiveDropdownItem(modelMenu, session.model);
     setActiveDropdownItem(modeMenu, activeMode);
+    activeMediaFilter = normalizeMediaFilter(session.mediaFilter || "all");
+    updateMediaFilterUI();
     updateModeIndicator(activeMode);
     updateSimulationUI(session);
     updateMindStateUI(session);
@@ -1248,16 +1273,51 @@
     messagesEl.innerHTML = "";
   }
 
+  function encodeExportToken(input) {
+    const raw = String(input || "");
+    try {
+      return btoa(unescape(encodeURIComponent(raw)))
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "")
+        .slice(0, 28);
+    } catch {
+      return btoa(raw)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "")
+        .slice(0, 28);
+    }
+  }
+
+  function buildOmniExportFilename(kind, extension, generatedAt = Date.now(), prompt = "") {
+    const safeKind = String(kind || "media").trim().toLowerCase();
+    const ts = Number.isFinite(Number(generatedAt)) ? Number(generatedAt) : Date.now();
+    const stamp = new Date(ts).toISOString().replace(/[:.]/g, "-");
+    const tokenSeed = `${safeKind}|${stamp}|${prompt}|${Math.random().toString(36).slice(2, 10)}`;
+    const token = encodeExportToken(tokenSeed);
+    const safeExt = String(extension || "bin").replace(/[^a-z0-9]/gi, "").toLowerCase() || "bin";
+    return `Omni_${safeKind}_${token}_${stamp}.${safeExt}`;
+  }
+
+  function formatGeneratedTimestamp(value) {
+    const ts = Number(value);
+    if (!Number.isFinite(ts) || ts <= 0) return "";
+    return new Date(ts).toLocaleString();
+  }
+
   function createGeneratedImageCard(meta = {}) {
     const imageDataUrl = String(meta.imageDataUrl || "").trim();
     if (!imageDataUrl.startsWith("data:image/")) {
       return null;
     }
 
-    const filename = String(meta.imageFilename || "generated-image.png").trim() || "generated-image.png";
+    const generatedAt = Number(meta.generatedAt || Date.now());
     const prompt = String(meta.imagePrompt || "Generated image").trim() || "Generated image";
+    const filename = buildOmniExportFilename("image", "png", generatedAt, prompt);
     const resolution = String(meta.imageResolution || "").trim();
     const styleId = String(meta.imageStyleId || "").trim();
+    const createdLabel = formatGeneratedTimestamp(generatedAt);
 
     const card = document.createElement("div");
     card.className = "generated-image-card";
@@ -1280,16 +1340,134 @@
 
     actions.appendChild(download);
 
-    if (resolution || styleId) {
+    if (resolution || styleId || createdLabel) {
       const info = document.createElement("div");
       info.className = "generated-image-meta";
-      info.textContent = [resolution, styleId].filter(Boolean).join(" • ");
+      info.textContent = [resolution, styleId, createdLabel ? `Created: ${createdLabel}` : ""].filter(Boolean).join(" • ");
       actions.appendChild(info);
     }
 
     card.appendChild(img);
     card.appendChild(actions);
 
+    return card;
+  }
+
+  function createGeneratedMediaCard(meta = {}) {
+    const generatedAt = Number(meta.generatedAt || Date.now());
+    const createdLabel = formatGeneratedTimestamp(generatedAt);
+    const mp4Url = String(meta.videoMp4Url || "").trim();
+    const gifUrl = String(meta.videoGifUrl || "").trim();
+    const keyframeUrls = Array.isArray(meta.videoKeyframeUrls) ? meta.videoKeyframeUrls.map((item) => String(item || "").trim()).filter(Boolean) : [];
+    const hasGif = /\.gif($|\?)/i.test(gifUrl) || gifUrl.startsWith("data:image/gif");
+    const hasMp4 = /\.mp4($|\?)/i.test(mp4Url) || mp4Url.startsWith("data:video/");
+    const hasPlayableVideo = hasMp4 || keyframeUrls.length > 0;
+
+    if (!hasPlayableVideo && !hasGif) {
+      return null;
+    }
+
+    const card = document.createElement("div");
+    card.className = "generated-media-card";
+
+    const viewer = document.createElement("div");
+    viewer.className = "generated-media-viewer";
+
+    let displayEl = null;
+
+    if (hasPlayableVideo) {
+      if (hasMp4) {
+        const video = document.createElement("video");
+        video.className = "generated-video-preview";
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = "metadata";
+        video.src = mp4Url;
+        displayEl = video;
+      } else {
+        const frame = document.createElement("img");
+        frame.className = "generated-gif-preview";
+        frame.alt = "Generated video preview";
+        frame.src = keyframeUrls[0];
+
+        let index = 0;
+        const interval = setInterval(() => {
+          if (!frame.isConnected || keyframeUrls.length < 2) {
+            if (!frame.isConnected) clearInterval(interval);
+            return;
+          }
+          index = (index + 1) % keyframeUrls.length;
+          frame.src = keyframeUrls[index];
+        }, 360);
+
+        frame.addEventListener("remove", () => clearInterval(interval));
+        displayEl = frame;
+      }
+
+      if (displayEl) {
+        viewer.appendChild(displayEl);
+      }
+    } else if (hasGif) {
+      const gif = document.createElement("img");
+      gif.className = "generated-gif-preview";
+      gif.src = gifUrl;
+      gif.alt = "Generated GIF";
+      viewer.appendChild(gif);
+      displayEl = gif;
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "generated-media-actions";
+
+    if (hasMp4) {
+      const downloadVideo = document.createElement("a");
+      downloadVideo.className = "generated-image-download";
+      downloadVideo.href = mp4Url;
+      downloadVideo.download = buildOmniExportFilename("video", "mp4", generatedAt, String(meta.videoPrompt || ""));
+      downloadVideo.textContent = "Download video";
+      actions.appendChild(downloadVideo);
+    }
+
+    if (hasGif) {
+      const downloadGif = document.createElement("a");
+      downloadGif.className = "generated-image-download";
+      downloadGif.href = gifUrl;
+      downloadGif.download = buildOmniExportFilename("gif", "gif", generatedAt, String(meta.videoPrompt || ""));
+      downloadGif.textContent = "Download GIF";
+      actions.appendChild(downloadGif);
+    }
+
+    if (displayEl) {
+      const fullscreenBtn = document.createElement("button");
+      fullscreenBtn.type = "button";
+      fullscreenBtn.className = "generated-media-fullscreen";
+      fullscreenBtn.textContent = "Fullscreen";
+      fullscreenBtn.addEventListener("click", async () => {
+        try {
+          const target = displayEl.tagName === "VIDEO" ? displayEl : viewer;
+          if (target && typeof target.requestFullscreen === "function") {
+            await target.requestFullscreen();
+          }
+        } catch {
+          // ignore fullscreen failures
+        }
+      });
+      actions.appendChild(fullscreenBtn);
+    }
+
+    const info = document.createElement("div");
+    info.className = "generated-image-meta";
+    const duration = Number(meta.videoDurationSec);
+    const resolution = String(meta.videoResolution || "").trim();
+    info.textContent = [
+      Number.isFinite(duration) && duration > 0 ? `${duration.toFixed(2)}s` : "",
+      resolution,
+      createdLabel ? `Created: ${createdLabel}` : ""
+    ].filter(Boolean).join(" • ");
+    actions.appendChild(info);
+
+    card.appendChild(viewer);
+    card.appendChild(actions);
     return card;
   }
 
@@ -1345,6 +1523,16 @@
       body.appendChild(imageCard);
     }
 
+    const mediaCard = createGeneratedMediaCard(meta);
+    if (mediaCard) {
+      if ((content || "").trim() || imageCard) {
+        const spacer = document.createElement("div");
+        spacer.className = "generated-image-spacer";
+        body.appendChild(spacer);
+      }
+      body.appendChild(mediaCard);
+    }
+
     inner.appendChild(header);
     inner.appendChild(body);
     wrapper.appendChild(inner);
@@ -1381,20 +1569,91 @@
     clearMessages();
     const session = getActiveSession();
     if (!session) return;
+
+    const isMediaFilterActive = activeMediaFilter !== "all";
+
     for (const msg of session.messages) {
+      if (isMediaFilterActive && !doesMessageMatchMediaFilter(msg, activeMediaFilter)) {
+        continue;
+      }
+
       const activeMode = getActiveMode(session);
       appendMessage(msg.role, msg.content, {
         model: session.model || "auto",
         mode: activeMode,
         timestamp: msg.timestamp || msg.ts || null,
+        generatedAt: msg.generatedAt || msg.timestamp || msg.ts || null,
         imageDataUrl: msg.imageDataUrl || "",
         imageFilename: msg.imageFilename || "",
         imagePrompt: msg.imagePrompt || "",
         imageResolution: msg.imageResolution || "",
-        imageStyleId: msg.imageStyleId || ""
+        imageStyleId: msg.imageStyleId || "",
+        videoMp4Url: msg.videoMp4Url || "",
+        videoGifUrl: msg.videoGifUrl || "",
+        videoPrompt: msg.videoPrompt || "",
+        videoDurationSec: msg.videoDurationSec || 0,
+        videoResolution: msg.videoResolution || "",
+        videoKeyframeUrls: Array.isArray(msg.videoKeyframeUrls) ? msg.videoKeyframeUrls : []
       });
     }
     updateMindStateUI(session);
+  }
+
+  function doesMessageMatchMediaFilter(msg, filter) {
+    const mediaType = getMessageMediaType(msg);
+    if (!mediaType) return false;
+    if (filter === "images") return mediaType === "image";
+    if (filter === "gifs") return mediaType === "gif";
+    if (filter === "videos") return mediaType === "video";
+    return true;
+  }
+
+  function getMessageMediaType(msg) {
+    const imageDataUrl = String(msg?.imageDataUrl || "").trim();
+    const gifUrl = String(msg?.videoGifUrl || "").trim();
+    const mp4Url = String(msg?.videoMp4Url || "").trim();
+
+    if (/^data:image\/gif/i.test(imageDataUrl) || /\.gif($|\?)/i.test(imageDataUrl) || /\.gif($|\?)/i.test(gifUrl)) {
+      return "gif";
+    }
+
+    if (mp4Url || (String(msg?.type || "").toLowerCase() === "video" && !gifUrl)) {
+      return "video";
+    }
+
+    if (imageDataUrl.startsWith("data:image/")) {
+      return "image";
+    }
+
+    return null;
+  }
+
+  function updateMediaFilterUI() {
+    const map = {
+      all: mediaFilterAllBtn,
+      images: mediaFilterImagesBtn,
+      gifs: mediaFilterGifsBtn,
+      videos: mediaFilterVideosBtn
+    };
+
+    for (const [key, button] of Object.entries(map)) {
+      if (!button) continue;
+      const active = activeMediaFilter === key;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    }
+  }
+
+  function setMediaFilter(nextFilter) {
+    const session = getActiveSession();
+    activeMediaFilter = normalizeMediaFilter(nextFilter);
+    if (session) {
+      session.mediaFilter = activeMediaFilter;
+      session.updatedAt = Date.now();
+      saveState();
+    }
+    updateMediaFilterUI();
+    renderActiveSessionMessages();
   }
 
   // =========================
@@ -1735,6 +1994,7 @@
       });
 
       let assistantText = "";
+      let assistantMediaMeta = null;
       if (styleCommand) {
         if (styleCommand.action === "show") {
           assistantText = buildStyleStatusMessage(session);
@@ -1916,6 +2176,7 @@
             if (!result) {
               assistantText = "Video generation failed: empty result.";
             } else {
+              const generatedAt = Date.now();
               const lines = [
                 `Phase 1 video generated: **${result.id || "(no id)"}**`,
                 `- Duration: **${Number(result?.meta?.durationSec || 0).toFixed(2)}s**`,
@@ -1933,6 +2194,15 @@
               lines.push(`- Shots: **${shotCount}** | Keyframes: **${keyframeCount}**`);
 
               assistantText = lines.join("\n");
+              assistantMediaMeta = {
+                generatedAt,
+                videoPrompt: videoCommand.prompt,
+                videoMp4Url: String(result?.mp4Url || ""),
+                videoGifUrl: String(result?.gifUrl || ""),
+                videoDurationSec: Number(result?.meta?.durationSec || 0),
+                videoResolution: `${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}`,
+                videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : []
+              };
             }
           } catch (error) {
             assistantText = `Video generation failed: ${error instanceof Error ? error.message : "unknown error"}`;
@@ -1945,13 +2215,15 @@
       appendMessage("assistant", assistantText, {
         model: session.model || "auto",
         mode: getActiveMode(session),
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        ...(assistantMediaMeta || {})
       });
 
       session.messages.push({
         role: "assistant",
         content: assistantText,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        ...(assistantMediaMeta || {})
       });
       updateSessionMetaFromMessages(session);
       saveState();
@@ -2071,6 +2343,7 @@
           format: mediaIntent.format === "gif" ? "gif" : "both",
           maxSizeMB: 2
         });
+        const generatedAt = Date.now();
 
         const lines = [
           `Generated ${mediaIntent.format === "gif" ? "GIF clip" : "video clip"} for: **${videoPrompt}**`,
@@ -2083,10 +2356,35 @@
 
         updateAssistantMessageBody(assistantBodyEl, lines.join("\n"));
 
+        if (assistantBodyEl) {
+          const mediaCard = createGeneratedMediaCard({
+            generatedAt,
+            videoPrompt,
+            videoMp4Url: String(result?.mp4Url || ""),
+            videoGifUrl: String(result?.gifUrl || ""),
+            videoDurationSec: Number(result?.meta?.durationSec || 0),
+            videoResolution: `${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}`,
+            videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : []
+          });
+          if (mediaCard) {
+            const spacer = document.createElement("div");
+            spacer.className = "generated-image-spacer";
+            assistantBodyEl.appendChild(spacer);
+            assistantBodyEl.appendChild(mediaCard);
+          }
+        }
+
         session.messages.push({
           role: "assistant",
           content: `Generated video clip for: ${videoPrompt}`,
           type: "video",
+          generatedAt,
+          videoPrompt,
+          videoMp4Url: String(result?.mp4Url || ""),
+          videoGifUrl: String(result?.gifUrl || ""),
+          videoDurationSec: Number(result?.meta?.durationSec || 0),
+          videoResolution: `${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}`,
+          videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : [],
           timestamp: Date.now()
         });
         updateSessionMetaFromMessages(session);
@@ -2134,6 +2432,7 @@
       try {
         const imagePrompt = String(mediaIntent.prompt || extractImagePrompt(trimmed) || trimmed).trim();
         const imageResult = await requestGeneratedImage(session, imagePrompt, safetyProfile);
+        const generatedAt = Date.now();
         const resolution = String(imageResult?.metadata?.resolution || "").trim();
         const styleId = String(imageResult?.metadata?.style_id || "").trim();
 
@@ -2146,7 +2445,8 @@
             imageFilename: imageResult.filename,
             imagePrompt,
             imageResolution: resolution,
-            imageStyleId: styleId
+            imageStyleId: styleId,
+            generatedAt
           });
           if (imageCard) {
             const spacer = document.createElement("div");
@@ -2166,6 +2466,7 @@
           imagePrompt,
           imageResolution: resolution,
           imageStyleId: styleId,
+          generatedAt,
           timestamp: Date.now()
         });
         updateSessionMetaFromMessages(session);
@@ -2222,7 +2523,8 @@
               imageFilename: String(payload?.image?.filename || "").trim(),
               imageResolution: String(payload?.image?.metadata?.resolution || "").trim(),
               imageStyleId: String(payload?.image?.metadata?.style_id || "").trim(),
-              imagePrompt: trimmed
+              imagePrompt: trimmed,
+              generatedAt: Date.now()
             };
             if (typeof payload.content === "string") {
               session._streamingAssistantText = appendTokenWithSpacing(
@@ -2281,7 +2583,8 @@
           imageFilename: streamedMeta.imageFilename,
           imagePrompt: streamedMeta.imagePrompt || trimmed,
           imageResolution: streamedMeta.imageResolution,
-          imageStyleId: streamedMeta.imageStyleId
+          imageStyleId: streamedMeta.imageStyleId,
+          generatedAt: streamedMeta.generatedAt || Date.now()
         });
         if (imageCard) {
           const spacer = document.createElement("div");
@@ -2299,7 +2602,8 @@
         imageFilename: streamedMeta.imageFilename || "",
         imagePrompt: streamedMeta.imagePrompt || "",
         imageResolution: streamedMeta.imageResolution || "",
-        imageStyleId: streamedMeta.imageStyleId || ""
+        imageStyleId: streamedMeta.imageStyleId || "",
+        generatedAt: streamedMeta.generatedAt || Date.now()
       });
       session.messages[session.messages.length - 1].timestamp = Date.now();
       if (getActiveMode(session) === "simulation") {
@@ -2643,6 +2947,7 @@
     syncSelectorsFromSession();
     renderSessionsSidebar();
     renderActiveSessionMessages();
+    updateMediaFilterUI();
     startApiChecks();
     updateModelInspector("auto", "router-ready");
     loadPreferences();
@@ -2885,6 +3190,19 @@
         renderSessionsSidebar();
         renderActiveSessionMessages();
       });
+    }
+
+    if (mediaFilterAllBtn) {
+      mediaFilterAllBtn.addEventListener("click", () => setMediaFilter("all"));
+    }
+    if (mediaFilterImagesBtn) {
+      mediaFilterImagesBtn.addEventListener("click", () => setMediaFilter("images"));
+    }
+    if (mediaFilterGifsBtn) {
+      mediaFilterGifsBtn.addEventListener("click", () => setMediaFilter("gifs"));
+    }
+    if (mediaFilterVideosBtn) {
+      mediaFilterVideosBtn.addEventListener("click", () => setMediaFilter("videos"));
     }
   }
 

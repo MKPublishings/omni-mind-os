@@ -2352,6 +2352,7 @@ export default {
           const referenceImages = Array.isArray(body?.referenceImages)
             ? body.referenceImages.map((item) => sanitizePromptText(String(item || ""))).filter(Boolean)
             : [];
+          const keyframeUrlById = new Map<string, string>();
 
           const imageEngine = {
             generateImage: async (requestPayload: {
@@ -2383,8 +2384,11 @@ export default {
                 quality: qualityMode === "CRISP_SHORT" ? "ultra" : qualityMode === "LONG_SOFT" ? "high" : "ultra"
               });
 
+              const generatedId = `kf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+              keyframeUrlById.set(generatedId, generated.imageDataUrl);
+
               return {
-                id: `kf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                id: generatedId,
                 url: generated.imageDataUrl
               };
             }
@@ -2421,7 +2425,22 @@ export default {
             format
           });
 
-          return new Response(JSON.stringify({ ok: true, result }), {
+          const keyframeUrls = Array.isArray(result?.meta?.keyframes)
+            ? result.meta.keyframes
+                .map((keyframe) => keyframeUrlById.get(String(keyframe?.imageId || "")) || "")
+                .filter(Boolean)
+            : [];
+
+          const responsePayload = {
+            ok: true,
+            result,
+            previews: {
+              keyframeUrls
+            },
+            createdAt: Date.now()
+          };
+
+          return new Response(JSON.stringify(responsePayload), {
             headers: {
               ...CORS_HEADERS,
               "Content-Type": "application/json"
