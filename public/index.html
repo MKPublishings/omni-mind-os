@@ -15,7 +15,7 @@
       padding: 96px 32px 72px;
       margin-bottom: 48px;
       position: relative;
-      min-height: 520px;
+      min-height: 620px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -24,14 +24,14 @@
 
     .home-hero-content {
       position: relative;
-      z-index: 3;
+      z-index: 4;
       max-width: 760px;
       margin: 0 auto;
-      padding-top: 300px;
+      padding-top: 370px;
     }
 
     .home-omni-art {
-      position: absolute;
+      position: fixed;
       inset: 0;
       z-index: 0;
       pointer-events: none;
@@ -44,6 +44,7 @@
       position: relative;
       isolation: isolate;
       overflow: hidden;
+      scroll-behavior: smooth;
     }
 
     .modes-main > *:not(.home-omni-art) {
@@ -52,33 +53,63 @@
     }
 
     .home-hero h1 {
-      font-size: 56px;
-      font-weight: 700;
+      font-size: clamp(64px, 12vw, 168px);
+      font-weight: 800;
       margin: 0;
       background:
-        repeating-linear-gradient(35deg, rgba(156, 194, 255, 0.96) 0 1px, rgba(23, 92, 196, 0.9) 1px 4px, rgba(7, 25, 56, 0.86) 4px 7px),
-        repeating-linear-gradient(-35deg, rgba(148, 187, 255, 0.68) 0 0.8px, rgba(14, 72, 168, 0.7) 0.8px 3.6px, rgba(9, 22, 45, 0.58) 3.6px 6.8px);
-      background-size: 180% 180%, 160% 160%;
+        linear-gradient(102deg, rgba(224, 240, 255, 0.98) 0%, rgba(128, 197, 255, 0.98) 24%, rgba(86, 141, 255, 0.96) 46%, rgba(134, 116, 255, 0.98) 70%, rgba(200, 129, 255, 0.98) 100%),
+        repeating-linear-gradient(-42deg, rgba(166, 209, 255, 0.2) 0 2px, rgba(109, 132, 255, 0.2) 2px 6px, rgba(97, 62, 195, 0.2) 6px 10px);
+      background-size: 240% 240%, 180% 180%;
       background-position: 0% 50%, 100% 50%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      -webkit-text-stroke: 1px rgba(139, 186, 255, 0.38);
+      -webkit-text-stroke: 1px rgba(148, 196, 255, 0.46);
       text-shadow:
-        0 0 14px rgba(15, 82, 186, 0.46),
-        0 0 30px rgba(15, 82, 186, 0.32),
-        0 0 52px rgba(15, 82, 186, 0.2);
-      letter-spacing: 0.02em;
-      animation: rainbow-shift 50s linear infinite, home-wireflow 8s ease-in-out infinite;
+        0 0 24px rgba(70, 130, 255, 0.44),
+        0 0 58px rgba(84, 99, 255, 0.3),
+        0 0 92px rgba(126, 72, 255, 0.24);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 0.92;
+      animation: omni-title-spectrum 14s linear infinite, omni-title-pulse 5.8s ease-in-out infinite;
       position: absolute;
       left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
+      top: 44%;
+      transform: translate(-50%, -50%) perspective(800px) rotateX(8deg);
       z-index: 3;
-      width: min(88vw, 900px);
+      width: min(90vw, 1080px);
       pointer-events: none;
       opacity: 1;
       filter: none;
+    }
+
+    @keyframes omni-title-spectrum {
+      0% {
+        background-position: 0% 50%, 100% 50%;
+      }
+      50% {
+        background-position: 100% 52%, 0% 48%;
+      }
+      100% {
+        background-position: 0% 50%, 100% 50%;
+      }
+    }
+
+    @keyframes omni-title-pulse {
+      0%,
+      100% {
+        text-shadow:
+          0 0 18px rgba(70, 130, 255, 0.4),
+          0 0 42px rgba(84, 99, 255, 0.26),
+          0 0 74px rgba(126, 72, 255, 0.18);
+      }
+      50% {
+        text-shadow:
+          0 0 28px rgba(98, 159, 255, 0.54),
+          0 0 72px rgba(116, 109, 255, 0.38),
+          0 0 106px rgba(157, 84, 255, 0.28);
+      }
     }
 
     @keyframes home-wireflow {
@@ -332,18 +363,18 @@
 
     @media (max-width: 768px) {
       .home-hero {
-        min-height: 460px;
+        min-height: 540px;
         padding-top: 86px;
         padding-bottom: 64px;
       }
 
       .home-hero-content {
-        padding-top: 250px;
+        padding-top: 290px;
       }
 
       .home-hero h1 {
-        font-size: 40px;
-        width: min(90vw, 680px);
+        width: min(92vw, 760px);
+        top: 43%;
       }
 
       .home-hero p {
