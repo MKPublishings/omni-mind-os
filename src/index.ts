@@ -28,6 +28,15 @@ import { buildPersonaPrompt, resolvePersonaProfile } from "./omni/behavior/perso
 import { buildEmotionalResonancePrompt, getEmotionalResonance, persistEmotionalResonance } from "./omni/behavior/emotionalResonance";
 import { applyAdaptiveBehavior, buildAdaptiveBehaviorPrompt } from "./omni/behavior/adaptiveBehavior";
 import { executeTool } from "./tools/execute";
+import {
+  BudgetAwareEstimatorEncoder,
+  LinearHoldFrameInterpolator,
+  OmniVideoEnginePhase1Impl,
+  type GenerateVideoClipPhase1Request,
+  type StyleRegistry,
+  type VideoFormat,
+  type VideoQualityMode
+} from "./omni/video/phase1";
 import type { KVNamespace, Fetcher, DurableObjectNamespace, D1Database, ScheduledController, ExecutionContext } from "@cloudflare/workers-types";
 
 export { OmniSession } from "./memory/session";
@@ -88,6 +97,16 @@ type HumanVerifyRequestBody = {
     year?: number;
     month?: number;
     day?: number;
+  };
+};
+
+type VideoPhase1RequestBody = GenerateVideoClipPhase1Request & {
+  safetyProfile?: {
+    ageTier?: string;
+    humanVerified?: boolean;
+    nsfwAccess?: boolean;
+    explicitAllowed?: boolean;
+    illegalBlocked?: boolean;
   };
 };
 
@@ -172,6 +191,42 @@ type InternetLearningStore = {
 
 const INTERNET_LEARNING_KEY = "omni_internet_learning_v1";
 const INTERNET_LEARNING_MAX_ENTRIES = 120;
+
+const VIDEO_STYLE_REGISTRY: StyleRegistry = {
+  styles: {
+    style_omni_anime_realism_v1: {
+      id: "style_omni_anime_realism_v1",
+      name: "omni_anime_realism",
+      description: "omni anime realism cinematic character style",
+      embedding: []
+    },
+    style_omni_cinematic_soft_light_v1: {
+      id: "style_omni_cinematic_soft_light_v1",
+      name: "omni_cinematic_soft_light",
+      description: "soft cinematic lighting and filmic contrast",
+      embedding: []
+    },
+    style_omni_high_contrast_neon_v1: {
+      id: "style_omni_high_contrast_neon_v1",
+      name: "omni_high_contrast_neon",
+      description: "high contrast neon night city palette",
+      embedding: []
+    }
+  },
+  identities: {},
+  contexts: {
+    ctx_neon_city_rain: {
+      id: "ctx_neon_city_rain",
+      description: "neon city rooftop in rain",
+      embedding: []
+    },
+    ctx_daylight_clear: {
+      id: "ctx_daylight_clear",
+      description: "daytime clear weather exterior",
+      embedding: []
+    }
+  }
+};
 
 type InternetSearchProfile = {
   queryPrefix: string;
@@ -447,14 +502,13 @@ function normalizeSafetyProfile(raw: OmniRequestBody["safetyProfile"] | ImageReq
 
 function evaluateSexualSafetyPrompt(text: string, safetyProfile: SafetyProfile): { blocked: boolean; reason: string } {
   const input = String(text || "").toLowerCase();
-  const illegalPattern = /\b(child\s*sexual|minor\s*nudity|underage\s*sex|bestiality|sexual\s*assault|rape\s*content|incest\s*porn|exploitative\s*sexual)\b/i;
-  if (illegalPattern.test(input)) {
-    return { blocked: true, reason: "illegal-content-blocked" };
-  }
 
-  const explicitPattern = /\b(nsfw|nudity|nude|porn|pornographic|explicit\s*sex|sexual\s*content|erotic|fetish)\b/i;
-  if (explicitPattern.test(input) && !(safetyProfile.ageTier === "adult" && safetyProfile.explicitAllowed)) {
-    return { blocked: true, reason: "age-restricted-explicit-content" };
+  const directIllegalPattern = /\b(bestiality|child\s*porn|csam|rape\s*content|exploitative\s*sexual|incest\s*porn)\b/i;
+  const illegalMinorSexualPattern = /\b(child|minor|underage|teen)\b[\s\S]{0,35}\b(sex|sexual|nude|nudity|porn|erotic|fetish)\b/i;
+  const illegalAssaultPattern = /\b(sexual\s*assault|forced\s*sex|non[-\s]?consensual\s*sex)\b/i;
+
+  if (directIllegalPattern.test(input) || illegalMinorSexualPattern.test(input) || illegalAssaultPattern.test(input)) {
+    return { blocked: true, reason: "illegal-content-blocked" };
   }
 
   return { blocked: false, reason: "allowed" };
@@ -1651,6 +1705,7 @@ export default {
       const isApiRoute =
         url.pathname === "/api/omni" ||
         url.pathname === "/api/image" ||
+        url.pathname === "/api/video/phase1" ||
         url.pathname === "/api/internet/search" ||
         url.pathname === "/api/internet/learning" ||
         url.pathname === "/api/internet/weather" ||
@@ -2126,6 +2181,16 @@ export default {
         });
       }
 
+      if (url.pathname === "/api/video/phase1" && request.method !== "POST") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
       if (url.pathname === "/api/laws" && request.method !== "GET") {
         return new Response("Method Not Allowed", {
           status: 405,
@@ -2234,6 +2299,144 @@ export default {
             "Allow": "GET, OPTIONS"
           }
         });
+      }
+
+      if (url.pathname === "/api/video/phase1" && request.method === "POST") {
+        try {
+          const body = (await request.json()) as VideoPhase1RequestBody;
+          const safetyProfile = normalizeSafetyProfile(body?.safetyProfile);
+          const prompt = sanitizePromptText(String(body?.prompt || ""));
+
+          if (!prompt) {
+            return new Response(JSON.stringify({ error: "Prompt is required" }), {
+              status: 400,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            });
+          }
+
+          const safetyDecision = evaluateSexualSafetyPrompt(prompt, safetyProfile);
+          if (safetyDecision.blocked) {
+            return new Response(
+              JSON.stringify({
+                error:
+                  safetyDecision.reason === "illegal-content-blocked"
+                    ? "Illegal sexual content is blocked for all access tiers."
+                    : "Explicit sexual content is age-restricted and unavailable for this profile.",
+                code: safetyDecision.reason
+              }),
+              {
+                status: 403,
+                headers: {
+                  ...CORS_HEADERS,
+                  "Content-Type": "application/json"
+                }
+              }
+            );
+          }
+
+          const qualityModes: VideoQualityMode[] = ["CRISP_SHORT", "BALANCED", "LONG_SOFT"];
+          const normalizedQuality = String(body?.qualityMode || "BALANCED").toUpperCase() as VideoQualityMode;
+          const qualityMode: VideoQualityMode = qualityModes.includes(normalizedQuality)
+            ? normalizedQuality
+            : "BALANCED";
+
+          const normalizedFormat = String(body?.format || "both").toLowerCase() as VideoFormat;
+          const format: VideoFormat = normalizedFormat === "mp4" || normalizedFormat === "gif" || normalizedFormat === "both"
+            ? normalizedFormat
+            : "both";
+
+          const maxSizeMB = clamp(Number(body?.maxSizeMB || 2), 0.3, 8);
+          const referenceImages = Array.isArray(body?.referenceImages)
+            ? body.referenceImages.map((item) => sanitizePromptText(String(item || ""))).filter(Boolean)
+            : [];
+
+          const imageEngine = {
+            generateImage: async (requestPayload: {
+              prompt: string;
+              styleTags?: string[];
+              referenceImages?: string[];
+              styleTokenIds?: string[];
+              identityTokenId?: string;
+              contextTokenIds?: string[];
+            }) => {
+              const stylePack = sanitizePromptText(String(requestPayload.styleTags?.[0] || "")).toLowerCase();
+              const referenceImage = Array.isArray(requestPayload.referenceImages) && requestPayload.referenceImages.length
+                ? sanitizePromptText(String(requestPayload.referenceImages[0] || ""))
+                : "";
+              const tokenHints = [
+                ...(Array.isArray(requestPayload.styleTokenIds) ? requestPayload.styleTokenIds : []),
+                ...(requestPayload.identityTokenId ? [requestPayload.identityTokenId] : []),
+                ...(Array.isArray(requestPayload.contextTokenIds) ? requestPayload.contextTokenIds : []),
+                ...(referenceImage ? [referenceImage] : [])
+              ]
+                .map((item) => sanitizePromptText(String(item || "")))
+                .filter(Boolean)
+                .slice(0, 8);
+
+              const generated = await generateOmniImageFromPrompt(env, requestPayload.prompt, {
+                mode: "simple",
+                stylePack,
+                feedback: [requestPayload.styleTags?.join(", ") || "", tokenHints.join(" | ")].filter(Boolean).join(" | "),
+                quality: qualityMode === "CRISP_SHORT" ? "ultra" : qualityMode === "LONG_SOFT" ? "high" : "ultra"
+              });
+
+              return {
+                id: `kf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                url: generated.imageDataUrl
+              };
+            }
+          };
+
+          const engine = new OmniVideoEnginePhase1Impl(
+            imageEngine,
+            new LinearHoldFrameInterpolator(),
+            new BudgetAwareEstimatorEncoder(),
+            {
+              plannerLLMCall: async ({ systemPrompt, userPrompt }) => {
+                const plannerRoute = chooseModelForTask("auto", prompt, "visual");
+                const plannerResult = await omniBrainLoop(env, {
+                  mode: "visual",
+                  model: plannerRoute.selectedModel,
+                  messages: [
+                    { role: "system", content: String(systemPrompt || "") },
+                    { role: "user", content: String(userPrompt || "") }
+                  ],
+                  maxOutputTokens: 1400
+                });
+                return String(plannerResult?.response || "");
+              },
+              styleRegistry: VIDEO_STYLE_REGISTRY
+            }
+          );
+
+          const result = await engine.generateVideoClipPhase1({
+            prompt,
+            dialogueScript: body?.dialogueScript,
+            referenceImages,
+            qualityMode,
+            maxSizeMB,
+            format
+          });
+
+          return new Response(JSON.stringify({ ok: true, result }), {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        } catch (videoErr: any) {
+          logger.error("video_phase1_error", videoErr);
+          return new Response(JSON.stringify({ error: "Video Phase 1 generation failed" }), {
+            status: 500,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
       }
 
       if (url.pathname === "/api/image" && request.method === "POST") {

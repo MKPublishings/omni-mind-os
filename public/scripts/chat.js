@@ -15,6 +15,7 @@
   // =========================
   const messagesEl = document.getElementById("chat-messages") || document.getElementById("chat-container");
   const inputEl = document.getElementById("chat-input") || document.getElementById("user-input");
+  const videoQuickBtn = document.getElementById("video-quick-btn");
   const sendBtn = document.getElementById("send-btn");
   const modelDropdown = document.getElementById("model-dropdown");
   const modelBtn = document.getElementById("model-btn");
@@ -296,8 +297,10 @@
   function evaluatePromptPolicy(text, safetyProfile) {
     const value = String(text || "").toLowerCase();
 
-    const illegalPattern = /\b(child\s*sexual|minor\s*nudity|underage\s*sex|bestiality|sexual\s*assault|rape\s*content|incest\s*porn|exploitative\s*sexual)\b/i;
-    if (illegalPattern.test(value)) {
+    const directIllegalPattern = /\b(bestiality|child\s*porn|csam|rape\s*content|exploitative\s*sexual|incest\s*porn)\b/i;
+    const illegalMinorSexualPattern = /\b(child|minor|underage|teen)\b[\s\S]{0,35}\b(sex|sexual|nude|nudity|porn|erotic|fetish)\b/i;
+    const illegalAssaultPattern = /\b(sexual\s*assault|forced\s*sex|non[-\s]?consensual\s*sex)\b/i;
+    if (directIllegalPattern.test(value) || illegalMinorSexualPattern.test(value) || illegalAssaultPattern.test(value)) {
       return {
         blocked: true,
         reason: "illegal",
@@ -305,21 +308,51 @@
       };
     }
 
-    const explicitPattern = /\b(nsfw|nudity|nude|porn|pornographic|explicit\s*sex|sexual\s*content|erotic|fetish)\b/i;
-    const isExplicit = explicitPattern.test(value);
-
-    if (isExplicit && safetyProfile.ageTier !== "adult") {
-      return {
-        blocked: true,
-        reason: "minor-explicit-block",
-        message: "This request is age-restricted. Explicit sexual content is disabled for under-18 profiles."
-      };
-    }
-
     return {
       blocked: false,
-      reason: isExplicit ? "adult-explicit-allowed" : "safe"
+      reason: "safe"
     };
+  }
+
+  function detectAutoMediaIntent(text) {
+    const raw = String(text || "").trim();
+    const value = raw.toLowerCase();
+    if (!value) return { kind: "chat", prompt: "", format: "both" };
+
+    if (value.startsWith("/image") || value.startsWith("/video")) {
+      return { kind: "command", prompt: raw, format: "both" };
+    }
+
+    const hasMakeVerb = /\b(generate|create|make|render|animate|produce|design)\b/i.test(value);
+    const asksVideo = /\b(video|clip|animation|animate|cinematic\s+shot|motion)\b/i.test(value);
+    const asksGif = /\b(gif|loop|animated\s+gif)\b/i.test(value);
+    const asksImage = /\b(image|picture|illustration|art|photo|logo|poster|wallpaper)\b/i.test(value);
+
+    if (asksGif && (hasMakeVerb || asksVideo || asksImage)) {
+      return { kind: "video", prompt: extractVideoPrompt(raw), format: "gif" };
+    }
+
+    if (asksVideo && (hasMakeVerb || asksImage || /\bturn\b[\s\S]{0,20}\binto\b/i.test(value))) {
+      return { kind: "video", prompt: extractVideoPrompt(raw), format: "both" };
+    }
+
+    if (isImageGenerationRequest(raw)) {
+      return { kind: "image", prompt: extractImagePrompt(raw), format: "both" };
+    }
+
+    return { kind: "chat", prompt: raw, format: "both" };
+  }
+
+  function extractVideoPrompt(text) {
+    const raw = String(text || "").trim();
+    if (!raw) return "";
+
+    const withoutLead = raw
+      .replace(/^\s*(please\s+)?(generate|create|make|render|animate|produce)\s+(a\s+)?(gif|video|clip|animation)\s*(of|for)?\s*/i, "")
+      .replace(/\b(as\s+a\s+gif|as\s+gif|in\s+video\s+form)\b/gi, "")
+      .trim();
+
+    return withoutLead || raw;
   }
 
   function parseStyleCommand(content) {
@@ -438,6 +471,56 @@
     };
   }
 
+  function parseVideoCommand(content) {
+    const text = String(content || "").trim();
+    const lower = text.toLowerCase();
+    if (!lower.startsWith("/video")) return null;
+
+    const raw = text.slice(6).trim();
+    if (!raw) {
+      return { action: "help" };
+    }
+
+    let prompt = raw;
+    let qualityMode = "BALANCED";
+    let format = "both";
+    let maxSizeMB = 2;
+
+    const qualityMatch = raw.match(/--quality\s*=\s*(crisp_short|balanced|long_soft)/i);
+    if (qualityMatch?.[1]) {
+      qualityMode = String(qualityMatch[1]).toUpperCase();
+      prompt = prompt.replace(qualityMatch[0], " ").trim();
+    }
+
+    const formatMatch = raw.match(/--format\s*=\s*(mp4|gif|both)/i);
+    if (formatMatch?.[1]) {
+      format = String(formatMatch[1]).toLowerCase();
+      prompt = prompt.replace(formatMatch[0], " ").trim();
+    }
+
+    const maxMatch = raw.match(/--max\s*=\s*([0-9]+(?:\.[0-9]+)?)/i);
+    if (maxMatch?.[1]) {
+      const parsed = Number(maxMatch[1]);
+      if (Number.isFinite(parsed)) {
+        maxSizeMB = Math.max(0.3, Math.min(8, parsed));
+      }
+      prompt = prompt.replace(maxMatch[0], " ").trim();
+    }
+
+    prompt = prompt.replace(/\s+/g, " ").trim();
+    if (!prompt) {
+      return { action: "help" };
+    }
+
+    return {
+      action: "generate",
+      prompt,
+      qualityMode,
+      format,
+      maxSizeMB
+    };
+  }
+
   function formatAvailableStyles() {
     return KNOWN_RENDER_STYLES.join(", ");
   }
@@ -548,6 +631,35 @@
       count: Number(data.count || 0),
       entries: Array.isArray(data.entries) ? data.entries : []
     };
+  }
+
+  async function requestPhase1Video(payload) {
+    const response = await fetch("/api/video/phase1", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        prompt: String(payload?.prompt || "").trim(),
+        qualityMode: String(payload?.qualityMode || "BALANCED").toUpperCase(),
+        format: String(payload?.format || "both").toLowerCase(),
+        maxSizeMB: Number(payload?.maxSizeMB || 2),
+        safetyProfile: buildSafetyProfile()
+      })
+    });
+
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok || !data?.ok) {
+      throw new Error(String(data?.error || "Video generation failed"));
+    }
+
+    return data.result || null;
   }
 
   function toModelLabel(model) {
@@ -1608,7 +1720,8 @@
     const weatherCommand = parseWeatherCommand(trimmed);
     const inspectCommand = parseInspectCommand(trimmed);
     const learnCommand = parseLearnCommand(trimmed);
-    if (styleCommand || cameraCommand || lightCommand || materialsCommand || webCommand || weatherCommand || inspectCommand || learnCommand) {
+    const videoCommand = parseVideoCommand(trimmed);
+    if (styleCommand || cameraCommand || lightCommand || materialsCommand || webCommand || weatherCommand || inspectCommand || learnCommand || videoCommand) {
       const commandTimestamp = Date.now();
       session.messages.push({ role: "user", content: trimmed, timestamp: commandTimestamp });
       updateSessionMetaFromMessages(session);
@@ -1794,6 +1907,37 @@
         } catch (error) {
           assistantText = `Learning memory lookup failed: ${error instanceof Error ? error.message : "unknown error"}`;
         }
+      } else if (videoCommand) {
+        if (videoCommand.action === "help") {
+          assistantText = "Usage: `/video <prompt> [--quality=CRISP_SHORT|BALANCED|LONG_SOFT] [--format=mp4|gif|both] [--max=2]`. Example: `/video neon rooftop close-up of Aiko --quality=CRISP_SHORT --format=mp4 --max=2`.";
+        } else {
+          try {
+            const result = await requestPhase1Video(videoCommand);
+            if (!result) {
+              assistantText = "Video generation failed: empty result.";
+            } else {
+              const lines = [
+                `Phase 1 video generated: **${result.id || "(no id)"}**`,
+                `- Duration: **${Number(result?.meta?.durationSec || 0).toFixed(2)}s**`,
+                `- Resolution: **${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}**`,
+                `- FPS: **${Number(result?.meta?.fps || 0)}**`,
+                `- MP4 Size: **${typeof result?.sizeMB?.mp4 === "number" ? `${result.sizeMB.mp4} MB` : "n/a"}**`,
+                `- GIF Size: **${typeof result?.sizeMB?.gif === "number" ? `${result.sizeMB.gif} MB` : "n/a"}**`
+              ];
+
+              if (result.mp4Url) lines.push(`- MP4: ${result.mp4Url}`);
+              if (result.gifUrl) lines.push(`- GIF: ${result.gifUrl}`);
+
+              const keyframeCount = Array.isArray(result?.meta?.keyframes) ? result.meta.keyframes.length : 0;
+              const shotCount = Array.isArray(result?.meta?.shots) ? result.meta.shots.length : 0;
+              lines.push(`- Shots: **${shotCount}** | Keyframes: **${keyframeCount}**`);
+
+              assistantText = lines.join("\n");
+            }
+          } catch (error) {
+            assistantText = `Video generation failed: ${error instanceof Error ? error.message : "unknown error"}`;
+          }
+        }
       } else {
         assistantText = "Rendering command received.";
       }
@@ -1898,12 +2042,81 @@
     // Clear input
     if (inputEl) inputEl.value = "";
 
-    const shouldGenerateImage = isImageGenerationRequest(trimmed);
+    const mediaIntent = detectAutoMediaIntent(trimmed);
+
+    if (mediaIntent.kind === "video") {
+      const mindState = ensureMindState(session);
+      if (mindState) {
+        mindState.route = "video";
+        appendMindTimeline(session, "route=video, source=prompt-aware-media-intent");
+        updateMindStateUI(session);
+      }
+
+      const assistantMessage = appendMessage("assistant", "Generating video clip...", {
+        model: session.model || "auto",
+        mode: activeMode
+      });
+      const assistantBodyEl = assistantMessage ? assistantMessage.body : null;
+
+      isStreaming = true;
+      if (sendBtn) sendBtn.disabled = true;
+      if (inputEl) inputEl.disabled = true;
+      if (typingIndicatorEl) typingIndicatorEl.style.display = "block";
+
+      try {
+        const videoPrompt = String(mediaIntent.prompt || trimmed).trim() || trimmed;
+        const result = await requestPhase1Video({
+          prompt: videoPrompt,
+          qualityMode: "BALANCED",
+          format: mediaIntent.format === "gif" ? "gif" : "both",
+          maxSizeMB: 2
+        });
+
+        const lines = [
+          `Generated ${mediaIntent.format === "gif" ? "GIF clip" : "video clip"} for: **${videoPrompt}**`,
+          `- Duration: **${Number(result?.meta?.durationSec || 0).toFixed(2)}s**`,
+          `- Resolution: **${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}**`,
+          `- FPS: **${Number(result?.meta?.fps || 0)}**`
+        ];
+        if (result?.mp4Url) lines.push(`- MP4: ${result.mp4Url}`);
+        if (result?.gifUrl) lines.push(`- GIF: ${result.gifUrl}`);
+
+        updateAssistantMessageBody(assistantBodyEl, lines.join("\n"));
+
+        session.messages.push({
+          role: "assistant",
+          content: `Generated video clip for: ${videoPrompt}`,
+          type: "video",
+          timestamp: Date.now()
+        });
+        updateSessionMetaFromMessages(session);
+        saveState();
+        playNotificationSound("assistant");
+      } catch (err) {
+        console.error("Omni video generation error:", err);
+        updateAssistantMessageBody(
+          assistantBodyEl,
+          `[Error] Video generation failed. Try refining the prompt with clearer visual action.`
+        );
+        playNotificationSound("error");
+      } finally {
+        isStreaming = false;
+        updateJumpToLatestVisibility();
+        if (sendBtn) sendBtn.disabled = false;
+        if (inputEl) inputEl.disabled = false;
+        if (typingIndicatorEl) typingIndicatorEl.style.display = "none";
+        if (inputEl) inputEl.focus();
+      }
+
+      return;
+    }
+
+    const shouldGenerateImage = mediaIntent.kind === "image";
     if (shouldGenerateImage) {
       const mindState = ensureMindState(session);
       if (mindState) {
         mindState.route = "image";
-        appendMindTimeline(session, "route=image, source=direct-image-endpoint");
+        appendMindTimeline(session, "route=image, source=prompt-aware-media-intent");
         updateMindStateUI(session);
       }
 
@@ -1919,7 +2132,7 @@
       if (typingIndicatorEl) typingIndicatorEl.style.display = "block";
 
       try {
-        const imagePrompt = extractImagePrompt(trimmed) || trimmed;
+        const imagePrompt = String(mediaIntent.prompt || extractImagePrompt(trimmed) || trimmed).trim();
         const imageResult = await requestGeneratedImage(session, imagePrompt, safetyProfile);
         const resolution = String(imageResult?.metadata?.resolution || "").trim();
         const styleId = String(imageResult?.metadata?.style_id || "").trim();
@@ -2248,6 +2461,20 @@
     if (!inputEl) return;
     const content = inputEl.value || "";
     sendMessage(content);
+  }
+
+  function primeVideoCommandInput() {
+    if (!inputEl) return;
+
+    const current = String(inputEl.value || "").trim();
+    if (!current) {
+      inputEl.value = "/video ";
+    } else if (!current.toLowerCase().startsWith("/video")) {
+      inputEl.value = `/video ${current}`;
+    }
+
+    autoResizeInput();
+    inputEl.focus();
   }
 
   function handleInputKeydown(e) {
@@ -2621,6 +2848,9 @@
 
     if (sendBtn) {
       sendBtn.addEventListener("click", handleSendClick);
+    }
+    if (videoQuickBtn) {
+      videoQuickBtn.addEventListener("click", primeVideoCommandInput);
     }
     if (inputEl) {
       inputEl.addEventListener("keydown", handleInputKeydown);
