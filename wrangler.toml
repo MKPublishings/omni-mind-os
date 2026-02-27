@@ -6,7 +6,7 @@ compatibility_date = "2024-11-01"
 binding = "AI"
 
 [vars]
-OMNI_ENV = "development"
+OMNI_ENV = "production"
 
 # Optional model aliases for omni runtime routing.
 # Uncomment and set these to provider model IDs available in your account.
