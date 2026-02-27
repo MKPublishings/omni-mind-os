@@ -10,15 +10,19 @@
   const backToTopBtn = document.getElementById("docs-back-to-top");
   const docsNavEl = document.getElementById("docs-nav");
   const navLinks = Array.from(document.querySelectorAll(".docs-nav-link[href^='#']"));
-  const sections = navLinks
-    .map((link) => {
-      const id = link.getAttribute("href")?.slice(1) || "";
-      return document.getElementById(id);
-    })
-    .filter(Boolean);
+  const sections = (navLinks.length
+    ? navLinks
+        .map((link) => {
+          const id = link.getAttribute("href")?.slice(1) || "";
+          return document.getElementById(id);
+        })
+        .filter(Boolean)
+    : Array.from(document.querySelectorAll(".docs-section[id]"))
+  );
   let activeScrollRaf = null;
 
   function setActiveById(id) {
+    if (!navLinks.length) return;
     navLinks.forEach((link) => {
       const targetId = link.getAttribute("href")?.slice(1) || "";
       link.classList.toggle("is-active", targetId === id);
