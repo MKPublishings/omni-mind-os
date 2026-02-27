@@ -110,6 +110,31 @@ type VideoPhase1RequestBody = GenerateVideoClipPhase1Request & {
   };
 };
 
+type VideoGenerateRequestBody = VideoPhase1RequestBody & {
+  durationSeconds?: number;
+  width?: number;
+  height?: number;
+  fps?: number;
+};
+
+type OmniVideoJobStatus = "queued" | "running" | "succeeded" | "failed";
+
+type OmniVideoJob = {
+  id: string;
+  status: OmniVideoJobStatus;
+  prompt: string;
+  durationSeconds: number;
+  width: number;
+  height: number;
+  fps: number;
+  createdAt: string;
+  mp4Url?: string;
+  gifUrl?: string;
+  thumbnailUrl?: string;
+  keyframePreviewUrls?: string[];
+  errorMessage?: string;
+};
+
 type ImageRequestBody = {
   prompt?: string;
   userId?: string;
@@ -191,6 +216,8 @@ type InternetLearningStore = {
 
 const INTERNET_LEARNING_KEY = "omni_internet_learning_v1";
 const INTERNET_LEARNING_MAX_ENTRIES = 120;
+const VIDEO_JOB_KEY_PREFIX = "video:job:";
+const VIDEO_JOB_TTL_SEC = 6 * 60 * 60;
 
 const VIDEO_STYLE_REGISTRY: StyleRegistry = {
   styles: {
@@ -1656,6 +1683,191 @@ async function generateOmniImageFromPrompt(env: Env, userPrompt: string, options
   };
 }
 
+type Phase1VideoGenerationPayload = {
+  result: any;
+  previews: { keyframeUrls: string[] };
+  createdAt: number;
+};
+
+function videoJobKey(jobId: string): string {
+  return `${VIDEO_JOB_KEY_PREFIX}${jobId}`;
+}
+
+async function saveVideoJob(env: Env, job: OmniVideoJob): Promise<void> {
+  if (!env.MEMORY) return;
+  await env.MEMORY.put(videoJobKey(job.id), JSON.stringify(job), {
+    expirationTtl: VIDEO_JOB_TTL_SEC
+  });
+}
+
+async function readVideoJob(env: Env, jobId: string): Promise<OmniVideoJob | null> {
+  if (!env.MEMORY) return null;
+  const raw = await env.MEMORY.get(videoJobKey(jobId));
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as OmniVideoJob;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function coerceVideoQualityMode(value: unknown): VideoQualityMode {
+  const normalized = String(value || "BALANCED").toUpperCase();
+  return normalized === "CRISP_SHORT" || normalized === "LONG_SOFT" || normalized === "BALANCED"
+    ? (normalized as VideoQualityMode)
+    : "BALANCED";
+}
+
+function coerceVideoFormat(value: unknown): VideoFormat {
+  const normalized = String(value || "both").toLowerCase();
+  return normalized === "mp4" || normalized === "gif" || normalized === "both"
+    ? (normalized as VideoFormat)
+    : "both";
+}
+
+async function runPhase1VideoGeneration(
+  env: Env,
+  prompt: string,
+  body: VideoPhase1RequestBody
+): Promise<Phase1VideoGenerationPayload> {
+  const qualityMode = coerceVideoQualityMode(body?.qualityMode);
+  const format = coerceVideoFormat(body?.format);
+  const maxSizeMB = clamp(Number(body?.maxSizeMB || 2), 0.3, 8);
+  const referenceImages = Array.isArray(body?.referenceImages)
+    ? body.referenceImages.map((item) => sanitizePromptText(String(item || ""))).filter(Boolean)
+    : [];
+
+  const keyframeUrlById = new Map<string, string>();
+
+  const imageEngine = {
+    generateImage: async (requestPayload: {
+      prompt: string;
+      styleTags?: string[];
+      referenceImages?: string[];
+      styleTokenIds?: string[];
+      identityTokenId?: string;
+      contextTokenIds?: string[];
+    }) => {
+      const stylePack = sanitizePromptText(String(requestPayload.styleTags?.[0] || "")).toLowerCase();
+      const referenceImage = Array.isArray(requestPayload.referenceImages) && requestPayload.referenceImages.length
+        ? sanitizePromptText(String(requestPayload.referenceImages[0] || ""))
+        : "";
+      const tokenHints = [
+        ...(Array.isArray(requestPayload.styleTokenIds) ? requestPayload.styleTokenIds : []),
+        ...(requestPayload.identityTokenId ? [requestPayload.identityTokenId] : []),
+        ...(Array.isArray(requestPayload.contextTokenIds) ? requestPayload.contextTokenIds : []),
+        ...(referenceImage ? [referenceImage] : [])
+      ]
+        .map((item) => sanitizePromptText(String(item || "")))
+        .filter(Boolean)
+        .slice(0, 8);
+
+      const generated = await generateOmniImageFromPrompt(env, requestPayload.prompt, {
+        mode: "simple",
+        stylePack,
+        feedback: [requestPayload.styleTags?.join(", ") || "", tokenHints.join(" | ")].filter(Boolean).join(" | "),
+        quality: qualityMode === "CRISP_SHORT" ? "ultra" : qualityMode === "LONG_SOFT" ? "high" : "ultra"
+      });
+
+      const generatedId = `kf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      keyframeUrlById.set(generatedId, generated.imageDataUrl);
+
+      return {
+        id: generatedId,
+        url: generated.imageDataUrl
+      };
+    }
+  };
+
+  const engine = new OmniVideoEnginePhase1Impl(
+    imageEngine,
+    new LinearHoldFrameInterpolator(),
+    new BudgetAwareEstimatorEncoder(),
+    {
+      plannerLLMCall: async ({ systemPrompt, userPrompt }) => {
+        const plannerRoute = chooseModelForTask("auto", prompt, "visual");
+        const plannerResult = await omniBrainLoop(env, {
+          mode: "visual",
+          model: plannerRoute.selectedModel,
+          messages: [
+            { role: "system", content: String(systemPrompt || "") },
+            { role: "user", content: String(userPrompt || "") }
+          ],
+          maxOutputTokens: 1400
+        });
+        return String(plannerResult?.response || "");
+      },
+      styleRegistry: VIDEO_STYLE_REGISTRY
+    }
+  );
+
+  const result = await engine.generateVideoClipPhase1({
+    prompt,
+    dialogueScript: body?.dialogueScript,
+    referenceImages,
+    qualityMode,
+    maxSizeMB,
+    format
+  });
+
+  const keyframeUrls = Array.isArray(result?.meta?.keyframes)
+    ? result.meta.keyframes
+        .map((keyframe: any) => keyframeUrlById.get(String(keyframe?.imageId || "")) || "")
+        .filter(Boolean)
+    : [];
+
+  return {
+    result,
+    previews: {
+      keyframeUrls
+    },
+    createdAt: Date.now()
+  };
+}
+
+async function processVideoJob(
+  env: Env,
+  logger: OmniLogger,
+  jobId: string,
+  body: VideoGenerateRequestBody
+): Promise<void> {
+  const current = await readVideoJob(env, jobId);
+  if (!current) return;
+
+  const running: OmniVideoJob = {
+    ...current,
+    status: "running"
+  };
+  await saveVideoJob(env, running);
+
+  try {
+    const payload = await runPhase1VideoGeneration(env, current.prompt, body);
+    const result = payload.result;
+    const succeeded: OmniVideoJob = {
+      ...running,
+      status: "succeeded",
+      durationSeconds: Number(result?.meta?.durationSec || running.durationSeconds || 0),
+      width: Number(result?.meta?.resolution?.width || running.width || 512),
+      height: Number(result?.meta?.resolution?.height || running.height || 512),
+      fps: Number(result?.meta?.fps || running.fps || 12),
+      mp4Url: String(result?.mp4Url || "") || undefined,
+      gifUrl: String(result?.gifUrl || "") || undefined,
+      thumbnailUrl: payload.previews.keyframeUrls[0] || undefined,
+      keyframePreviewUrls: payload.previews.keyframeUrls
+    };
+    await saveVideoJob(env, succeeded);
+  } catch (error: any) {
+    logger.error("video_job_processing_error", error);
+    const failed: OmniVideoJob = {
+      ...running,
+      status: "failed",
+      errorMessage: String(error?.message || "Video generation failed")
+    };
+    await saveVideoJob(env, failed);
+  }
+}
+
 // Warmup connections on first request (non-blocking)
 let connectionsWarmedUp = false;
 let lastReadinessAuditAt = 0;
@@ -1705,7 +1917,9 @@ export default {
       const isApiRoute =
         url.pathname === "/api/omni" ||
         url.pathname === "/api/image" ||
+        url.pathname === "/api/video/generate" ||
         url.pathname === "/api/video/phase1" ||
+        url.pathname.startsWith("/api/video/job/") ||
         url.pathname === "/api/internet/search" ||
         url.pathname === "/api/internet/learning" ||
         url.pathname === "/api/internet/weather" ||
@@ -2140,6 +2354,102 @@ export default {
         });
       }
 
+      if (url.pathname === "/api/video/generate" && request.method === "POST") {
+        const body = (await request.json().catch(() => ({}))) as VideoGenerateRequestBody;
+        const prompt = sanitizePromptText(String(body?.prompt || "")).trim();
+        const safetyProfile = normalizeSafetyProfile(body?.safetyProfile);
+
+        if (!prompt) {
+          return new Response(JSON.stringify({ error: "Prompt is required" }), {
+            status: 400,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const safetyDecision = evaluateSexualSafetyPrompt(prompt, safetyProfile);
+        if (safetyDecision.blocked) {
+          return new Response(
+            JSON.stringify({
+              error: "Illegal sexual content is blocked for all access tiers.",
+              code: safetyDecision.reason
+            }),
+            {
+              status: 403,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
+        const durationRequested = clamp(Number(body?.durationSeconds || 2), 1, 6);
+        const widthRequested = clamp(Number(body?.width || 512), 256, 768);
+        const heightRequested = clamp(Number(body?.height || 512), 256, 768);
+        const fpsRequested = clamp(Number(body?.fps || 12), 8, 24);
+
+        const jobId = `job-${crypto.randomUUID()}`;
+        const job: OmniVideoJob = {
+          id: jobId,
+          status: "queued",
+          prompt,
+          durationSeconds: durationRequested,
+          width: widthRequested,
+          height: heightRequested,
+          fps: fpsRequested,
+          createdAt: new Date().toISOString()
+        };
+
+        await saveVideoJob(env, job);
+        void processVideoJob(env, logger, jobId, {
+          ...body,
+          prompt,
+          maxSizeMB: Number(body?.maxSizeMB || 2)
+        });
+
+        return new Response(JSON.stringify(job), {
+          status: 202,
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (url.pathname.startsWith("/api/video/job/") && request.method === "GET") {
+        const jobId = sanitizePromptText(url.pathname.slice("/api/video/job/".length)).trim();
+        if (!jobId) {
+          return new Response(JSON.stringify({ error: "Job id is required" }), {
+            status: 400,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const job = await readVideoJob(env, jobId);
+        if (!job) {
+          return new Response(JSON.stringify({ error: "Video job not found" }), {
+            status: 404,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        return new Response(JSON.stringify(job), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
       if (url.pathname === "/api/preferences" && request.method === "POST") {
         const payload = await request.json();
         const memory = await savePreferences(env, payload || {});
@@ -2177,6 +2487,26 @@ export default {
           headers: {
             ...CORS_HEADERS,
             "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/video/generate" && request.method !== "POST") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname.startsWith("/api/video/job/") && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
           }
         });
       }
@@ -2337,107 +2667,12 @@ export default {
             );
           }
 
-          const qualityModes: VideoQualityMode[] = ["CRISP_SHORT", "BALANCED", "LONG_SOFT"];
-          const normalizedQuality = String(body?.qualityMode || "BALANCED").toUpperCase() as VideoQualityMode;
-          const qualityMode: VideoQualityMode = qualityModes.includes(normalizedQuality)
-            ? normalizedQuality
-            : "BALANCED";
-
-          const normalizedFormat = String(body?.format || "both").toLowerCase() as VideoFormat;
-          const format: VideoFormat = normalizedFormat === "mp4" || normalizedFormat === "gif" || normalizedFormat === "both"
-            ? normalizedFormat
-            : "both";
-
-          const maxSizeMB = clamp(Number(body?.maxSizeMB || 2), 0.3, 8);
-          const referenceImages = Array.isArray(body?.referenceImages)
-            ? body.referenceImages.map((item) => sanitizePromptText(String(item || ""))).filter(Boolean)
-            : [];
-          const keyframeUrlById = new Map<string, string>();
-
-          const imageEngine = {
-            generateImage: async (requestPayload: {
-              prompt: string;
-              styleTags?: string[];
-              referenceImages?: string[];
-              styleTokenIds?: string[];
-              identityTokenId?: string;
-              contextTokenIds?: string[];
-            }) => {
-              const stylePack = sanitizePromptText(String(requestPayload.styleTags?.[0] || "")).toLowerCase();
-              const referenceImage = Array.isArray(requestPayload.referenceImages) && requestPayload.referenceImages.length
-                ? sanitizePromptText(String(requestPayload.referenceImages[0] || ""))
-                : "";
-              const tokenHints = [
-                ...(Array.isArray(requestPayload.styleTokenIds) ? requestPayload.styleTokenIds : []),
-                ...(requestPayload.identityTokenId ? [requestPayload.identityTokenId] : []),
-                ...(Array.isArray(requestPayload.contextTokenIds) ? requestPayload.contextTokenIds : []),
-                ...(referenceImage ? [referenceImage] : [])
-              ]
-                .map((item) => sanitizePromptText(String(item || "")))
-                .filter(Boolean)
-                .slice(0, 8);
-
-              const generated = await generateOmniImageFromPrompt(env, requestPayload.prompt, {
-                mode: "simple",
-                stylePack,
-                feedback: [requestPayload.styleTags?.join(", ") || "", tokenHints.join(" | ")].filter(Boolean).join(" | "),
-                quality: qualityMode === "CRISP_SHORT" ? "ultra" : qualityMode === "LONG_SOFT" ? "high" : "ultra"
-              });
-
-              const generatedId = `kf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-              keyframeUrlById.set(generatedId, generated.imageDataUrl);
-
-              return {
-                id: generatedId,
-                url: generated.imageDataUrl
-              };
-            }
-          };
-
-          const engine = new OmniVideoEnginePhase1Impl(
-            imageEngine,
-            new LinearHoldFrameInterpolator(),
-            new BudgetAwareEstimatorEncoder(),
-            {
-              plannerLLMCall: async ({ systemPrompt, userPrompt }) => {
-                const plannerRoute = chooseModelForTask("auto", prompt, "visual");
-                const plannerResult = await omniBrainLoop(env, {
-                  mode: "visual",
-                  model: plannerRoute.selectedModel,
-                  messages: [
-                    { role: "system", content: String(systemPrompt || "") },
-                    { role: "user", content: String(userPrompt || "") }
-                  ],
-                  maxOutputTokens: 1400
-                });
-                return String(plannerResult?.response || "");
-              },
-              styleRegistry: VIDEO_STYLE_REGISTRY
-            }
-          );
-
-          const result = await engine.generateVideoClipPhase1({
-            prompt,
-            dialogueScript: body?.dialogueScript,
-            referenceImages,
-            qualityMode,
-            maxSizeMB,
-            format
-          });
-
-          const keyframeUrls = Array.isArray(result?.meta?.keyframes)
-            ? result.meta.keyframes
-                .map((keyframe) => keyframeUrlById.get(String(keyframe?.imageId || "")) || "")
-                .filter(Boolean)
-            : [];
-
+          const payload = await runPhase1VideoGeneration(env, prompt, body);
           const responsePayload = {
             ok: true,
-            result,
-            previews: {
-              keyframeUrls
-            },
-            createdAt: Date.now()
+            result: payload.result,
+            previews: payload.previews,
+            createdAt: payload.createdAt
           };
 
           return new Response(JSON.stringify(responsePayload), {

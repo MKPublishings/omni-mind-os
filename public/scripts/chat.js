@@ -644,8 +644,64 @@
     };
   }
 
-  async function requestPhase1Video(payload) {
-    const response = await fetch("/api/video/phase1", {
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function mapVideoJobToResult(job) {
+    return {
+      id: String(job?.id || ""),
+      mp4Url: String(job?.mp4Url || "") || undefined,
+      gifUrl: String(job?.gifUrl || "") || undefined,
+      sizeMB: {
+        mp4: undefined,
+        gif: undefined
+      },
+      meta: {
+        durationSec: Number(job?.durationSeconds || 0),
+        resolution: {
+          width: Number(job?.width || 0),
+          height: Number(job?.height || 0)
+        },
+        fps: Number(job?.fps || 0),
+        sceneGraph: null,
+        shots: [],
+        keyframes: []
+      },
+      previews: {
+        keyframeUrls: Array.isArray(job?.keyframePreviewUrls) ? job.keyframePreviewUrls : []
+      },
+      createdAt: Number(Date.parse(String(job?.createdAt || "")) || Date.now())
+    };
+  }
+
+  async function requestVideoJobStatus(jobId) {
+    const response = await fetch(`/api/video/job/${encodeURIComponent(String(jobId || "").trim())}`, {
+      method: "GET"
+    });
+
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok) {
+      throw new Error(String(data?.error || "Unable to load video job status"));
+    }
+
+    return data || null;
+  }
+
+  async function requestPhase1Video(payload, hooks = {}) {
+    const onStatus = typeof hooks?.onStatus === "function" ? hooks.onStatus : null;
+
+    if (onStatus) {
+      onStatus({ status: "queued", detail: "Submitting video job..." });
+    }
+
+    const response = await fetch("/api/video/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -655,6 +711,10 @@
         qualityMode: String(payload?.qualityMode || "BALANCED").toUpperCase(),
         format: String(payload?.format || "both").toLowerCase(),
         maxSizeMB: Number(payload?.maxSizeMB || 2),
+        durationSeconds: Number(payload?.durationSeconds || 2),
+        width: Number(payload?.width || 512),
+        height: Number(payload?.height || 512),
+        fps: Number(payload?.fps || 12),
         safetyProfile: buildSafetyProfile()
       })
     });
@@ -666,18 +726,87 @@
       data = null;
     }
 
-    if (!response.ok || !data?.ok) {
-      throw new Error(String(data?.error || "Video generation failed"));
+    if (!response.ok) {
+      if (onStatus) {
+        onStatus({ status: "running", detail: "Using legacy phase1 video path..." });
+      }
+
+      const fallbackResponse = await fetch("/api/video/phase1", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          prompt: String(payload?.prompt || "").trim(),
+          qualityMode: String(payload?.qualityMode || "BALANCED").toUpperCase(),
+          format: String(payload?.format || "both").toLowerCase(),
+          maxSizeMB: Number(payload?.maxSizeMB || 2),
+          safetyProfile: buildSafetyProfile()
+        })
+      });
+
+      let fallbackData = null;
+      try {
+        fallbackData = await fallbackResponse.json();
+      } catch {
+        fallbackData = null;
+      }
+
+      if (!fallbackResponse.ok || !fallbackData?.ok) {
+        throw new Error(String(fallbackData?.error || data?.error || "Video generation failed"));
+      }
+
+      const fallbackResult = fallbackData.result || null;
+      if (!fallbackResult) return null;
+      fallbackResult.previews = {
+        keyframeUrls: Array.isArray(fallbackData?.previews?.keyframeUrls) ? fallbackData.previews.keyframeUrls : []
+      };
+      fallbackResult.createdAt = Number(fallbackData?.createdAt || Date.now());
+      if (onStatus) {
+        onStatus({ status: "succeeded", detail: "Video generated via phase1 fallback." });
+      }
+      return fallbackResult;
     }
 
-    const result = data.result || null;
-    if (!result) return null;
+    const job = data || null;
+    if (!job?.id) {
+      throw new Error("Video job id was not returned");
+    }
 
-    result.previews = {
-      keyframeUrls: Array.isArray(data?.previews?.keyframeUrls) ? data.previews.keyframeUrls : []
-    };
-    result.createdAt = Number(data?.createdAt || Date.now());
-    return result;
+    let latest = job;
+    const startedAt = Date.now();
+    const timeoutMs = 75_000;
+
+    while (Date.now() - startedAt < timeoutMs) {
+      if (latest.status === "succeeded") {
+        if (onStatus) {
+          onStatus({ status: "succeeded", detail: "Video generation completed." });
+        }
+        return mapVideoJobToResult(latest);
+      }
+      if (latest.status === "failed") {
+        if (onStatus) {
+          onStatus({ status: "failed", detail: String(latest.errorMessage || "Video generation failed") });
+        }
+        throw new Error(String(latest.errorMessage || "Video generation failed"));
+      }
+
+      if (onStatus) {
+        onStatus({
+          status: latest.status || "running",
+          detail: latest.status === "queued" ? "Queued in worker..." : "Generating frames and encoding..."
+        });
+      }
+
+      await sleep(2500);
+      latest = await requestVideoJobStatus(job.id);
+    }
+
+    if (onStatus) {
+      onStatus({ status: "failed", detail: "Video generation timed out." });
+    }
+
+    throw new Error("Video generation timed out while waiting for completion");
   }
 
   function toModelLabel(model) {
@@ -1995,6 +2124,7 @@
 
       let assistantText = "";
       let assistantMediaMeta = null;
+      let liveCommandAssistantBody = null;
       if (styleCommand) {
         if (styleCommand.action === "show") {
           assistantText = buildStyleStatusMessage(session);
@@ -2172,7 +2302,29 @@
           assistantText = "Usage: `/video <prompt> [--quality=CRISP_SHORT|BALANCED|LONG_SOFT] [--format=mp4|gif|both] [--max=2]`. Example: `/video neon rooftop close-up of Aiko --quality=CRISP_SHORT --format=mp4 --max=2`.";
         } else {
           try {
-            const result = await requestPhase1Video(videoCommand);
+            const liveAssistant = appendMessage("assistant", "Video job: Queued...", {
+              model: session.model || "auto",
+              mode: getActiveMode(session),
+              timestamp: Date.now()
+            });
+            const liveBody = liveAssistant?.body || null;
+            liveCommandAssistantBody = liveBody;
+
+            const result = await requestPhase1Video(videoCommand, {
+              onStatus: (event) => {
+                if (!liveBody) return;
+                const label = String(event?.status || "running").toLowerCase();
+                const detail = String(event?.detail || "").trim();
+                const pretty = label === "queued"
+                  ? "Queued"
+                  : label === "running"
+                    ? "Running"
+                    : label === "succeeded"
+                      ? "Succeeded"
+                      : "Failed";
+                updateAssistantMessageBody(liveBody, `Video job status: **${pretty}**${detail ? `\n${detail}` : ""}`);
+              }
+            });
             if (!result) {
               assistantText = "Video generation failed: empty result.";
             } else {
@@ -2212,12 +2364,25 @@
         assistantText = "Rendering command received.";
       }
 
-      appendMessage("assistant", assistantText, {
-        model: session.model || "auto",
-        mode: getActiveMode(session),
-        timestamp: Date.now(),
-        ...(assistantMediaMeta || {})
-      });
+      if (liveCommandAssistantBody) {
+        updateAssistantMessageBody(liveCommandAssistantBody, assistantText || "Done.");
+        if (assistantMediaMeta) {
+          const mediaCard = createGeneratedMediaCard(assistantMediaMeta);
+          if (mediaCard) {
+            const spacer = document.createElement("div");
+            spacer.className = "generated-image-spacer";
+            liveCommandAssistantBody.appendChild(spacer);
+            liveCommandAssistantBody.appendChild(mediaCard);
+          }
+        }
+      } else {
+        appendMessage("assistant", assistantText, {
+          model: session.model || "auto",
+          mode: getActiveMode(session),
+          timestamp: Date.now(),
+          ...(assistantMediaMeta || {})
+        });
+      }
 
       session.messages.push({
         role: "assistant",
