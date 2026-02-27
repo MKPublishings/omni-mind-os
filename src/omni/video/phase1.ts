@@ -9,6 +9,9 @@ export interface GenerateVideoClipRequest {
   dialogueScript?: DialogueScript;
   referenceImages?: string[];
   durationSec?: number;
+  width?: number;
+  height?: number;
+  fps?: number;
   qualityMode?: VideoQualityMode;
   maxSizeMB?: number;
   format?: VideoFormat;
@@ -447,7 +450,7 @@ function sanitizePlannedShots(shots: Shot[], fallbackEntityId: string): Shot[] {
     ...shot,
     id: String(shot?.id || `shot_${index + 1}`),
     order: Number.isFinite(Number(shot?.order)) ? Number(shot.order) : index + 1,
-    durationSec: Math.min(3, Math.max(0.6, Number(shot?.durationSec || 1.2))),
+    durationSec: Math.min(60, Math.max(0.5, Number(shot?.durationSec || 1.2))),
     description: String(shot?.description || "cinematic shot"),
     camera: {
       type: shot?.camera?.type || "static",
@@ -547,7 +550,7 @@ export async function planSceneAndShots(
   };
 
   const durationSec = dialogueScript?.lines?.length
-    ? Math.min(2, Math.max(1, dialogueScript.lines.reduce((sum, line) => sum + Math.max(0.35, Number(line.approxDurationSec || 0.5)), 0)))
+    ? Math.min(30, Math.max(1, dialogueScript.lines.reduce((sum, line) => sum + Math.max(0.35, Number(line.approxDurationSec || 0.5)), 0)))
     : 1.5;
 
   const dialogueTiming = dialogueScript?.lines?.length
@@ -1087,7 +1090,7 @@ export class BudgetAwareEstimatorEncoder implements VideoEncoder {
     }
 
     const encodedMp4 = wantsMp4 ? await encodeMp4WithFfmpeg(frames, fps) : null;
-    const gifFps = Math.min(8, fps);
+    const gifFps = Math.max(1, Math.min(60, fps));
     const encodedGif = wantsGif ? encodeGifFromFrames(frames, gifFps) : null;
     const gifWidth = encodedGif?.width || width;
     const gifHeight = encodedGif?.height || height;
@@ -1145,6 +1148,9 @@ export class OmniVideoEnginePhase1Impl implements OmniVideoEnginePhase1, OmniVid
       dialogueScript,
       referenceImages,
       durationSec: requestedDurationSec,
+      width: requestedWidth,
+      height: requestedHeight,
+      fps: requestedFps,
       qualityMode = "BALANCED",
       maxSizeMB = 2,
       format = "both"
@@ -1161,10 +1167,17 @@ export class OmniVideoEnginePhase1Impl implements OmniVideoEnginePhase1, OmniVid
 
     const { sceneGraph, shots } = planned;
     const shot = shots[0];
-    const plannedDurationSec = Math.max(1, Math.min(8, Number(shot.durationSec || 1.5)));
+    const plannedDurationSec = Math.max(1, Math.min(180, Number(shot.durationSec || 1.5)));
     const durationSec = Number.isFinite(Number(requestedDurationSec))
-      ? Math.max(2, Math.min(8, Number(requestedDurationSec)))
-      : Math.max(2, Math.min(8, plannedDurationSec));
+      ? Math.max(1, Math.min(180, Number(requestedDurationSec)))
+      : Math.max(1, Math.min(180, plannedDurationSec));
+
+    const width = Number.isFinite(Number(requestedWidth))
+      ? Math.max(128, Math.min(4096, Number(requestedWidth)))
+      : 512;
+    const height = Number.isFinite(Number(requestedHeight))
+      ? Math.max(128, Math.min(4096, Number(requestedHeight)))
+      : 512;
 
     const keyframes = createKeyframesForShot(shot);
     const renderedKeyframes = await renderKeyframes(
@@ -1176,14 +1189,20 @@ export class OmniVideoEnginePhase1Impl implements OmniVideoEnginePhase1, OmniVid
       this.options.styleRegistry
     );
 
-    const fps = qualityMode === "CRISP_SHORT" ? 16 : qualityMode === "LONG_SOFT" ? 10 : 12;
+    const fps = Number.isFinite(Number(requestedFps))
+      ? Math.max(1, Math.min(60, Number(requestedFps)))
+      : qualityMode === "CRISP_SHORT"
+        ? 16
+        : qualityMode === "LONG_SOFT"
+          ? 10
+          : 12;
 
     const frames = await buildFramesFromKeyframes(renderedKeyframes, fps, durationSec, this.interpolator);
 
     const encoded = await this.encoder.encode(frames, {
       fps,
-      width: 512,
-      height: 512,
+      width,
+      height,
       maxSizeMB,
       format,
       qualityMode

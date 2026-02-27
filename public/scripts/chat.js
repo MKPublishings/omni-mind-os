@@ -361,10 +361,11 @@
       };
     }
 
-    if (prompt.length > 1600) {
+    const promptLimit = mediaKind === "video" || mediaKind === "gif" ? 24000 : 1600;
+    if (prompt.length > promptLimit) {
       return {
         ok: false,
-        message: "Prompt is too long for generation. Please shorten it and retry."
+        message: `Prompt is too long for ${mediaKind} generation. Please keep it under ${promptLimit} characters.`
       };
     }
 
@@ -560,7 +561,7 @@
     if (maxMatch?.[1]) {
       const parsed = Number(maxMatch[1]);
       if (Number.isFinite(parsed)) {
-        maxSizeMB = Math.max(0.3, Math.min(8, parsed));
+        maxSizeMB = Math.max(0.1, Math.min(512, parsed));
       }
       prompt = prompt.replace(maxMatch[0], " ").trim();
     }
@@ -569,7 +570,7 @@
     if (durationMatch?.[1]) {
       const parsed = Number(durationMatch[1]);
       if (Number.isFinite(parsed)) {
-        durationSeconds = Math.max(2, Math.min(8, parsed));
+        durationSeconds = Math.max(1, Math.min(180, parsed));
       }
       prompt = prompt.replace(durationMatch[0], " ").trim();
     }
@@ -757,10 +758,10 @@
 
   function buildVideoFallbackResult(payload, reason = "") {
     const prompt = String(payload?.prompt || "Generated video preview").trim() || "Generated video preview";
-    const durationSec = Math.max(2, Math.min(8, Number(payload?.durationSeconds || 4)));
-    const width = Math.max(256, Math.min(768, Number(payload?.width || 512)));
-    const height = Math.max(256, Math.min(768, Number(payload?.height || 512)));
-    const fps = Math.max(8, Math.min(24, Number(payload?.fps || 12)));
+    const durationSec = Math.max(1, Math.min(180, Number(payload?.durationSeconds || 4)));
+    const width = Math.max(128, Math.min(4096, Number(payload?.width || 512)));
+    const height = Math.max(128, Math.min(4096, Number(payload?.height || 512)));
+    const fps = Math.max(1, Math.min(60, Number(payload?.fps || 12)));
     const keyframeUrls = buildVideoFallbackKeyframeDataUrls(prompt, 6);
 
     return {

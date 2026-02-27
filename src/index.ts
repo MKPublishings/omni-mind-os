@@ -1963,10 +1963,10 @@ function buildFallbackPhase1VideoPayload(
   body: VideoPhase1RequestBody,
   reason = "Video pipeline unavailable"
 ): Phase1VideoGenerationPayload {
-  const durationSec = clamp(Number((body as VideoGenerateRequestBody)?.durationSeconds ?? body?.durationSec ?? 4), 2, 8);
-  const width = clamp(Number((body as VideoGenerateRequestBody)?.width || 512), 256, 768);
-  const height = clamp(Number((body as VideoGenerateRequestBody)?.height || 512), 256, 768);
-  const fps = clamp(Number((body as VideoGenerateRequestBody)?.fps || 12), 8, 24);
+  const durationSec = clamp(Number((body as VideoGenerateRequestBody)?.durationSeconds ?? body?.durationSec ?? 4), 1, 180);
+  const width = clamp(Number((body as VideoGenerateRequestBody)?.width || 512), 128, 4096);
+  const height = clamp(Number((body as VideoGenerateRequestBody)?.height || 512), 128, 4096);
+  const fps = clamp(Number((body as VideoGenerateRequestBody)?.fps || 12), 1, 60);
   const keyframeUrls = buildVideoFallbackKeyframeUrls(prompt, 6);
 
   const result = {
@@ -2055,8 +2055,11 @@ async function runPhase1VideoGeneration(
 ): Promise<Phase1VideoGenerationPayload> {
   const qualityMode = coerceVideoQualityMode(body?.qualityMode);
   const format = coerceVideoFormat(body?.format);
-  const maxSizeMB = clamp(Number(body?.maxSizeMB || 2), 0.3, 8);
-  const requestedDurationSec = clamp(Number((body as VideoGenerateRequestBody)?.durationSeconds ?? body?.durationSec ?? 4), 2, 8);
+  const maxSizeMB = clamp(Number(body?.maxSizeMB || 2), 0.1, 512);
+  const requestedDurationSec = clamp(Number((body as VideoGenerateRequestBody)?.durationSeconds ?? body?.durationSec ?? 4), 1, 180);
+  const requestedWidth = clamp(Number((body as VideoGenerateRequestBody)?.width || 512), 128, 4096);
+  const requestedHeight = clamp(Number((body as VideoGenerateRequestBody)?.height || 512), 128, 4096);
+  const requestedFps = clamp(Number((body as VideoGenerateRequestBody)?.fps || 12), 1, 60);
   const referenceImages = Array.isArray(body?.referenceImages)
     ? body.referenceImages.map((item) => sanitizePromptText(String(item || ""))).filter(Boolean)
     : [];
@@ -2117,7 +2120,7 @@ async function runPhase1VideoGeneration(
             { role: "system", content: String(systemPrompt || "") },
             { role: "user", content: String(userPrompt || "") }
           ],
-          maxOutputTokens: 1400
+          maxOutputTokens: 6000
         });
         return String(plannerResult?.response || "");
       },
@@ -2130,6 +2133,9 @@ async function runPhase1VideoGeneration(
     dialogueScript: body?.dialogueScript,
     referenceImages,
     durationSec: requestedDurationSec,
+    width: requestedWidth,
+    height: requestedHeight,
+    fps: requestedFps,
     qualityMode,
     maxSizeMB,
     format
@@ -2775,10 +2781,10 @@ export default {
           );
         }
 
-        const durationRequested = clamp(Number(body?.durationSeconds || 4), 2, 8);
-        const widthRequested = clamp(Number(body?.width || 512), 256, 768);
-        const heightRequested = clamp(Number(body?.height || 512), 256, 768);
-        const fpsRequested = clamp(Number(body?.fps || 12), 8, 24);
+        const durationRequested = clamp(Number(body?.durationSeconds || 4), 1, 180);
+        const widthRequested = clamp(Number(body?.width || 512), 128, 4096);
+        const heightRequested = clamp(Number(body?.height || 512), 128, 4096);
+        const fpsRequested = clamp(Number(body?.fps || 12), 1, 60);
 
         const jobId = `job-${crypto.randomUUID()}`;
         const job: OmniVideoJob = {
