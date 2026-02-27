@@ -82,6 +82,8 @@ type OmniRequestBody = {
 
 type HumanVerifyRequestBody = {
   token?: string;
+  challengeId?: string;
+  challengeAnswer?: string;
   birthDate?: {
     year?: number;
     month?: number;
@@ -308,6 +310,71 @@ async function verifyTurnstileToken(request: Request, env: Env, token: string): 
     if (!response.ok) return false;
     const result = (await response.json()) as { success?: boolean };
     return result?.success === true;
+  } catch {
+    return false;
+  }
+}
+
+type HumanChallengeRecord = {
+  answer: string;
+  createdAt: number;
+};
+
+function makeHumanChallengePrompt(): { prompt: string; answer: string } {
+  const a = Math.floor(Math.random() * 16) + 5;
+  const b = Math.floor(Math.random() * 16) + 3;
+  const useAddition = Math.random() >= 0.35;
+
+  if (useAddition) {
+    return {
+      prompt: `What is ${a} + ${b}?`,
+      answer: String(a + b)
+    };
+  }
+
+  const high = Math.max(a, b);
+  const low = Math.min(a, b);
+  return {
+    prompt: `What is ${high} - ${low}?`,
+    answer: String(high - low)
+  };
+}
+
+async function createHumanChallenge(env: Env): Promise<{ challengeId: string; prompt: string; expiresInSec: number }> {
+  const challengeId = crypto.randomUUID();
+  const challenge = makeHumanChallengePrompt();
+  const record: HumanChallengeRecord = {
+    answer: challenge.answer,
+    createdAt: Date.now()
+  };
+
+  if (env.MEMORY) {
+    await env.MEMORY.put(`human_challenge:${challengeId}`, JSON.stringify(record), {
+      expirationTtl: 5 * 60
+    });
+  }
+
+  return {
+    challengeId,
+    prompt: challenge.prompt,
+    expiresInSec: 5 * 60
+  };
+}
+
+async function verifyFallbackChallenge(env: Env, challengeId: string, answer: string): Promise<boolean> {
+  if (!env.MEMORY) return false;
+  const key = `human_challenge:${challengeId}`;
+  const raw = await env.MEMORY.get(key);
+  if (!raw) return false;
+
+  await env.MEMORY.delete(key);
+
+  try {
+    const parsed = JSON.parse(raw) as HumanChallengeRecord;
+    const expected = String(parsed?.answer || "").trim();
+    const provided = String(answer || "").trim();
+    if (!expected || !provided) return false;
+    return expected === provided;
   } catch {
     return false;
   }
@@ -1311,6 +1378,7 @@ export default {
         url.pathname === "/api/internet/search" ||
         url.pathname === "/api/human-verify" ||
         url.pathname === "/api/human-verify/config" ||
+        url.pathname === "/api/human-verify/challenge" ||
         url.pathname === "/api/laws" ||
         url.pathname === "/api/search" ||
         url.pathname === "/api/preferences" ||
@@ -1419,9 +1487,45 @@ export default {
 
       if (url.pathname === "/api/human-verify/config" && request.method === "GET") {
         const siteKey = String(env.TURNSTILE_SITE_KEY || "").trim();
+        const hasSecret = String(env.TURNSTILE_SECRET_KEY || "").trim().length > 0;
         return new Response(
           JSON.stringify({
-            siteKey
+            siteKey,
+            turnstileEnabled: Boolean(siteKey && hasSecret),
+            fallbackChallengeEnabled: Boolean(env.MEMORY),
+            methods: [
+              ...(siteKey && hasSecret ? ["turnstile"] : []),
+              ...(env.MEMORY ? ["challenge"] : [])
+            ]
+          }),
+          {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      }
+
+      if (url.pathname === "/api/human-verify/challenge" && request.method === "GET") {
+        if (!env.MEMORY) {
+          return new Response(
+            JSON.stringify({ ok: false, error: "Fallback challenge is unavailable." }),
+            {
+              status: 503,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
+        const challenge = await createHumanChallenge(env);
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            challenge
           }),
           {
             headers: {
@@ -1435,6 +1539,8 @@ export default {
       if (url.pathname === "/api/human-verify" && request.method === "POST") {
         const payload = (await request.json().catch(() => ({}))) as HumanVerifyRequestBody;
         const token = sanitizePromptText(String(payload?.token || "")).trim();
+        const challengeId = sanitizePromptText(String(payload?.challengeId || "")).trim();
+        const challengeAnswer = sanitizePromptText(String(payload?.challengeAnswer || "")).trim();
         const year = Number(payload?.birthDate?.year);
         const month = Number(payload?.birthDate?.month);
         const day = Number(payload?.birthDate?.day);
@@ -1464,9 +1570,13 @@ export default {
         }
 
         const hasTurnstileSecret = String(env.TURNSTILE_SECRET_KEY || "").trim().length > 0;
-        if (hasTurnstileSecret && !token) {
-          return new Response(JSON.stringify({ ok: false, error: "Human verification token is required." }), {
-            status: 400,
+        const hasTurnstileSiteKey = String(env.TURNSTILE_SITE_KEY || "").trim().length > 0;
+        const turnstileEnabled = hasTurnstileSecret && hasTurnstileSiteKey;
+        const challengeEnabled = Boolean(env.MEMORY);
+
+        if (!turnstileEnabled && !challengeEnabled) {
+          return new Response(JSON.stringify({ ok: false, error: "No verification method is configured on the server." }), {
+            status: 503,
             headers: {
               ...CORS_HEADERS,
               "Content-Type": "application/json"
@@ -1474,9 +1584,25 @@ export default {
           });
         }
 
-        const humanVerified = await verifyTurnstileToken(request, env, token);
+        let humanVerified = false;
+        let verificationMethod = "none";
+
+        if (turnstileEnabled && token) {
+          humanVerified = await verifyTurnstileToken(request, env, token);
+          if (humanVerified) {
+            verificationMethod = "turnstile";
+          }
+        }
+
+        if (!humanVerified && challengeEnabled && challengeId && challengeAnswer) {
+          humanVerified = await verifyFallbackChallenge(env, challengeId, challengeAnswer);
+          if (humanVerified) {
+            verificationMethod = "challenge";
+          }
+        }
+
         if (!humanVerified) {
-          return new Response(JSON.stringify({ ok: false, error: "Human verification failed." }), {
+          return new Response(JSON.stringify({ ok: false, error: "Human verification failed. Complete Turnstile or solve the fallback challenge." }), {
             status: 403,
             headers: {
               ...CORS_HEADERS,
@@ -1490,6 +1616,7 @@ export default {
           JSON.stringify({
             ok: true,
             humanVerified: true,
+            verificationMethod,
             age,
             isAdult,
             ageTier: isAdult ? "adult" : "minor",
@@ -1639,6 +1766,16 @@ export default {
       }
 
       if (url.pathname === "/api/human-verify/config" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/human-verify/challenge" && request.method !== "GET") {
         return new Response("Method Not Allowed", {
           status: 405,
           headers: {

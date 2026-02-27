@@ -138,6 +138,22 @@
     }
   }
 
+  async function fetchHumanChallenge() {
+    try {
+      const response = await fetch("/api/human-verify/challenge", { method: "GET" });
+      if (!response.ok) return null;
+      const data = await response.json().catch(() => null);
+      if (!data?.ok || !data?.challenge) return null;
+
+      return {
+        challengeId: String(data.challenge.challengeId || "").trim(),
+        prompt: String(data.challenge.prompt || "").trim()
+      };
+    } catch {
+      return null;
+    }
+  }
+
   function createModalMarkup() {
     const overlay = document.createElement("div");
     overlay.className = "age-gate-overlay";
@@ -163,6 +179,11 @@
             <select id="age-year" required></select>
           </div>
           <div id="age-gate-turnstile" class="age-gate-turnstile"></div>
+          <div id="age-gate-challenge" class="age-gate-challenge" hidden>
+            <label class="age-gate-label" for="age-human-answer">Human check</label>
+            <p id="age-human-prompt" class="age-human-prompt"></p>
+            <input id="age-human-answer" type="text" inputmode="numeric" autocomplete="off" placeholder="Enter answer" />
+          </div>
           <p id="age-gate-status" class="age-gate-status" aria-live="polite"></p>
           <button id="age-gate-submit" type="submit" class="age-gate-submit">Verify & Continue</button>
         </form>
@@ -235,6 +256,9 @@
     const statusEl = modal.querySelector("#age-gate-status");
     const submitBtn = modal.querySelector("#age-gate-submit");
     const turnstileTarget = modal.querySelector("#age-gate-turnstile");
+    const challengeWrap = modal.querySelector("#age-gate-challenge");
+    const challengePromptEl = modal.querySelector("#age-human-prompt");
+    const challengeAnswerEl = modal.querySelector("#age-human-answer");
 
     fillMonthOptions(monthSelect);
     fillYearOptions(yearSelect);
@@ -249,16 +273,18 @@
     });
 
     let token = "";
-    let turnstileRequired = true;
+    let challengeId = "";
+    let turnstileAvailable = false;
+    let challengeAvailable = false;
 
     try {
       const siteKey = await fetchTurnstileSiteKey();
       if (!siteKey) {
-        turnstileRequired = false;
-        statusEl.textContent = "Human verification key is not configured. Date verification only is active.";
+        statusEl.textContent = "Turnstile unavailable. Fallback challenge is required.";
       } else {
         await ensureTurnstileScript();
         if (window.turnstile && turnstileTarget) {
+          turnstileAvailable = true;
           window.turnstile.render(turnstileTarget, {
             sitekey: siteKey,
             theme: "dark",
@@ -280,8 +306,15 @@
         }
       }
     } catch {
-      turnstileRequired = false;
-      statusEl.textContent = "Human verification service unavailable. Date verification only is active.";
+      statusEl.textContent = "Turnstile unavailable. Use fallback challenge.";
+    }
+
+    const challenge = await fetchHumanChallenge();
+    if (challenge && challengeWrap && challengePromptEl) {
+      challengeAvailable = true;
+      challengeId = challenge.challengeId;
+      challengePromptEl.textContent = challenge.prompt;
+      challengeWrap.hidden = false;
     }
 
     form.addEventListener("submit", async (event) => {
@@ -297,8 +330,11 @@
         return;
       }
 
-      if (turnstileRequired && !token) {
-        statusEl.textContent = "Complete the human verification before continuing.";
+      const challengeAnswer = String(challengeAnswerEl?.value || "").trim();
+      const hasTurnstileAttempt = Boolean(turnstileAvailable && token);
+      const hasChallengeAttempt = Boolean(challengeAvailable && challengeId && challengeAnswer);
+      if (!hasTurnstileAttempt && !hasChallengeAttempt) {
+        statusEl.textContent = "Complete Turnstile or solve the fallback challenge before continuing.";
         return;
       }
 
@@ -313,6 +349,8 @@
           },
           body: JSON.stringify({
             token,
+            challengeId,
+            challengeAnswer,
             birthDate: { year, month, day }
           })
         });
@@ -327,6 +365,7 @@
         const profile = {
           verified: true,
           humanVerified: Boolean(data.humanVerified),
+          verificationMethod: String(data.verificationMethod || (hasTurnstileAttempt ? "turnstile" : "challenge")),
           verifiedAt: Date.now(),
           dob: { year, month, day },
           age: Number(data.age || age),

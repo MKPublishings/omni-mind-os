@@ -304,6 +304,30 @@ body.age-gate-locked {
   align-items: center;
 }
 
+.age-gate-challenge {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.age-human-prompt {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+#age-human-answer {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--text-primary);
+  padding: 10px;
+}
+
 .age-gate-status {
   grid-column: 1 / -1;
   font-size: 13px;
