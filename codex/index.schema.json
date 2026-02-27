@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omni.local/codex/index.schema.json",
+  "title": "Omni Living Codex Index",
+  "type": "object",
+  "required": ["meta", "categories", "entries", "crossLinks"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["name", "version", "generatedAt", "entryCount"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "entryCount": { "type": "integer", "minimum": 0 },
+        "lineage": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "count"],
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": true
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "title", "type", "category", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "title": { "type": "string" },
+          "type": { "type": "string" },
+          "category": { "type": "string" },
+          "symbol": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "links": { "type": "array", "items": { "type": "string" } },
+          "autoLinks": { "type": "array", "items": { "type": "string" } },
+          "lineage": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "crossLinks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "target", "reason"],
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "reason": { "type": "string" },
+          "score": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

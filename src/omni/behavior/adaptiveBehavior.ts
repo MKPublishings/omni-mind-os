@@ -29,26 +29,35 @@ export function applyAdaptiveBehavior(text: string, input: AdaptiveBehaviorInput
   const route = normalizeText(input.route).toLowerCase();
 
   let prefix = "";
+  let suffix = "";
 
   if (emotion === "frustrated") {
     prefix = "Stabilizing tone: I understand the friction. Here is the cleanest path forward.\n\n";
+    suffix = "\n\nIf this still fails, share the exact error and I will pivot immediately.";
   } else if (emotion === "confused") {
     prefix = "Clarity mode: I will keep this concrete and stepwise.\n\n";
+    suffix = "\n\nIf any step is unclear, say 'expand step N' and I will zoom in.";
   } else if (emotion === "positive") {
     prefix = "Momentum acknowledged.\n\n";
   }
 
   if (route === "tool") {
-    return `${prefix}${base}`.trim();
+    return `${prefix}${base}${suffix}`.trim();
   }
 
   if (mode === "coding" || mode === "os") {
-    return `${prefix}${base}`.trim();
+    const codingScaffold = emotion === "confused" || emotion === "frustrated"
+      ? "\n\nExecution checklist:\n1) run\n2) verify\n3) fallback"
+      : "";
+    return `${prefix}${base}${codingScaffold}${suffix}`.trim();
   }
 
   if (mode === "creative" || mode === "lore") {
-    return `${prefix}${base}`.trim();
+    const creativeScaffold = emotion === "confused"
+      ? "\n\nCreative map: premise → motif → style → output."
+      : "";
+    return `${prefix}${base}${creativeScaffold}${suffix}`.trim();
   }
 
-  return `${prefix}${base}`.trim();
+  return `${prefix}${base}${suffix}`.trim();
 }

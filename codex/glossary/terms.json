@@ -1,0 +1,26 @@
+[
+  {
+    "id": "glossary.context-window",
+    "term": "Context Window",
+    "symbol": "C_t",
+    "definition": "The active tokenized scope the runtime can reason over in a turn.",
+    "tags": ["context", "runtime"],
+    "links": ["law.cognitive.01", "system.omni.overview"]
+  },
+  {
+    "id": "glossary.lineage",
+    "term": "Lineage",
+    "symbol": "L",
+    "definition": "Traceable ancestry between artifacts and system phases.",
+    "tags": ["history", "graph"],
+    "links": ["system.mind-os.lineage", "system.omni.intelligence-lineage"]
+  },
+  {
+    "id": "glossary.resonance",
+    "term": "Resonance",
+    "symbol": "R",
+    "definition": "Alignment between user emotional signal and Omni behavior output.",
+    "tags": ["emotion", "behavior"],
+    "links": ["equation.2026-02-27-002", "law.cognitive.02"]
+  }
+]

@@ -4,6 +4,8 @@ export interface VisualReasoningOutput {
   lightingIntent: string;
   paletteIntent: string;
   moodIntent: string;
+  materialIntent: string;
+  negativeIntent: string;
   directive: string;
 }
 
@@ -46,6 +48,20 @@ function chooseMood(text: string): string {
   return "focused narrative clarity";
 }
 
+function chooseMaterial(text: string): string {
+  if (/\b(metal|chrome|steel|robot|armor)\b/i.test(text)) return "metallic microtexture emphasis";
+  if (/\b(cloth|fabric|fashion|garment)\b/i.test(text)) return "fabric weave and fold detail";
+  if (/\b(glass|crystal|transparent|bottle)\b/i.test(text)) return "glass refraction and edge clarity";
+  if (/\b(skin|portrait|face)\b/i.test(text)) return "natural skin detail with soft microcontrast";
+  return "balanced surface realism";
+}
+
+function chooseNegativeIntent(text: string): string {
+  if (/\b(logo|watermark|text overlay)\b/i.test(text)) return "avoid over-stylized clutter";
+  if (/\b(product|ecommerce)\b/i.test(text)) return "avoid background noise and crowding";
+  return "avoid artifacts, blur, malformed anatomy, and accidental text";
+}
+
 export function runVisualReasoning(inputPrompt: string): VisualReasoningOutput {
   const text = normalizeText(inputPrompt);
   const composition = chooseComposition(text);
@@ -53,13 +69,17 @@ export function runVisualReasoning(inputPrompt: string): VisualReasoningOutput {
   const lightingIntent = chooseLighting(text);
   const paletteIntent = choosePalette(text);
   const moodIntent = chooseMood(text);
+  const materialIntent = chooseMaterial(text);
+  const negativeIntent = chooseNegativeIntent(text);
 
   const directive = [
     `composition: ${composition}`,
     `camera: ${cameraIntent}`,
     `lighting: ${lightingIntent}`,
     `palette: ${paletteIntent}`,
-    `mood: ${moodIntent}`
+    `mood: ${moodIntent}`,
+    `material: ${materialIntent}`,
+    `negative: ${negativeIntent}`
   ].join(", ");
 
   return {
@@ -68,6 +88,8 @@ export function runVisualReasoning(inputPrompt: string): VisualReasoningOutput {
     lightingIntent,
     paletteIntent,
     moodIntent,
+    materialIntent,
+    negativeIntent,
     directive
   };
 }

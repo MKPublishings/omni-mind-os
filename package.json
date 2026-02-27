@@ -25,7 +25,10 @@
     "mind:tokens:active": "node ./scripts/tools/printActiveTaskTokens.js",
     "mind:tokens:next": "node ./scripts/tools/printNextTaskToken.js",
     "mind:tokens:next:claim": "node ./scripts/tools/printNextTaskToken.js --claim",
-    "mind:tokens:maintain": "node ./scripts/tools/runTaskTokenMaintenance.js"
+    "mind:tokens:maintain": "node ./scripts/tools/runTaskTokenMaintenance.js",
+    "codex:reindex": "node ./scripts/codex/reindex.js",
+    "codex:register": "node ./scripts/codex/registerArtifact.js",
+    "codex:watch": "node ./scripts/codex/watch.js"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260227.0",
@@ -37,6 +40,7 @@
     "typescript-eslint": "^8.56.1"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "gifenc": "^1.0.3",
     "upng-js": "^2.1.0"
   }

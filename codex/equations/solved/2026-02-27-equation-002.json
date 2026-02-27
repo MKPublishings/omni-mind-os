@@ -1,0 +1,16 @@
+{
+  "id": "equation.2026-02-27-002",
+  "title": "Emotion Resonance Drift",
+  "type": "equation-solved",
+  "category": "equations/solved",
+  "template": "equation.template.differential",
+  "equation": "drift_rate = d(resonance)/dt",
+  "variables": {
+    "drift_rate": "rate of emotional mismatch over turns",
+    "resonance": "alignment between user state and omni state"
+  },
+  "tags": ["equation", "emotion", "behavior"],
+  "links": ["law.cognitive.02", "equation.template.differential"],
+  "createdAt": "2026-02-27T00:00:00.000Z",
+  "updatedAt": "2026-02-27T00:00:00.000Z"
+}

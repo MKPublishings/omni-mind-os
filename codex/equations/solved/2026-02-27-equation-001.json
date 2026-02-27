@@ -1,0 +1,18 @@
+{
+  "id": "equation.2026-02-27-001",
+  "title": "Response Latency Balancing",
+  "type": "equation-solved",
+  "category": "equations/solved",
+  "template": "equation.template.linear",
+  "equation": "latency_budget = reasoning_time + tool_time + render_time",
+  "variables": {
+    "latency_budget": "total allowed response time",
+    "reasoning_time": "model cognition window",
+    "tool_time": "external tool execution",
+    "render_time": "formatting/stream finalization"
+  },
+  "tags": ["equation", "performance", "runtime"],
+  "links": ["system.omni.overview", "equation.template.linear"],
+  "createdAt": "2026-02-27T00:00:00.000Z",
+  "updatedAt": "2026-02-27T00:00:00.000Z"
+}

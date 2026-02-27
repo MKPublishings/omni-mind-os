@@ -10,6 +10,7 @@ export interface OmniRouteDecision {
   reason: string;
   confidence: number;
   toolDirective?: ToolDirective;
+  signals?: string[];
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -26,12 +27,82 @@ function extractToolDirective(text: string): ToolDirective | null {
   };
 }
 
+type RouteScore = {
+  route: OmniRouteKind;
+  score: number;
+  reason: string;
+};
+
+function hasAny(text: string, patterns: RegExp[]): boolean {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function scoreRouteCandidates(text: string, mode: string): { candidates: RouteScore[]; signals: string[] } {
+  const lower = String(text || "").toLowerCase();
+  const normalizedMode = String(mode || "").toLowerCase();
+  const signals: string[] = [];
+
+  const candidates: RouteScore[] = [
+    { route: "chat", score: 0.54, reason: "default-chat-path" },
+    { route: "image", score: 0.2, reason: "image-intent-detected" },
+    { route: "memory", score: 0.2, reason: "memory-intent-detected" },
+    { route: "simulation", score: 0.2, reason: "simulation-intent-detected" },
+    { route: "tool", score: 0.2, reason: "tool-intent-detected" }
+  ];
+
+  if (normalizedMode === "simulation") {
+    candidates.find((c) => c.route === "simulation")!.score += 0.55;
+    signals.push("mode:simulation");
+  }
+
+  if (/^#(image|memory|simulation|chat)\b/i.test(lower)) {
+    const explicit = String(lower.match(/^#(image|memory|simulation|chat)\b/i)?.[1] || "chat") as OmniRouteKind;
+    const target = candidates.find((c) => c.route === explicit);
+    if (target) {
+      target.score += 0.7;
+      target.reason = `explicit-route-tag:${explicit}`;
+      signals.push(`explicit-route:${explicit}`);
+    }
+  }
+
+  if (hasAny(lower, [/\b(simulate|simulation mode|run simulation|world sim|state machine)\b/i])) {
+    candidates.find((c) => c.route === "simulation")!.score += 0.45;
+    signals.push("signal:simulation-keywords");
+  }
+
+  if (hasAny(lower, [/\b(memory|remember|recall|what do you know about me|session context|state)\b/i])) {
+    candidates.find((c) => c.route === "memory")!.score += 0.42;
+    signals.push("signal:memory-keywords");
+  }
+
+  if (
+    hasAny(lower, [
+      /\b(generate image|create image|render image|make an image|visualize this|image prompt|art prompt|portrait of|illustration of|photo of|thumbnail)\b/i,
+      /\b(video frame|storyboard frame|concept frame)\b/i
+    ])
+  ) {
+    candidates.find((c) => c.route === "image")!.score += 0.47;
+    signals.push("signal:image-keywords");
+  }
+
+  if (hasAny(lower, [/^\/tool\b/i, /\b(use tool|call tool|run tool|execute tool)\b/i])) {
+    candidates.find((c) => c.route === "tool")!.score += 0.4;
+    signals.push("signal:tool-keywords");
+  }
+
+  if (lower.length < 8) {
+    candidates.find((c) => c.route === "chat")!.score += 0.1;
+    signals.push("signal:short-input");
+  }
+
+  return { candidates, signals };
+}
+
 export function decideMultimodalRoute(params: {
   latestUserText: string;
   mode: string;
 }): OmniRouteDecision {
   const text = String(params.latestUserText || "").trim();
-  const lower = text.toLowerCase();
   const mode = String(params.mode || "").toLowerCase();
 
   const toolDirective = extractToolDirective(text);
@@ -40,41 +111,19 @@ export function decideMultimodalRoute(params: {
       route: "tool",
       reason: "explicit-tool-command",
       confidence: 1,
-      toolDirective
+      toolDirective,
+      signals: ["explicit-tool-command"]
     };
   }
 
-  if (mode === "simulation" || /\b(simulate|simulation mode|run simulation|world sim)\b/i.test(lower)) {
-    return {
-      route: "simulation",
-      reason: mode === "simulation" ? "mode-simulation" : "text-simulation-intent",
-      confidence: 0.9
-    };
-  }
-
-  if (/\b(memory|remember|recall|what do you know about me|session context|state)\b/i.test(lower)) {
-    return {
-      route: "memory",
-      reason: "memory-intent-detected",
-      confidence: 0.82
-    };
-  }
-
-  if (
-    /\b(generate image|create image|render image|make an image|visualize this|image prompt|art prompt|portrait of|illustration of|photo of)\b/i.test(
-      lower
-    )
-  ) {
-    return {
-      route: "image",
-      reason: "image-intent-detected",
-      confidence: 0.87
-    };
-  }
+  const { candidates, signals } = scoreRouteCandidates(text, mode);
+  const best = [...candidates].sort((a, b) => b.score - a.score)[0];
+  const confidence = clamp(best?.score || 0.5, 0.5, 0.98);
 
   return {
-    route: "chat",
-    reason: "default-chat-path",
-    confidence: clamp(text.length > 0 ? 0.74 : 0.5, 0.5, 0.95)
+    route: best?.route || "chat",
+    reason: best?.reason || "default-chat-path",
+    confidence,
+    signals
   };
 }

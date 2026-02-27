@@ -1,6 +1,9 @@
 import { OmniLogger } from "./logging/logger";
 import { OmniSafety } from "./stability/safety";
 import { omniBrainLoop } from "./api/omni/runtime/loop";
+import { ping as apiPing } from "./api/ping";
+import { listModes, listModeDetails, getModeDetails } from "./api/modes";
+import { getMemory as getMemoryApi, setMemory as setMemoryApi, deleteMemory as deleteMemoryApi } from "./api/memory";
 import {
   buildModeTemplate,
   chooseModelForTask,
@@ -378,6 +381,18 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS"
 };
+
+function withCors(response: Response): Response {
+  const headers = new Headers(response.headers);
+  Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
 
 function computeAgeFromBirthDate(year: number, month: number, day: number, now = new Date()): number {
   const dob = new Date(Date.UTC(year, month - 1, day));
@@ -2252,7 +2267,7 @@ function runBackgroundReadinessAudit(env: Env, logger: OmniLogger): void {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const logger = new OmniLogger(env);
 
     // Warmup API connections on first request (non-blocking)
@@ -2268,6 +2283,11 @@ export default {
       const isApiRoute =
         url.pathname === "/api/omni" ||
         url.pathname === "/api/image" ||
+        url.pathname === "/api/ping" ||
+        url.pathname === "/api/modes" ||
+        url.pathname === "/api/modes/details" ||
+        url.pathname.startsWith("/api/modes/") ||
+        url.pathname === "/api/memory" ||
         url.pathname === "/api/video/generate" ||
         url.pathname === "/api/video/phase1" ||
         url.pathname.startsWith("/api/video/job/") ||
@@ -2644,6 +2664,42 @@ export default {
         });
       }
 
+      if (url.pathname === "/api/ping" && request.method === "GET") {
+        return withCors(await apiPing());
+      }
+
+      if (url.pathname === "/api/modes" && request.method === "GET") {
+        const includeDetails = String(url.searchParams.get("details") || "").toLowerCase() === "true";
+        return withCors(includeDetails ? await listModeDetails() : await listModes());
+      }
+
+      if (url.pathname === "/api/modes/details" && request.method === "GET") {
+        return withCors(await listModeDetails());
+      }
+
+      if (url.pathname.startsWith("/api/modes/") && request.method === "GET") {
+        const modeId = sanitizePromptText(url.pathname.slice("/api/modes/".length)).trim().toLowerCase();
+        return withCors(await getModeDetails(modeId));
+      }
+
+      if (url.pathname === "/api/memory" && request.method === "GET") {
+        const key = sanitizePromptText(String(url.searchParams.get("key") || "memory"));
+        return withCors(await getMemoryApi(env, key));
+      }
+
+      if (url.pathname === "/api/memory" && request.method === "POST") {
+        const payload = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+        const key = sanitizePromptText(String(payload?.key || "memory"));
+        const merge = payload?.merge === true;
+        const value = Object.prototype.hasOwnProperty.call(payload, "value") ? payload.value : payload;
+        return withCors(await setMemoryApi(env, value, key, { merge }));
+      }
+
+      if (url.pathname === "/api/memory" && request.method === "DELETE") {
+        const key = sanitizePromptText(String(url.searchParams.get("key") || "memory"));
+        return withCors(await deleteMemoryApi(env, key));
+      }
+
       if (url.pathname === "/api/stats" && request.method === "GET") {
         const stats = getConnectionStats();
         return new Response(JSON.stringify(stats), {
@@ -2799,11 +2855,13 @@ export default {
         };
 
         await saveVideoJob(env, job);
-        void processVideoJob(env, logger, jobId, {
-          ...body,
-          prompt,
-          maxSizeMB: Number(body?.maxSizeMB || 2)
-        });
+        ctx.waitUntil(
+          processVideoJob(env, logger, jobId, {
+            ...body,
+            prompt,
+            maxSizeMB: Number(body?.maxSizeMB || 2)
+          })
+        );
 
         return new Response(JSON.stringify(job), {
           status: 202,
@@ -2882,6 +2940,56 @@ export default {
           headers: {
             ...CORS_HEADERS,
             "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/ping" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/modes" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/modes/details" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname.startsWith("/api/modes/") && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/memory" && !["GET", "POST", "DELETE"].includes(request.method)) {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, POST, DELETE, OPTIONS"
           }
         });
       }

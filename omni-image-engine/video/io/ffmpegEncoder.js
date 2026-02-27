@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 const { formatDateTimeForFilename } = require("../../utils/datetime");
+const { resolveFfmpegCommand } = require("./ffmpegResolver");
 
 const OUTPUT_DIR = path.join(process.cwd(), "omni_video_exports");
 const ENABLE_VALUES = new Set(["1", "true", "yes", "on"]);
@@ -33,8 +34,9 @@ function runProcess(command, args) {
 }
 
 async function hasFfmpeg() {
+    const ffmpegCommand = resolveFfmpegCommand();
     try {
-        await runProcess("ffmpeg", ["-version"]);
+        await runProcess(ffmpegCommand, ["-version"]);
         return true;
     } catch (_error) {
         return false;
@@ -71,6 +73,7 @@ function toMB(byteCount) {
 }
 
 async function encodeWithFfmpeg({ request, budget, keyframes }) {
+    const ffmpegCommand = resolveFfmpegCommand();
     ensureOutputDir();
     const timestamp = formatDateTimeForFilename(new Date());
     const concatPath = path.join(OUTPUT_DIR, `omni_video_concat_${timestamp}.txt`);
@@ -83,14 +86,14 @@ async function encodeWithFfmpeg({ request, budget, keyframes }) {
 
     if (request.format === "gif") {
         const gifFilter = `fps=${budget.fps},scale=${budget.width}:${budget.height}:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=96[p];[s1][p]paletteuse=dither=floyd_steinberg`;
-        await runProcess("ffmpeg", [
+        await runProcess(ffmpegCommand, [
             ...baseInputArgs,
             "-vf",
             gifFilter,
             outputPath
         ]);
     } else {
-        await runProcess("ffmpeg", [
+        await runProcess(ffmpegCommand, [
             ...baseInputArgs,
             "-vf",
             `fps=${budget.fps},scale=${budget.width}:${budget.height}:flags=lanczos,format=yuv420p`,

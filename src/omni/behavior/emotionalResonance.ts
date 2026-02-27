@@ -1,5 +1,5 @@
 import type { KVNamespace } from "@cloudflare/workers-types";
-import { detectEmotion } from "../emotion/detector";
+import { detectEmotionDetailed } from "../emotion/detector";
 
 type ResonanceEnv = {
   MEMORY?: KVNamespace;
@@ -8,8 +8,10 @@ type ResonanceEnv = {
 export interface EmotionalResonanceState {
   sessionId: string;
   userEmotion: string;
+  userEmotionConfidence: number;
   omniTone: string;
   arc: string;
+  emotionSignals: string[];
   updatedAt: number;
 }
 
@@ -26,6 +28,12 @@ function mapOmniTone(userEmotion: string): string {
   if (emotion === "positive") return "energized-focused";
   if (emotion === "apologetic") return "reassuring";
   return "steady-neutral";
+}
+
+function confidenceBand(value: number): string {
+  if (value >= 0.82) return "high";
+  if (value >= 0.67) return "medium";
+  return "low";
 }
 
 function buildArcLabel(userEmotion: string, previousTone: string): string {
@@ -56,15 +64,18 @@ export async function getEmotionalResonance(
     }
   }
 
-  const userEmotion = detectEmotion(latestUserText || "") || fallbackTone;
+  const detected = detectEmotionDetailed(latestUserText || "");
+  const userEmotion = detected.emotion || fallbackTone;
   const previousTone = normalizeText(previous?.omniTone);
   const omniTone = mapOmniTone(userEmotion);
 
   return {
     sessionId,
     userEmotion,
+    userEmotionConfidence: detected.confidence,
     omniTone,
-    arc: buildArcLabel(userEmotion, previousTone),
+    arc: `${buildArcLabel(userEmotion, previousTone)}:${confidenceBand(detected.confidence)}`,
+    emotionSignals: detected.signals,
     updatedAt: Date.now()
   };
 }
@@ -79,8 +90,9 @@ export async function persistEmotionalResonance(env: ResonanceEnv, state: Emotio
 export function buildEmotionalResonancePrompt(state: EmotionalResonanceState): string {
   return [
     "Emotional Resonance Engine is active.",
-    `User emotional state: ${state.userEmotion}`,
+    `User emotional state: ${state.userEmotion} (${Number(state.userEmotionConfidence || 0).toFixed(2)})`,
     `Omni tonal target: ${state.omniTone}`,
-    `Conversation arc: ${state.arc}`
+    `Conversation arc: ${state.arc}`,
+    `Emotion signals: ${Array.isArray(state.emotionSignals) && state.emotionSignals.length ? state.emotionSignals.join(" | ") : "none"}`
   ].join("\n");
 }

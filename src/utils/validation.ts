@@ -14,8 +14,14 @@ export function validateMessages(body: OmniRequest): string | null {
   }
 
   for (const msg of body.messages) {
-    if (!msg.role || !msg.content) {
+    const role = String(msg?.role || "").trim();
+    const content = String(msg?.content || "").trim();
+    if (!role || !content) {
       return "Each message must include role and content";
+    }
+
+    if (!["system", "user", "assistant"].includes(role)) {
+      return "Message role must be one of: system, user, assistant";
     }
   }
 

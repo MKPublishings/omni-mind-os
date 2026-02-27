@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { resolveFfmpegCommand } = require("../io/ffmpegResolver");
 
 function fileExists(relativePath) {
     const absolutePath = path.join(__dirname, "..", relativePath);
@@ -29,7 +30,8 @@ function validateConfigShape(config) {
 }
 
 function checkFfmpeg() {
-    const result = spawnSync("ffmpeg", ["-version"], { stdio: "ignore" });
+    const ffmpegCommand = resolveFfmpegCommand();
+    const result = spawnSync(ffmpegCommand, ["-version"], { stdio: "ignore" });
     return result && result.status === 0;
 }
 

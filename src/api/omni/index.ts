@@ -12,17 +12,40 @@ export interface OmniRequest {
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
     try {
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "POST, OPTIONS"
+          }
+        });
+      }
+
       if (request.method !== "POST") {
-        return new Response("Method Not Allowed", { status: 405 });
+        return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+          status: 405,
+          headers: { "Content-Type": "application/json", "Allow": "POST, OPTIONS" }
+        });
       }
 
       // Parse JSON
-      const body = (await request.json()) as OmniRequest;
+      const body = (await request.json().catch(() => null)) as OmniRequest | null;
+      if (!body) {
+        return new Response(JSON.stringify({ error: "Invalid JSON payload" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
 
       // Validate structure
       const validationError = validateMessages(body);
       if (validationError) {
-        return new Response(validationError, { status: 400 });
+        return new Response(JSON.stringify({ error: validationError }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
       }
 
       // Route to correct model adapter
@@ -39,7 +62,7 @@ export default {
       });
 
     } catch (err: any) {
-      return new Response("Internal Server Error: " + err.message, {
+      return new Response(JSON.stringify({ error: "Internal Server Error", detail: String(err?.message || "unknown") }), {
         status: 500
       });
     }
