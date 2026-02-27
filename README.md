@@ -174,6 +174,39 @@ PUBLIC_ANNOUNCEMENT_OMNI_AI_1.0.0.md
 
 ---
 
+### **📚 Living Codex Knowledge Graph (v1)**
+The repository now includes a living codex that self-indexes and cross-links artifacts across technical and mythic chambers.
+
+Codex chambers:
+
+```txt
+codex/
+  laws/
+  systems/
+  mythic/
+  visual-dialect/
+  equations/
+  glossary/
+```
+
+Codex runtime:
+
+- `codex/index.json` is generated as the codex brain (entries, categories, cross-links, lineage).
+- `codex/index.schema.json` defines the inspectable index structure.
+- `npm run codex:reindex` rebuilds the codex graph from artifacts.
+- `npm run codex:register -- <path-inside-codex>` registers an artifact and refreshes graph state.
+- `npm run codex:watch` enables continuous codex graph updates while editing.
+
+Automation scripts:
+
+```txt
+scripts/codex/reindex.js
+scripts/codex/registerArtifact.js
+scripts/codex/watch.js
+```
+
+---
+
 ### **🧩 Multi‑Model Router**
 Route requests to different models:
 
@@ -318,6 +351,21 @@ Streamed text output.
 ### **GET /api/search?q=...**
 Knowledge retrieval endpoint that returns relevant text chunks from files in `/public/knowledge`.
 
+### **GET /api/ping**
+Returns service/runtime health metadata and timestamp.
+
+### **GET /api/modes**
+Returns available operational modes.
+
+### **GET /api/modes/details**
+Returns enriched mode metadata and descriptions.
+
+### **GET /api/modes/:id**
+Returns detail payload for a single mode.
+
+### **GET/POST/DELETE /api/memory**
+Structured memory API with read, write/merge, and delete support.
+
 ### **GET/POST/DELETE /api/preferences**
 Persistent memory endpoint for user preferences (mode, writing style, last-used settings).
 
@@ -418,7 +466,7 @@ OMNI_ADMIN_KEY = "replace-with-strong-secret"
 MP4 video encoding in the phase-1 video pipeline is optional and capability-gated.
 
 - Enable with environment variable: `OMNI_VIDEO_ENABLE_MP4_ENCODING=true` (also accepts `1`, `yes`, `on`).
-- Requires a Node/server runtime with `ffmpeg` available on `PATH`.
+- Uses local resolver order: `OMNI_VIDEO_FFMPEG_PATH` -> bundled `@ffmpeg-installer/ffmpeg` binary -> system `ffmpeg` on `PATH`.
 - If disabled or unavailable, the pipeline safely falls back to non-encoded placeholder MP4 output.
 - GIF visual output remains available through the JS encoder path.
 
@@ -499,6 +547,14 @@ npm run check:branding
 ```
 
 `npm run lint` also runs this branding check and fails if legacy brand variants are detected.
+
+Codex development commands:
+
+```
+npm run codex:reindex
+npm run codex:watch
+npm run codex:register -- codex/laws/quantum/03-<title>.md
+```
 
 ---
 

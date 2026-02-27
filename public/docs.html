@@ -32,7 +32,7 @@
       <header class="docs-header">
         <h2>Omni Ai Documentation</h2>
         <p>Public technical brain of Omni: architecture, cognition, simulation, safety/access, internet retrieval, learning memory, multimodal generation, and deployment operations.</p>
-        <p><strong>Last updated:</strong> 2026-02-27</p>
+        <p><strong>Last updated:</strong> 2026-02-27 (live codex + runtime refresh)</p>
       </header>
 
       <div class="docs-shell">
@@ -41,6 +41,8 @@
           <nav class="docs-nav" id="docs-nav">
             <a href="#overview" class="docs-nav-link is-active">Overview</a>
             <a href="#chat-platform-updates" class="docs-nav-link">Chat Platform (Latest)</a>
+            <a href="#runtime-updates" class="docs-nav-link">Runtime Updates</a>
+            <a href="#living-codex" class="docs-nav-link">Living Codex</a>
             <a href="#architecture" class="docs-nav-link">Architecture</a>
             <a href="#physics-engine" class="docs-nav-link">Physics Engine</a>
             <a href="#code-structure" class="docs-nav-link">Code Structure</a>
@@ -75,6 +77,7 @@
               <li>Mode-aware intelligence with explicit cognitive profiles</li>
               <li>Memory-aware conversation with user preference persistence</li>
               <li>Simulation-capable reasoning in contained environments</li>
+              <li>Living codex graph with automatic indexing and cross-linking</li>
               <li>Inspectable architecture with documented design intent</li>
             </ul>
             <p>Omni exists to make intelligence systems transparent, modular, and practical in real creative and technical workflows.</p>
@@ -91,10 +94,46 @@
             </ul>
           </section>
 
+          <section id="runtime-updates" class="docs-section">
+            <h3>Runtime Updates</h3>
+            <ul>
+              <li>Background video job execution is lifecycle-pinned in Worker runtime to reduce timeout fallback failures.</li>
+              <li>API surface now includes <code>/api/ping</code>, <code>/api/modes</code>, <code>/api/modes/details</code>, <code>/api/modes/:id</code>, and structured <code>/api/memory</code>.</li>
+              <li>Provider adapters for OpenAI and DeepSeek now use production-style timeout and error handling.</li>
+              <li>Multimodal route scoring now emits richer route signals and confidence-informed behavior control.</li>
+              <li>Emotion detection/resonance now carries structured confidence and signal payloads.</li>
+            </ul>
+          </section>
+
+          <section id="living-codex" class="docs-section">
+            <h3>Living Codex</h3>
+            <p>The codex now behaves as a self-indexing knowledge graph, not just static markdown folders.</p>
+
+            <h4>Codex Chambers</h4>
+            <pre><code>codex/
+  laws/
+  systems/
+  mythic/
+  visual-dialect/
+  equations/
+  glossary/
+  index.json
+  index.schema.json</code></pre>
+
+            <h4>Codex Automation</h4>
+            <pre><code>npm run codex:reindex
+npm run codex:watch
+npm run codex:register -- codex/laws/quantum/03-<title>.md</code></pre>
+            <p>Cross-links and lineage are generated automatically into <code>codex/index.json</code>.</p>
+          </section>
+
           <section id="dev-scripts-updates" class="docs-section">
             <h3>Dev Scripts</h3>
             <pre><code>npm run validate:engine
 npm run validate:video
+npm run codex:reindex
+npm run codex:watch
+npm run codex:register -- &lt;path-inside-codex&gt;
 npm run mind:loop
 npm run mind:auto-debug
 npm run mind:tokens
@@ -529,6 +568,15 @@ rules:
   "messages": [{ "role": "user", "content": "..." }]
 }</code></pre>
 
+            <h4>Extended Endpoints</h4>
+            <pre><code>GET  /api/ping
+GET  /api/modes
+GET  /api/modes/details
+GET  /api/modes/:id
+GET  /api/memory?key=...
+POST /api/memory
+DELETE /api/memory?key=...</code></pre>
+
             <h4>Prompt Layers</h4>
             <ul>
               <li>System prompt (global constraints)</li>
@@ -598,6 +646,13 @@ GET /api/internet/learning?mode=&amp;q=</code></pre>
               <li><code>/style &lt;name&gt;</code>, <code>/camera &lt;profile&gt;</code>, <code>/light &lt;profile&gt;</code>, <code>/materials a,b,c</code></li>
               <li>Session-aware style controls integrate with image-generation routing and metadata.</li>
             </ul>
+
+            <h4>Codex Commands</h4>
+            <ul>
+              <li><code>npm run codex:reindex</code> — rebuild codex registry, categories, and cross-links.</li>
+              <li><code>npm run codex:watch</code> — keep codex graph synchronized during active edits.</li>
+              <li><code>npm run codex:register -- &lt;artifact-path&gt;</code> — register one artifact and refresh index.</li>
+            </ul>
           </section>
 
           <section id="learning-memory" class="docs-section">
@@ -649,6 +704,7 @@ GET /api/internet/learning?mode=&amp;q=</code></pre>
             <ul>
               <li>Always produce a deterministic manifest in <code>omni_video_exports</code>.</li>
               <li>Optionally encode <code>mp4/gif</code> via ffmpeg when enabled and available.</li>
+              <li>ffmpeg resolver order: <code>OMNI_VIDEO_FFMPEG_PATH</code> → bundled <code>@ffmpeg-installer/ffmpeg</code> → system <code>ffmpeg</code>.</li>
               <li>Automatically fallback to manifest-only mode when encoding is unavailable or over budget.</li>
             </ul>
           </section>
