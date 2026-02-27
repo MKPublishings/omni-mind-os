@@ -32,6 +32,7 @@
       <header class="docs-header">
         <h2>Omni Ai Documentation</h2>
         <p>Public technical brain of Omni: architecture, cognition, simulation, safety/access, internet retrieval, learning memory, multimodal generation, and deployment operations.</p>
+        <p><strong>Last updated:</strong> 2026-02-27</p>
       </header>
 
       <div class="docs-shell">
@@ -39,6 +40,7 @@
           <h3>Documentation</h3>
           <nav class="docs-nav" id="docs-nav">
             <a href="#overview" class="docs-nav-link is-active">Overview</a>
+            <a href="#chat-platform-updates" class="docs-nav-link">Chat Platform (Latest)</a>
             <a href="#architecture" class="docs-nav-link">Architecture</a>
             <a href="#physics-engine" class="docs-nav-link">Physics Engine</a>
             <a href="#code-structure" class="docs-nav-link">Code Structure</a>
@@ -55,6 +57,7 @@
             <a href="#video-engine" class="docs-nav-link">Video Engine</a>
             <a href="#safety-policy" class="docs-nav-link">Safety Policy</a>
             <a href="#ops-telemetry" class="docs-nav-link">Ops & Telemetry</a>
+            <a href="#dev-scripts-updates" class="docs-nav-link">Dev Scripts</a>
             <a href="#ui-ux-philosophy" class="docs-nav-link">UI/UX Philosophy</a>
             <a href="#deployment-pipeline" class="docs-nav-link">Deployment Pipeline</a>
             <a href="#research-inspirations" class="docs-nav-link">Research & Inspirations</a>
@@ -75,6 +78,32 @@
               <li>Inspectable architecture with documented design intent</li>
             </ul>
             <p>Omni exists to make intelligence systems transparent, modular, and practical in real creative and technical workflows.</p>
+          </section>
+
+          <section id="chat-platform-updates" class="docs-section">
+            <h3>Chat Platform (Latest)</h3>
+            <ul>
+              <li>chat.html/chat.css/chat.js integration aligned (typing indicator, simulation panel, inspector rails).</li>
+              <li>SSE streaming hardened with <code>[DONE]</code> completion and robust chunk parsing.</li>
+              <li>Markdown + code highlight rendering path stabilized.</li>
+              <li>Safety profile checks enforced for explicit request gating.</li>
+              <li>Media pipeline supports image/GIF/video cards and filter controls.</li>
+            </ul>
+          </section>
+
+          <section id="dev-scripts-updates" class="docs-section">
+            <h3>Dev Scripts</h3>
+            <pre><code>npm run validate:engine
+npm run validate:video
+npm run mind:loop
+npm run mind:auto-debug
+npm run mind:tokens
+npm run mind:tokens:set
+npm run mind:tokens:active
+npm run mind:tokens:next
+npm run mind:tokens:next:claim
+npm run mind:tokens:maintain</code></pre>
+            <p>Recommended build/release validation: run both engine and video validators before deploy.</p>
           </section>
 
           <section id="architecture" class="docs-section">
@@ -633,6 +662,7 @@ GET /api/internet/learning?mode=&amp;q=</code></pre>
               <li><strong>Prompt sanitization:</strong> inbound text normalized and validated before orchestration.</li>
               <li><strong>Age-tier gating:</strong> explicit sexual content restricted for under-18 profiles.</li>
               <li><strong>Illegal-content block:</strong> prohibited content denied for all profiles and routes.</li>
+              <li><strong>Runtime profile checks:</strong> explicit-content requests are blocked when <code>explicitAllowed</code> is false.</li>
               <li><strong>Response safeguards:</strong> final output constrained via safety filters and bounded output caps.</li>
             </ul>
 
