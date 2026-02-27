@@ -1,5 +1,4 @@
 {
-  "$schema": "./index.schema.json",
   "meta": {
     "name": "Omni Living Codex",
     "version": "1.0.0",
