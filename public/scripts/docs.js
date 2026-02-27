@@ -1,12 +1,7 @@
 (() => {
   const mainRoot = document.getElementById("main");
   const documentRoot = document.scrollingElement || document.documentElement;
-  const prefersMainRoot = Boolean(
-    mainRoot
-      && mainRoot.scrollHeight > mainRoot.clientHeight
-      && getComputedStyle(mainRoot).overflowY !== "visible"
-  );
-  const scrollRoot = prefersMainRoot ? mainRoot : documentRoot;
+  const scrollRoot = mainRoot || documentRoot;
   const backToTopBtn = document.getElementById("docs-back-to-top");
   const docsNavEl = document.getElementById("docs-nav");
   const navLinks = Array.from(document.querySelectorAll(".docs-nav-link[href^='#']"));
