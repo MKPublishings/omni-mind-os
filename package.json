@@ -9,10 +9,13 @@
     "preview": "wrangler dev --local",
     "lint": "npm run check:branding",
     "check:branding": "node ./scripts/check-branding.js",
-    "build": "echo \"No build step required\"",
-    "test": "npm run smoke:image",
+    "build": "npm run validate:engine",
+    "test": "npm run smoke:image && npm run smoke:video",
     "typecheck": "tsc -p tsconfig.json",
-    "smoke:image": "node ./omni-image-engine/utils/smokeTest.js"
+    "smoke:image": "node ./omni-image-engine/utils/smokeTest.js",
+    "smoke:video": "node ./omni-image-engine/video/utils/videoSmokeTest.js",
+    "validate:engine": "node ./omni-image-engine/utils/validator.js",
+    "validate:video": "node ./omni-image-engine/video/utils/validator.js"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260227.0",

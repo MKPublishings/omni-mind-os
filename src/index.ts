@@ -56,6 +56,8 @@ export interface Env {
   OMNI_SESSION_MAX_AGE_HOURS?: string;
   OMNI_AUTONOMY_LEVEL?: string;
   OMNI_ADMIN_KEY?: string;
+  TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_SITE_KEY?: string;
 }
 
 type OmniRole = "system" | "user" | "assistant";
@@ -69,6 +71,22 @@ type OmniRequestBody = {
   mode?: string;
   model?: string;
   messages?: Array<{ role?: string; content?: string }>;
+  safetyProfile?: {
+    ageTier?: string;
+    humanVerified?: boolean;
+    nsfwAccess?: boolean;
+    explicitAllowed?: boolean;
+    illegalBlocked?: boolean;
+  };
+};
+
+type HumanVerifyRequestBody = {
+  token?: string;
+  birthDate?: {
+    year?: number;
+    month?: number;
+    day?: number;
+  };
 };
 
 type ImageRequestBody = {
@@ -88,6 +106,34 @@ type ImageRequestBody = {
   camera?: string;
   lighting?: string;
   materials?: string[];
+  safetyProfile?: {
+    ageTier?: string;
+    humanVerified?: boolean;
+    nsfwAccess?: boolean;
+    explicitAllowed?: boolean;
+    illegalBlocked?: boolean;
+  };
+};
+
+type SafetyProfile = {
+  ageTier: "adult" | "minor";
+  humanVerified: boolean;
+  nsfwAccess: boolean;
+  explicitAllowed: boolean;
+  illegalBlocked: boolean;
+};
+
+type InternetSearchHit = {
+  title: string;
+  snippet: string;
+  url: string;
+  source: "duckduckgo" | "wikipedia";
+};
+
+type InternetSearchProfile = {
+  queryPrefix: string;
+  querySuffix: string;
+  limit: number;
 };
 
 type ImageModelConfig = {
@@ -208,6 +254,65 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS"
 };
 
+function computeAgeFromBirthDate(year: number, month: number, day: number, now = new Date()): number {
+  const dob = new Date(Date.UTC(year, month - 1, day));
+  if (
+    Number.isNaN(dob.getTime()) ||
+    dob.getUTCFullYear() !== year ||
+    dob.getUTCMonth() !== month - 1 ||
+    dob.getUTCDate() !== day
+  ) {
+    return -1;
+  }
+
+  const nowUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  if (dob.getTime() > nowUtc.getTime()) return -1;
+
+  let age = nowUtc.getUTCFullYear() - dob.getUTCFullYear();
+  const monthDiff = nowUtc.getUTCMonth() - dob.getUTCMonth();
+  const dayDiff = nowUtc.getUTCDate() - dob.getUTCDate();
+  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+    age -= 1;
+  }
+
+  return age;
+}
+
+function getRequestIp(request: Request): string {
+  return String(request.headers.get("cf-connecting-ip") || "").trim();
+}
+
+async function verifyTurnstileToken(request: Request, env: Env, token: string): Promise<boolean> {
+  const secret = String(env.TURNSTILE_SECRET_KEY || "").trim();
+  if (!secret) {
+    return isNonProduction(request, env);
+  }
+
+  const payload = new URLSearchParams();
+  payload.set("secret", secret);
+  payload.set("response", token);
+  const remoteIp = getRequestIp(request);
+  if (remoteIp) {
+    payload.set("remoteip", remoteIp);
+  }
+
+  try {
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: payload.toString()
+    });
+
+    if (!response.ok) return false;
+    const result = (await response.json()) as { success?: boolean };
+    return result?.success === true;
+  } catch {
+    return false;
+  }
+}
+
 function getLatestUserText(messages: OmniMessage[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i]?.role === "user") {
@@ -216,6 +321,186 @@ function getLatestUserText(messages: OmniMessage[]): string {
   }
 
   return "";
+}
+
+function normalizeSafetyProfile(raw: OmniRequestBody["safetyProfile"] | ImageRequestBody["safetyProfile"]): SafetyProfile {
+  const tier = String(raw?.ageTier || "minor").trim().toLowerCase() === "adult" ? "adult" : "minor";
+  const humanVerified = Boolean(raw?.humanVerified);
+  const nsfwAccess = Boolean(raw?.nsfwAccess) && tier === "adult";
+
+  return {
+    ageTier: tier,
+    humanVerified,
+    nsfwAccess,
+    explicitAllowed: Boolean(raw?.explicitAllowed) && nsfwAccess,
+    illegalBlocked: raw?.illegalBlocked !== false
+  };
+}
+
+function evaluateSexualSafetyPrompt(text: string, safetyProfile: SafetyProfile): { blocked: boolean; reason: string } {
+  const input = String(text || "").toLowerCase();
+  const illegalPattern = /\b(child\s*sexual|minor\s*nudity|underage\s*sex|bestiality|sexual\s*assault|rape\s*content|incest\s*porn|exploitative\s*sexual)\b/i;
+  if (illegalPattern.test(input)) {
+    return { blocked: true, reason: "illegal-content-blocked" };
+  }
+
+  const explicitPattern = /\b(nsfw|nudity|nude|porn|pornographic|explicit\s*sex|sexual\s*content|erotic|fetish)\b/i;
+  if (explicitPattern.test(input) && !(safetyProfile.ageTier === "adult" && safetyProfile.explicitAllowed)) {
+    return { blocked: true, reason: "age-restricted-explicit-content" };
+  }
+
+  return { blocked: false, reason: "allowed" };
+}
+
+const INTERNET_MODE_PROFILES: Record<string, InternetSearchProfile> = {
+  auto: { queryPrefix: "overview", querySuffix: "latest", limit: 4 },
+  architect: { queryPrefix: "architecture patterns", querySuffix: "design tradeoffs", limit: 5 },
+  analyst: { queryPrefix: "analysis", querySuffix: "evidence", limit: 5 },
+  visual: { queryPrefix: "visual design", querySuffix: "examples", limit: 4 },
+  lore: { queryPrefix: "history", querySuffix: "timeline", limit: 4 },
+  reasoning: { queryPrefix: "explain", querySuffix: "why", limit: 4 },
+  coding: { queryPrefix: "developer docs", querySuffix: "implementation", limit: 5 },
+  knowledge: { queryPrefix: "reference", querySuffix: "facts", limit: 5 },
+  "system-knowledge": { queryPrefix: "systems engineering", querySuffix: "best practices", limit: 5 },
+  simulation: { queryPrefix: "simulation methods", querySuffix: "models", limit: 3 }
+};
+
+function normalizeInternetMode(mode: string): keyof typeof INTERNET_MODE_PROFILES {
+  const normalized = String(mode || "auto").trim().toLowerCase();
+  if (Object.prototype.hasOwnProperty.call(INTERNET_MODE_PROFILES, normalized)) {
+    return normalized as keyof typeof INTERNET_MODE_PROFILES;
+  }
+  return "auto";
+}
+
+function buildInternetQueries(mode: string, userText: string): string[] {
+  const key = normalizeInternetMode(mode);
+  const profile = INTERNET_MODE_PROFILES[key];
+  const base = sanitizePromptText(String(userText || "")).trim();
+  if (!base) return [];
+
+  const primary = `${profile.queryPrefix} ${base} ${profile.querySuffix}`.replace(/\s+/g, " ").trim();
+  const fallback = `${base} ${profile.querySuffix}`.replace(/\s+/g, " ").trim();
+  return [...new Set([primary, fallback].filter(Boolean))];
+}
+
+function flattenDuckDuckGoTopics(items: any[], collector: InternetSearchHit[]): void {
+  for (const item of items || []) {
+    if (item?.Topics && Array.isArray(item.Topics)) {
+      flattenDuckDuckGoTopics(item.Topics, collector);
+      continue;
+    }
+
+    const title = sanitizePromptText(String(item?.Text || "")).trim();
+    const url = sanitizePromptText(String(item?.FirstURL || "")).trim();
+    if (!title || !url) continue;
+
+    collector.push({
+      title: title.slice(0, 160),
+      snippet: title.slice(0, 320),
+      url,
+      source: "duckduckgo"
+    });
+  }
+}
+
+async function searchDuckDuckGo(query: string, limit = 4): Promise<InternetSearchHit[]> {
+  const target = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&no_redirect=1`;
+  const response = await fetch(target, { method: "GET" });
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as any;
+  const hits: InternetSearchHit[] = [];
+
+  const abstract = sanitizePromptText(String(data?.AbstractText || "")).trim();
+  const abstractUrl = sanitizePromptText(String(data?.AbstractURL || "")).trim();
+  const heading = sanitizePromptText(String(data?.Heading || "")).trim();
+  if (abstract && abstractUrl) {
+    hits.push({
+      title: heading || "DuckDuckGo Result",
+      snippet: abstract.slice(0, 400),
+      url: abstractUrl,
+      source: "duckduckgo"
+    });
+  }
+
+  flattenDuckDuckGoTopics(Array.isArray(data?.RelatedTopics) ? data.RelatedTopics : [], hits);
+  return hits.slice(0, Math.max(1, limit));
+}
+
+async function searchWikipedia(query: string, limit = 4): Promise<InternetSearchHit[]> {
+  const target = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=${Math.max(1, limit)}&namespace=0&format=json`;
+  const response = await fetch(target, { method: "GET" });
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as [string, string[], string[], string[]] | unknown;
+  if (!Array.isArray(data) || data.length < 4) return [];
+
+  const titles = Array.isArray(data[1]) ? data[1] : [];
+  const descriptions = Array.isArray(data[2]) ? data[2] : [];
+  const urls = Array.isArray(data[3]) ? data[3] : [];
+  const hits: InternetSearchHit[] = [];
+
+  for (let i = 0; i < titles.length; i += 1) {
+    const title = sanitizePromptText(String(titles[i] || "")).trim();
+    const snippet = sanitizePromptText(String(descriptions[i] || "")).trim();
+    const url = sanitizePromptText(String(urls[i] || "")).trim();
+    if (!title || !url) continue;
+
+    hits.push({
+      title: title.slice(0, 160),
+      snippet: snippet.slice(0, 400),
+      url,
+      source: "wikipedia"
+    });
+  }
+
+  return hits.slice(0, Math.max(1, limit));
+}
+
+function dedupeInternetHits(hits: InternetSearchHit[], limit: number): InternetSearchHit[] {
+  const out: InternetSearchHit[] = [];
+  const seen = new Set<string>();
+  for (const hit of hits) {
+    const key = `${hit.url}|${hit.title}`.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(hit);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+async function performModeAwareInternetSearch(mode: string, userText: string): Promise<{ profile: InternetSearchProfile; hits: InternetSearchHit[] }> {
+  const key = normalizeInternetMode(mode);
+  const profile = INTERNET_MODE_PROFILES[key];
+  const queries = buildInternetQueries(key, userText);
+  if (!queries.length) {
+    return { profile, hits: [] };
+  }
+
+  const collected: InternetSearchHit[] = [];
+  for (const query of queries.slice(0, 2)) {
+    const [ddg, wiki] = await Promise.all([
+      searchDuckDuckGo(query, profile.limit),
+      searchWikipedia(query, profile.limit)
+    ]);
+    collected.push(...ddg, ...wiki);
+    if (collected.length >= profile.limit * 2) break;
+  }
+
+  return {
+    profile,
+    hits: dedupeInternetHits(collected, profile.limit)
+  };
+}
+
+function shouldUseInternetSearch(userText: string, mode: string): boolean {
+  const value = String(userText || "").trim();
+  if (!value) return false;
+  if (normalizeInternetMode(mode) === "simulation") return false;
+  const intentPattern = /\b(latest|current|today|news|recent|what is|how to|documentation|docs|guide|compare|vs\.?|benchmark|release|update)\b/i;
+  return intentPattern.test(value) || value.length > 24;
 }
 
 function makeContextSystemMessage(label: string, content: string): OmniMessage {
@@ -1023,6 +1308,9 @@ export default {
       const isApiRoute =
         url.pathname === "/api/omni" ||
         url.pathname === "/api/image" ||
+        url.pathname === "/api/internet/search" ||
+        url.pathname === "/api/human-verify" ||
+        url.pathname === "/api/human-verify/config" ||
         url.pathname === "/api/laws" ||
         url.pathname === "/api/search" ||
         url.pathname === "/api/preferences" ||
@@ -1060,6 +1348,39 @@ export default {
         });
       }
 
+      if (url.pathname === "/api/internet/search" && request.method === "GET") {
+        const query = sanitizePromptText(String(url.searchParams.get("q") || "")).trim();
+        const mode = sanitizePromptText(String(url.searchParams.get("mode") || "auto")).trim().toLowerCase();
+        if (!query) {
+          return new Response(
+            JSON.stringify({ query, mode, hits: [] }),
+            {
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
+        const { profile, hits } = await performModeAwareInternetSearch(mode, query);
+        return new Response(
+          JSON.stringify({
+            query,
+            mode: normalizeInternetMode(mode),
+            profile,
+            count: hits.length,
+            hits
+          }),
+          {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      }
+
       if (url.pathname === "/api/laws" && request.method === "GET") {
         const id = String(url.searchParams.get("id") || "").trim().toUpperCase();
         const tag = String(url.searchParams.get("tag") || "").trim().toLowerCase();
@@ -1094,6 +1415,94 @@ export default {
             "Content-Type": "application/json"
           }
         });
+      }
+
+      if (url.pathname === "/api/human-verify/config" && request.method === "GET") {
+        const siteKey = String(env.TURNSTILE_SITE_KEY || "").trim();
+        return new Response(
+          JSON.stringify({
+            siteKey
+          }),
+          {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      }
+
+      if (url.pathname === "/api/human-verify" && request.method === "POST") {
+        const payload = (await request.json().catch(() => ({}))) as HumanVerifyRequestBody;
+        const token = sanitizePromptText(String(payload?.token || "")).trim();
+        const year = Number(payload?.birthDate?.year);
+        const month = Number(payload?.birthDate?.month);
+        const day = Number(payload?.birthDate?.day);
+
+        const yearIsValid = Number.isFinite(year) && year >= 1900 && year <= 2200;
+        const monthIsValid = Number.isFinite(month) && month >= 1 && month <= 12;
+        const dayIsValid = Number.isFinite(day) && day >= 1 && day <= 31;
+        if (!yearIsValid || !monthIsValid || !dayIsValid) {
+          return new Response(JSON.stringify({ ok: false, error: "A valid birth date is required." }), {
+            status: 400,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const age = computeAgeFromBirthDate(year, month, day);
+        if (!Number.isFinite(age) || age < 0) {
+          return new Response(JSON.stringify({ ok: false, error: "Birth date is invalid for current time." }), {
+            status: 400,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const hasTurnstileSecret = String(env.TURNSTILE_SECRET_KEY || "").trim().length > 0;
+        if (hasTurnstileSecret && !token) {
+          return new Response(JSON.stringify({ ok: false, error: "Human verification token is required." }), {
+            status: 400,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const humanVerified = await verifyTurnstileToken(request, env, token);
+        if (!humanVerified) {
+          return new Response(JSON.stringify({ ok: false, error: "Human verification failed." }), {
+            status: 403,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const isAdult = age >= 18;
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            humanVerified: true,
+            age,
+            isAdult,
+            ageTier: isAdult ? "adult" : "minor",
+            nsfwAccess: isAdult,
+            illegalContentBlocked: true
+          }),
+          {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          }
+        );
       }
 
       if (url.pathname === "/api/preferences" && request.method === "GET") {
@@ -1219,6 +1628,36 @@ export default {
         });
       }
 
+      if (url.pathname === "/api/internet/search" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/human-verify/config" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/human-verify" && request.method !== "POST") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
       if (url.pathname === "/api/maintenance/status" && request.method !== "GET") {
         return new Response("Method Not Allowed", {
           status: 405,
@@ -1252,6 +1691,7 @@ export default {
       if (url.pathname === "/api/image" && request.method === "POST") {
         try {
           const body = (await request.json()) as ImageRequestBody;
+          const safetyProfile = normalizeSafetyProfile(body?.safetyProfile);
           const userId = sanitizePromptText(String(body?.userId || "anonymous"));
           const promptText = sanitizePromptText(String(body?.prompt || ""));
           const feedback = sanitizePromptText(String(body?.feedback || ""));
@@ -1313,6 +1753,26 @@ export default {
                 "Content-Type": "application/json"
               }
             });
+          }
+
+          const safetyDecision = evaluateSexualSafetyPrompt(promptText, safetyProfile);
+          if (safetyDecision.blocked) {
+            return new Response(
+              JSON.stringify({
+                error:
+                  safetyDecision.reason === "illegal-content-blocked"
+                    ? "Illegal sexual content is blocked for all access tiers."
+                    : "Explicit sexual content is age-restricted and unavailable for this profile.",
+                code: safetyDecision.reason
+              }),
+              {
+                status: 403,
+                headers: {
+                  ...CORS_HEADERS,
+                  "Content-Type": "application/json"
+                }
+              }
+            );
           }
 
           const orchestrated = orchestrateOmniImagePrompt(promptText, {
@@ -1391,6 +1851,11 @@ export default {
                 negativeTags: refined.data.negativeTags,
                 finalPrompt: refined.data.finalPrompt
               },
+              safety: {
+                ageTier: safetyProfile.ageTier,
+                explicitAllowed: safetyProfile.explicitAllowed,
+                illegalBlocked: safetyProfile.illegalBlocked
+              },
               export_location: "chat-download"
             }
           };
@@ -1465,6 +1930,7 @@ export default {
       if (url.pathname === "/api/omni" && request.method === "POST") {
         await ensureOmniMemorySchema(env);
         const body = (await request.json()) as OmniRequestBody;
+        const safetyProfile = normalizeSafetyProfile(body?.safetyProfile);
 
         if (!body.messages || !OmniSafety.validateMessages(body.messages)) {
           logger.error("invalid_messages", body);
@@ -1488,6 +1954,26 @@ export default {
         const workingMemory = await loadWorkingMemory(env, sessionId);
 
         const latestUserText = getLatestUserText(ctx.messages);
+        const safetyDecision = evaluateSexualSafetyPrompt(latestUserText, safetyProfile);
+        if (safetyDecision.blocked) {
+          return new Response(
+            JSON.stringify({
+              error:
+                safetyDecision.reason === "illegal-content-blocked"
+                  ? "Illegal sexual content is blocked for all users."
+                  : "Explicit sexual content is age-restricted for this profile.",
+              code: safetyDecision.reason
+            }),
+            {
+              status: 403,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
         const personaProfile = await resolvePersonaProfile(env, normalizedMode);
         const emotionalResonance = await getEmotionalResonance(
           env,
@@ -1502,6 +1988,8 @@ export default {
         const routeSelection = chooseModelForTask(ctx.model, latestUserText, normalizedMode);
 
         const promptSystemMessages: OmniMessage[] = [];
+        let internetProfileUsed: InternetSearchProfile | null = null;
+        let internetHitCount = 0;
         const savedMemory = normalizedMode === "simulation" ? {} : await getPreferences(env);
         if (normalizedMode !== "simulation" && savedMemory && Object.keys(savedMemory).length > 0) {
           promptSystemMessages.push(
@@ -1520,6 +2008,21 @@ export default {
 
         promptSystemMessages.push(
           makeContextSystemMessage("Persona Engine", buildPersonaPrompt(personaProfile))
+        );
+        promptSystemMessages.push(
+          makeContextSystemMessage(
+            "Safety Profile",
+            JSON.stringify(
+              {
+                ageTier: safetyProfile.ageTier,
+                explicitAllowed: safetyProfile.explicitAllowed,
+                illegalBlocked: safetyProfile.illegalBlocked,
+                enforcement: "illegal content is always blocked"
+              },
+              null,
+              2
+            )
+          )
         );
         promptSystemMessages.push(
           makeContextSystemMessage("Emotional Resonance", buildEmotionalResonancePrompt(emotionalResonance))
@@ -1593,6 +2096,31 @@ export default {
               makeContextSystemMessage(
                 "System Knowledge Modules",
                 `Use these internal modules as authoritative context:\n\n${moduleContext}`
+              )
+            );
+          }
+        }
+
+        if (shouldUseInternetSearch(latestUserText, normalizedMode)) {
+          const internet = await performModeAwareInternetSearch(normalizedMode, latestUserText);
+          internetProfileUsed = internet.profile;
+          internetHitCount = internet.hits.length;
+          if (internet.hits.length) {
+            const internetContext = internet.hits
+              .map((hit, index) => {
+                return `(${index + 1}) [${hit.source}] ${hit.title}\n${hit.snippet}\nURL: ${hit.url}`;
+              })
+              .join("\n\n---\n\n");
+
+            promptSystemMessages.push(
+              makeContextSystemMessage(
+                "Internet Retrieval",
+                [
+                  `Mode profile: prefix='${internet.profile.queryPrefix}', suffix='${internet.profile.querySuffix}', limit=${internet.profile.limit}`,
+                  "Use these internet references when relevant, and do not fabricate facts beyond cited context.",
+                  "",
+                  internetContext
+                ].join("\n")
               )
             );
           }
@@ -1719,6 +2247,27 @@ export default {
               });
             }
 
+            const exposeHeaders = [
+              "X-Omni-Model-Used",
+              "X-Omni-Route-Reason",
+              "X-Omni-Orchestrator-Route",
+              "X-Omni-Orchestrator-Reason",
+              "X-Omni-Persona-Tone",
+              "X-Omni-Emotion-User",
+              "X-Omni-Emotion-Omni",
+              "X-Omni-Internet-Mode",
+              "X-Omni-Internet-Profile",
+              "X-Omni-Internet-Count"
+            ];
+
+            if (simulationContext) {
+              exposeHeaders.push("X-Omni-Simulation-Id", "X-Omni-Simulation-Status", "X-Omni-Simulation-Steps");
+            }
+
+            if (debugEnabled) {
+              exposeHeaders.push("X-Omni-Response-Cap", "X-Omni-Output-Token-Cap");
+            }
+
             return new Response(stream, {
               headers: {
                 ...CORS_HEADERS,
@@ -1732,6 +2281,11 @@ export default {
                 "X-Omni-Persona-Tone": personaProfile.tone,
                 "X-Omni-Emotion-User": emotionalResonance.userEmotion,
                 "X-Omni-Emotion-Omni": emotionalResonance.omniTone,
+                "X-Omni-Internet-Mode": normalizeInternetMode(normalizedMode),
+                "X-Omni-Internet-Profile": internetProfileUsed
+                  ? `${internetProfileUsed.queryPrefix}|${internetProfileUsed.querySuffix}|${internetProfileUsed.limit}`
+                  : "none",
+                "X-Omni-Internet-Count": String(internetHitCount),
                 ...(simulationContext
                   ? {
                       "X-Omni-Simulation-Id": simulationContext.state.simulationId,
@@ -1742,16 +2296,10 @@ export default {
                 ...(debugEnabled
                   ? {
                       "X-Omni-Response-Cap": String(responseLimit),
-                      "X-Omni-Output-Token-Cap": String(outputTokenLimit),
-                    "Access-Control-Expose-Headers": simulationContext
-                      ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Orchestrator-Route, X-Omni-Orchestrator-Reason, X-Omni-Persona-Tone, X-Omni-Emotion-User, X-Omni-Emotion-Omni, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
-                      : "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Orchestrator-Route, X-Omni-Orchestrator-Reason, X-Omni-Persona-Tone, X-Omni-Emotion-User, X-Omni-Emotion-Omni, X-Omni-Response-Cap, X-Omni-Output-Token-Cap"
+                      "X-Omni-Output-Token-Cap": String(outputTokenLimit)
                     }
-                  : {
-                      "Access-Control-Expose-Headers": simulationContext
-                        ? "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Orchestrator-Route, X-Omni-Orchestrator-Reason, X-Omni-Persona-Tone, X-Omni-Emotion-User, X-Omni-Emotion-Omni, X-Omni-Simulation-Id, X-Omni-Simulation-Status, X-Omni-Simulation-Steps"
-                        : "X-Omni-Model-Used, X-Omni-Route-Reason, X-Omni-Orchestrator-Route, X-Omni-Orchestrator-Reason, X-Omni-Persona-Tone, X-Omni-Emotion-User, X-Omni-Emotion-Omni"
-                    })
+                  : {}),
+                "Access-Control-Expose-Headers": exposeHeaders.join(", ")
               }
             });
           }

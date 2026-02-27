@@ -1,0 +1,29 @@
+{
+  "profiles": {
+    "crisp-short": {
+      "width": 720,
+      "height": 720,
+      "fps": 12,
+      "durationSec": 1.8
+    },
+    "balanced": {
+      "width": 640,
+      "height": 640,
+      "fps": 12,
+      "durationSec": 2.5
+    },
+    "long-soft": {
+      "width": 512,
+      "height": 512,
+      "fps": 10,
+      "durationSec": 4
+    }
+  },
+  "defaults": {
+    "mode": "balanced",
+    "format": "mp4",
+    "maxSizeMB": 2,
+    "camera": "static",
+    "mood": "cinematic"
+  }
+}

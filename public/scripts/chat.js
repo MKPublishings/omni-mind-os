@@ -38,6 +38,11 @@
   const mindPersonaEl = document.getElementById("mind-persona");
   const mindEmotionEl = document.getElementById("mind-emotion");
   const mindTimelineEl = document.getElementById("mind-timeline");
+  const internetModeEl = document.getElementById("internet-mode");
+  const internetProfileEl = document.getElementById("internet-profile");
+  const internetCountEl = document.getElementById("internet-count");
+  const internetQueryEl = document.getElementById("internet-query");
+  const internetSourcesEl = document.getElementById("internet-sources");
   const savePreferencesBtn = document.getElementById("save-preferences-btn");
   const resetMemoryBtn = document.getElementById("reset-memory-btn");
 
@@ -90,6 +95,7 @@
   const KNOWN_CAMERA_PROFILES = ["portrait-85mm", "wide-35mm", "macro", "telephoto-135mm"];
   const KNOWN_LIGHTING_PROFILES = ["studio-soft", "studio-hard", "natural-daylight", "cinematic-lowkey"];
   const KNOWN_MATERIAL_PROFILES = ["skin", "fabric", "metal", "glass"];
+  const AGE_PROFILE_KEY = "omni-age-profile-v1";
 
   let state = {
     activeSessionId: null,
@@ -263,6 +269,59 @@
     return ["skin"];
   }
 
+  function getAgeProfile() {
+    try {
+      const raw = localStorage.getItem(AGE_PROFILE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function buildSafetyProfile() {
+    const profile = getAgeProfile() || {};
+    const ageTier = String(profile.ageTier || "minor").toLowerCase() === "adult" ? "adult" : "minor";
+    const nsfwAccess = Boolean(profile.nsfwAccess) && ageTier === "adult";
+    return {
+      ageTier,
+      humanVerified: Boolean(profile.humanVerified),
+      nsfwAccess,
+      explicitAllowed: nsfwAccess,
+      illegalBlocked: true
+    };
+  }
+
+  function evaluatePromptPolicy(text, safetyProfile) {
+    const value = String(text || "").toLowerCase();
+
+    const illegalPattern = /\b(child\s*sexual|minor\s*nudity|underage\s*sex|bestiality|sexual\s*assault|rape\s*content|incest\s*porn|exploitative\s*sexual)\b/i;
+    if (illegalPattern.test(value)) {
+      return {
+        blocked: true,
+        reason: "illegal",
+        message: "Request blocked. Illegal sexual content is not permitted under any access tier."
+      };
+    }
+
+    const explicitPattern = /\b(nsfw|nudity|nude|porn|pornographic|explicit\s*sex|sexual\s*content|erotic|fetish)\b/i;
+    const isExplicit = explicitPattern.test(value);
+
+    if (isExplicit && safetyProfile.ageTier !== "adult") {
+      return {
+        blocked: true,
+        reason: "minor-explicit-block",
+        message: "This request is age-restricted. Explicit sexual content is disabled for under-18 profiles."
+      };
+    }
+
+    return {
+      blocked: false,
+      reason: isExplicit ? "adult-explicit-allowed" : "safe"
+    };
+  }
+
   function parseStyleCommand(content) {
     const text = String(content || "").trim();
     if (!text.toLowerCase().startsWith("/style")) return null;
@@ -334,6 +393,19 @@
     return { action: "set", materials: normalizeMaterialList(requested) };
   }
 
+  function parseWebCommand(content) {
+    const text = String(content || "").trim();
+    const lower = text.toLowerCase();
+    if (!lower.startsWith("/web")) return null;
+
+    const query = text.slice(4).trim();
+    if (!query) {
+      return { action: "help", query: "" };
+    }
+
+    return { action: "search", query };
+  }
+
   function formatAvailableStyles() {
     return KNOWN_RENDER_STYLES.join(", ");
   }
@@ -357,6 +429,27 @@
     const materials = getActiveMaterials(session);
     const styleText = active ? `Current style: **${active}**.` : "Current style: **auto** (no forced style).";
     return `${styleText}\nCamera: **${camera}**\nLighting: **${lighting}**\nMaterials: **${materials.join(", ")}**\n\nUse \`/style <name>\`, \`/camera <profile>\`, \`/light <profile>\`, \`/materials a,b,c\`.\nStyles: ${formatAvailableStyles()}\nCameras: ${formatAvailableCameras()}\nLighting: ${formatAvailableLighting()}\nMaterials: ${formatAvailableMaterials()}`;
+  }
+
+  async function requestInternetSearch(query, mode) {
+    const params = new URLSearchParams({ q: String(query || "").trim(), mode: String(mode || "auto") });
+    const response = await fetch(`/api/internet/search?${params.toString()}`, { method: "GET" });
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok) {
+      throw new Error(String(data?.error || "Internet search failed"));
+    }
+
+    return {
+      mode: String(data?.mode || "auto"),
+      profile: data?.profile || null,
+      hits: Array.isArray(data?.hits) ? data.hits : []
+    };
   }
 
   function toModelLabel(model) {
@@ -485,6 +578,103 @@
       mindEmotionEl.textContent = `Emotion: ${userEmotion} → ${omniEmotion}`;
     }
     renderMindTimeline(session);
+    renderInternetInspector(session);
+  }
+
+  function ensureInternetInspectorState(session = getActiveSession()) {
+    if (!session) return null;
+    if (!session.internetInspector || typeof session.internetInspector !== "object") {
+      session.internetInspector = {
+        mode: getActiveMode(session) || "auto",
+        profile: "none",
+        count: 0,
+        query: "",
+        sources: [],
+        updatedAt: 0
+      };
+    }
+    if (!Array.isArray(session.internetInspector.sources)) {
+      session.internetInspector.sources = [];
+    }
+    return session.internetInspector;
+  }
+
+  function renderInternetInspector(session = getActiveSession()) {
+    const internetState = ensureInternetInspectorState(session);
+    if (!internetState) return;
+
+    if (internetModeEl) {
+      internetModeEl.textContent = `Internet Mode: ${String(internetState.mode || "auto")}`;
+    }
+    if (internetProfileEl) {
+      internetProfileEl.textContent = `Profile: ${String(internetState.profile || "none")}`;
+    }
+    if (internetCountEl) {
+      const count = Number.isFinite(Number(internetState.count)) ? Number(internetState.count) : 0;
+      internetCountEl.textContent = `Sources: ${count}`;
+    }
+    if (internetQueryEl) {
+      const query = String(internetState.query || "").trim();
+      internetQueryEl.textContent = query ? `Query: ${query}` : "Query: not used yet.";
+    }
+
+    if (!internetSourcesEl) return;
+    internetSourcesEl.innerHTML = "";
+    const sourceList = Array.isArray(internetState.sources) ? internetState.sources : [];
+    if (!sourceList.length) {
+      const row = document.createElement("div");
+      row.className = "internet-source-item";
+      row.textContent = "No internet sources captured for this session yet.";
+      internetSourcesEl.appendChild(row);
+      return;
+    }
+
+    for (const source of sourceList.slice(0, 6)) {
+      const row = document.createElement("div");
+      row.className = "internet-source-item";
+      row.textContent = String(source || "");
+      internetSourcesEl.appendChild(row);
+    }
+  }
+
+  function updateInternetInspectorFromMeta(session, meta, queryText = "") {
+    const internetState = ensureInternetInspectorState(session);
+    if (!internetState) return;
+
+    if (meta?.internetMode) {
+      internetState.mode = String(meta.internetMode || "auto").trim().toLowerCase() || "auto";
+    }
+    if (meta?.internetProfile) {
+      internetState.profile = String(meta.internetProfile || "none").trim() || "none";
+    }
+    if (Number.isFinite(meta?.internetCount)) {
+      internetState.count = Number(meta.internetCount) || 0;
+    }
+    if (queryText) {
+      internetState.query = queryText;
+    }
+    internetState.updatedAt = Date.now();
+    renderInternetInspector(session);
+  }
+
+  function updateInternetInspectorFromWebSearch(session, query, searchResult) {
+    const internetState = ensureInternetInspectorState(session);
+    if (!internetState) return;
+
+    internetState.mode = String(searchResult?.mode || getActiveMode(session) || "auto").trim().toLowerCase();
+    const profile = searchResult?.profile;
+    if (profile && typeof profile === "object") {
+      internetState.profile = `${String(profile.queryPrefix || "")}|${String(profile.querySuffix || "")}|${String(profile.limit || "")}`;
+    }
+    internetState.count = Array.isArray(searchResult?.hits) ? searchResult.hits.length : 0;
+    internetState.query = String(query || "").trim();
+    internetState.sources = Array.isArray(searchResult?.hits)
+      ? searchResult.hits
+          .slice(0, 6)
+          .map((hit) => `${String(hit?.source || "web")} · ${String(hit?.title || "Untitled")}`)
+      : [];
+    internetState.updatedAt = Date.now();
+    renderInternetInspector(session);
   }
 
   function appendSimulationLog(session, message) {
@@ -1067,7 +1257,7 @@
       .trim() || raw;
   }
 
-  async function requestGeneratedImage(session, prompt) {
+  async function requestGeneratedImage(session, prompt, safetyProfile = null) {
     const selectedStyle = getActiveImageStyle(session);
     const selectedCamera = getActiveCameraProfile(session);
     const selectedLighting = getActiveLightingProfile(session);
@@ -1079,7 +1269,8 @@
       stylePack: selectedStyle || "",
       camera: selectedCamera,
       lighting: selectedLighting,
-      materials: selectedStyle === "hyper-real" ? selectedMaterials : []
+      materials: selectedStyle === "hyper-real" ? selectedMaterials : [],
+      safetyProfile: safetyProfile || buildSafetyProfile()
     };
 
     const res = await fetch(getImageEndpoint(), {
@@ -1156,12 +1347,13 @@
     return status === 408 || status === 425 || status === 429 || (status >= 500 && status <= 599);
   }
 
-  async function streamOmniResponse(session, assistantBodyEl, onChunk, onMeta) {
+  async function streamOmniResponse(session, assistantBodyEl, onChunk, onMeta, safetyProfile = null) {
     const activeMode = getActiveMode(session);
     const payload = {
       messages: session.messages,
       model: session.model || "auto",
-      mode: activeMode
+      mode: activeMode,
+      safetyProfile: safetyProfile || buildSafetyProfile()
     };
 
     const controller = new AbortController();
@@ -1225,6 +1417,9 @@
         personaTone: (res.headers.get("X-Omni-Persona-Tone") || "").trim(),
         userEmotion: (res.headers.get("X-Omni-Emotion-User") || "").trim(),
         omniEmotion: (res.headers.get("X-Omni-Emotion-Omni") || "").trim(),
+        internetMode: (res.headers.get("X-Omni-Internet-Mode") || "").trim(),
+        internetProfile: (res.headers.get("X-Omni-Internet-Profile") || "").trim(),
+        internetCount: Number(res.headers.get("X-Omni-Internet-Count") || "0"),
         simulationId: (res.headers.get("X-Omni-Simulation-Id") || "").trim(),
         simulationStatus: (res.headers.get("X-Omni-Simulation-Status") || "").trim(),
         simulationSteps: Number(res.headers.get("X-Omni-Simulation-Steps") || "0")
@@ -1311,7 +1506,8 @@
     const cameraCommand = parseCameraCommand(trimmed);
     const lightCommand = parseLightCommand(trimmed);
     const materialsCommand = parseMaterialsCommand(trimmed);
-    if (styleCommand || cameraCommand || lightCommand || materialsCommand) {
+    const webCommand = parseWebCommand(trimmed);
+    if (styleCommand || cameraCommand || lightCommand || materialsCommand || webCommand) {
       const commandTimestamp = Date.now();
       session.messages.push({ role: "user", content: trimmed, timestamp: commandTimestamp });
       updateSessionMetaFromMessages(session);
@@ -1407,6 +1603,30 @@
             assistantText = `Materials set to **${requestedMaterials.join(", ")}**.`;
           }
         }
+      } else if (webCommand) {
+        if (webCommand.action === "help") {
+          assistantText = "Usage: `/web <query>` to search the internet with your current mode profile.";
+        } else {
+          try {
+            const currentMode = getActiveMode(session);
+            const search = await requestInternetSearch(webCommand.query, currentMode);
+            updateInternetInspectorFromWebSearch(session, webCommand.query, search);
+            if (!search.hits.length) {
+              assistantText = `No internet results found for **${webCommand.query}** in mode **${search.mode}**.`;
+            } else {
+              const preview = search.hits
+                .slice(0, 4)
+                .map((hit, index) => `${index + 1}. **${hit.title}**\n${hit.snippet || "No summary available."}\n${hit.url}`)
+                .join("\n\n");
+              assistantText = [
+                `Internet search results for **${webCommand.query}** (mode: **${search.mode}**):`,
+                preview
+              ].join("\n\n");
+            }
+          } catch (error) {
+            assistantText = `Internet search failed: ${error instanceof Error ? error.message : "unknown error"}`;
+          }
+        }
       } else {
         assistantText = "Rendering command received.";
       }
@@ -1426,6 +1646,39 @@
       saveState();
       renderSessionsSidebar();
       playNotificationSound("assistant");
+
+      if (inputEl) {
+        inputEl.value = "";
+        inputEl.focus();
+      }
+      return;
+    }
+
+    const safetyProfile = buildSafetyProfile();
+    const policy = evaluatePromptPolicy(trimmed, safetyProfile);
+    if (policy.blocked) {
+      const blockTs = Date.now();
+      session.messages.push({ role: "user", content: trimmed, timestamp: blockTs });
+      appendMessage("user", trimmed, {
+        model: session.model || "auto",
+        mode: getActiveMode(session),
+        timestamp: blockTs
+      });
+
+      appendMessage("assistant", policy.message, {
+        model: session.model || "auto",
+        mode: getActiveMode(session),
+        timestamp: Date.now()
+      });
+
+      session.messages.push({
+        role: "assistant",
+        content: policy.message,
+        timestamp: Date.now()
+      });
+      updateSessionMetaFromMessages(session);
+      saveState();
+      renderSessionsSidebar();
 
       if (inputEl) {
         inputEl.value = "";
@@ -1500,7 +1753,7 @@
 
       try {
         const imagePrompt = extractImagePrompt(trimmed) || trimmed;
-        const imageResult = await requestGeneratedImage(session, imagePrompt);
+        const imageResult = await requestGeneratedImage(session, imagePrompt, safetyProfile);
         const resolution = String(imageResult?.metadata?.resolution || "").trim();
         const styleId = String(imageResult?.metadata?.style_id || "").trim();
 
@@ -1607,6 +1860,7 @@
         },
         (meta) => {
           updateModelInspector(meta?.modelUsed || session.model || "auto", meta?.routeReason || "");
+          updateInternetInspectorFromMeta(session, meta, trimmed);
 
           const mindState = ensureMindState(session);
           if (mindState) {
@@ -1632,7 +1886,8 @@
             appendSimulationLog(session, `Backend sync: ${simulation.status}, steps ${simulation.steps}.`);
             updateSimulationUI(session);
           }
-        }
+        },
+        safetyProfile
       );
 
       const finalText = (session._streamingAssistantText || "").trim();

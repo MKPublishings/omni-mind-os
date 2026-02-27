@@ -545,6 +545,51 @@
   width: 100%;
   height: auto;
   display: block;
+
+.internet-inspector {
+  margin-top: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.internet-inspector-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.internet-inspector-row span {
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.internet-query {
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.internet-sources {
+  display: grid;
+  gap: 4px;
+  max-height: 110px;
+  overflow-y: auto;
+}
+
+.internet-source-item {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
   border-bottom: 1px solid var(--border);
 }
 
