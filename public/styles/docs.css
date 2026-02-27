@@ -1,7 +1,8 @@
 .docs-main {
   width: 100%;
   margin: 0 auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: auto;
+  scroll-behavior: smooth;
 }
 
 #main.docs-main {
@@ -63,7 +64,7 @@
   flex-direction: column;
   gap: 6px;
   max-height: calc(100vh - 170px);
-  overflow-y: hidden;
+  overflow-y: auto;
 }
 
 .docs-nav-link {

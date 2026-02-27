@@ -1,5 +1,12 @@
 (() => {
-  const scrollRoot = document.getElementById("main");
+  const mainRoot = document.getElementById("main");
+  const documentRoot = document.scrollingElement || document.documentElement;
+  const prefersMainRoot = Boolean(
+    mainRoot
+      && mainRoot.scrollHeight > mainRoot.clientHeight
+      && getComputedStyle(mainRoot).overflowY !== "visible"
+  );
+  const scrollRoot = prefersMainRoot ? mainRoot : documentRoot;
   const backToTopBtn = document.getElementById("docs-back-to-top");
   const docsNavEl = document.getElementById("docs-nav");
   const navLinks = Array.from(document.querySelectorAll(".docs-nav-link[href^='#']"));
@@ -30,7 +37,11 @@
   function getSectionTargetTop(section) {
     if (!scrollRoot || !section) return 0;
     const maxTop = getMaxScrollTop();
-    const desiredTop = Math.max(0, section.offsetTop - 12);
+    const rootRectTop = scrollRoot === documentRoot ? 0 : scrollRoot.getBoundingClientRect().top;
+    const desiredTop = Math.max(
+      0,
+      scrollRoot.scrollTop + section.getBoundingClientRect().top - rootRectTop - 12
+    );
     return Math.min(desiredTop, maxTop);
   }
 
@@ -119,9 +130,11 @@
     const currentY = scrollRoot.scrollTop;
     const offset = 130;
     let activeId = sections[0].id;
+    const rootRectTop = scrollRoot === documentRoot ? 0 : scrollRoot.getBoundingClientRect().top;
 
     for (const section of sections) {
-      if (section.offsetTop - offset <= currentY) {
+      const sectionTop = scrollRoot.scrollTop + section.getBoundingClientRect().top - rootRectTop;
+      if (sectionTop - offset <= currentY) {
         activeId = section.id;
       } else {
         break;
@@ -166,19 +179,6 @@
       setActiveById(id);
     });
   });
-
-  if (docsNavEl && scrollRoot) {
-    docsNavEl.addEventListener(
-      "wheel",
-      (event) => {
-        const navScrollable = Math.max(0, docsNavEl.scrollHeight - docsNavEl.clientHeight);
-        if (navScrollable <= 0) return;
-        event.preventDefault();
-        scrollRoot.scrollTop += event.deltaY;
-      },
-      { passive: false }
-    );
-  }
 
   if (scrollRoot && backToTopBtn) {
     const updateBackToTopVisibility = () => {
