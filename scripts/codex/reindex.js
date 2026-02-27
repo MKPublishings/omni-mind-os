@@ -4,6 +4,7 @@ const path = require("path");
 const ROOT = process.cwd();
 const CODEX_DIR = path.join(ROOT, "codex");
 const INDEX_PATH = path.join(CODEX_DIR, "index.json");
+const PUBLIC_INDEX_MIRROR_PATH = path.join(ROOT, "public", "codex-index.json");
 const SCHEMA_REL = "./index.schema.json";
 
 const CHAMBER_ROOTS = [
@@ -425,9 +426,15 @@ function main() {
   }
 
   const index = buildIndex();
-  fs.writeFileSync(INDEX_PATH, `${JSON.stringify(index, null, 2)}\n`, "utf8");
+  const indexJson = `${JSON.stringify(index, null, 2)}\n`;
+  fs.writeFileSync(INDEX_PATH, indexJson, "utf8");
+
+  if (fs.existsSync(path.dirname(PUBLIC_INDEX_MIRROR_PATH))) {
+    fs.writeFileSync(PUBLIC_INDEX_MIRROR_PATH, indexJson, "utf8");
+  }
 
   console.log(`Codex indexed: ${index.meta.entryCount} entries, ${index.crossLinks.length} cross-links.`);
+  console.log(`Codex web mirror updated: ${normalizeRel(PUBLIC_INDEX_MIRROR_PATH)}`);
 }
 
 main();

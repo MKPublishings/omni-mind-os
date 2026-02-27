@@ -188,12 +188,29 @@
   }
 
   async function loadCodexIndex() {
+    const candidates = ["/codex/index.json", "/codex-index.json"];
+
     try {
-      const response = await fetch("/codex/index.json", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`Failed to load codex index (${response.status})`);
+      let payload = null;
+
+      for (const url of candidates) {
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) {
+            continue;
+          }
+          payload = await response.json();
+          break;
+        } catch (_error) {
+          continue;
+        }
       }
-      state.index = await response.json();
+
+      if (!payload) {
+        throw new Error("No codex index source is reachable.");
+      }
+
+      state.index = payload;
       renderAll();
     } catch (error) {
       statsEntries.textContent = "--";
@@ -201,7 +218,7 @@
       statsChambers.textContent = "--";
       statsGenerated.textContent = "--";
       graphInsightRoot.innerHTML = `<li>Unable to load codex graph: ${escapeHtml(error.message)}</li>`;
-      entryListRoot.innerHTML = `<p class="codex-empty">Codex index is unavailable. Run <code>npm run codex:reindex</code> and ensure <code>codex/index.json</code> is served by the site.</p>`;
+      entryListRoot.innerHTML = `<p class="codex-empty">Codex index is unavailable. Run <code>npm run codex:reindex</code> to regenerate <code>codex/index.json</code> and the web mirror <code>public/codex-index.json</code>.</p>`;
       resultCount.textContent = "0 results";
       chamberButtonsRoot.innerHTML = "";
     }

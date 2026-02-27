@@ -1,0 +1,828 @@
+{
+  "$schema": "./index.schema.json",
+  "meta": {
+    "name": "Omni Living Codex",
+    "version": "1.0.0",
+    "generatedAt": "2026-02-27T16:02:36.184Z",
+    "entryCount": 35,
+    "lineage": [
+      "legacy.codex.00-index",
+      "legacy.codex.10-architecture",
+      "legacy.codex.20-protocols",
+      "legacy.codex.30-patterns",
+      "legacy.codex.40-decisions",
+      "legacy.codex.50-mind-path-map",
+      "legacy.codex.60-internal-mind-contracts"
+    ]
+  },
+  "categories": [
+    {
+      "id": "equations.solved",
+      "path": "equations/solved",
+      "count": 2
+    },
+    {
+      "id": "equations.templates",
+      "path": "equations/templates",
+      "count": 3
+    },
+    {
+      "id": "glossary.terms",
+      "path": "glossary/terms",
+      "count": 3
+    },
+    {
+      "id": "laws.cognitive",
+      "path": "laws/cognitive",
+      "count": 2
+    },
+    {
+      "id": "laws.quantum",
+      "path": "laws/quantum",
+      "count": 2
+    },
+    {
+      "id": "legacy",
+      "path": "legacy",
+      "count": 6
+    },
+    {
+      "id": "mythic.archetypes",
+      "path": "mythic/archetypes",
+      "count": 3
+    },
+    {
+      "id": "mythic.checkpoints",
+      "path": "mythic/checkpoints",
+      "count": 2
+    },
+    {
+      "id": "systems.mind-os",
+      "path": "systems/mind-os",
+      "count": 3
+    },
+    {
+      "id": "systems.omni",
+      "path": "systems/omni",
+      "count": 4
+    },
+    {
+      "id": "visual-dialect.motifs",
+      "path": "visual-dialect/motifs",
+      "count": 3
+    },
+    {
+      "id": "visual-dialect.registers",
+      "path": "visual-dialect/registers",
+      "count": 2
+    }
+  ],
+  "entries": [
+    {
+      "id": "legacy.codex.00-index",
+      "path": "codex/00-index.md",
+      "title": "00 Index",
+      "type": "legacy",
+      "category": "legacy",
+      "tags": [
+        "legacy",
+        "codex"
+      ],
+      "links": [],
+      "autoLinks": [
+        "legacy.codex.10-architecture",
+        "legacy.codex.20-protocols",
+        "legacy.codex.30-patterns",
+        "legacy.codex.50-mind-path-map",
+        "legacy.codex.60-internal-mind-contracts"
+      ],
+      "lineage": [],
+      "createdAt": "2026-02-27T10:24:25.264Z",
+      "updatedAt": "2026-02-27T16:01:29.672Z"
+    },
+    {
+      "id": "legacy.codex.10-architecture",
+      "path": "codex/10-architecture.md",
+      "title": "10 Architecture",
+      "type": "legacy",
+      "category": "legacy",
+      "tags": [
+        "legacy",
+        "codex"
+      ],
+      "links": [],
+      "autoLinks": [
+        "legacy.codex.00-index",
+        "legacy.codex.20-protocols",
+        "legacy.codex.30-patterns",
+        "legacy.codex.50-mind-path-map",
+        "legacy.codex.60-internal-mind-contracts"
+      ],
+      "lineage": [],
+      "createdAt": "2026-02-27T10:24:25.375Z",
+      "updatedAt": "2026-02-27T10:46:28.889Z"
+    },
+    {
+      "id": "legacy.codex.20-protocols",
+      "path": "codex/20-protocols.md",
+      "title": "20 Protocols",
+      "type": "legacy",
+      "category": "legacy",
+      "tags": [
+        "legacy",
+        "codex"
+      ],
+      "links": [],
+      "autoLinks": [
+        "legacy.codex.00-index",
+        "legacy.codex.10-architecture",
+        "legacy.codex.30-patterns",
+        "legacy.codex.50-mind-path-map",
+        "legacy.codex.60-internal-mind-contracts"
+      ],
+      "lineage": [],
+      "createdAt": "2026-02-27T10:24:25.455Z",
+      "updatedAt": "2026-02-27T10:42:27.277Z"
+    },
+    {
+      "id": "legacy.codex.30-patterns",
+      "path": "codex/30-patterns.md",
+      "title": "30 Patterns",
+      "type": "legacy",
+      "category": "legacy",
+      "tags": [
+        "legacy",
+        "codex"
+      ],
+      "links": [],
+      "autoLinks": [
+        "legacy.codex.00-index",
+        "legacy.codex.10-architecture",
+        "legacy.codex.20-protocols",
+        "legacy.codex.50-mind-path-map",
+        "legacy.codex.60-internal-mind-contracts"
+      ],
+      "lineage": [],
+      "createdAt": "2026-02-27T10:24:25.537Z",
+      "updatedAt": "2026-02-27T10:52:11.391Z"
+    },
+    {
+      "id": "legacy.codex.50-mind-path-map",
+      "path": "codex/50-mind-path-map.md",
+      "title": "50 Mind Path Map",
+      "type": "legacy",
+      "category": "legacy",
+      "tags": [
+        "legacy",
+        "codex"
+      ],
+      "links": [],
+      "autoLinks": [
+        "legacy.codex.00-index",
+        "legacy.codex.10-architecture",
+        "legacy.codex.20-protocols",
+        "legacy.codex.30-patterns",
+        "legacy.codex.60-internal-mind-contracts"
+      ],
+      "lineage": [],
+      "createdAt": "2026-02-27T10:46:12.542Z",
+      "updatedAt": "2026-02-27T10:46:28.889Z"
+    },
+    {
+      "id": "legacy.codex.60-internal-mind-contracts",
+      "path": "codex/60-internal-mind-contracts.md",
+      "title": "60 Internal Mind Contracts",
+      "type": "legacy",
+      "category": "legacy",
+      "tags": [
+        "legacy",
+        "codex"
+      ],
+      "links": [],
+      "autoLinks": [
+        "legacy.codex.00-index",
+        "legacy.codex.10-architecture",
+        "legacy.codex.20-protocols",
+        "legacy.codex.30-patterns",
+        "legacy.codex.50-mind-path-map"
+      ],
+      "lineage": [],
+      "createdAt": "2026-02-27T10:46:12.772Z",
+      "updatedAt": "2026-02-27T10:47:44.607Z"
+    },
+    {
+      "id": "equation.2026-02-27-001",
+      "path": "codex/equations/solved/2026-02-27-equation-001.json",
+      "title": "Response Latency Balancing",
+      "type": "equation-solved",
+      "category": "equations/solved",
+      "tags": [
+        "equation",
+        "performance",
+        "runtime"
+      ],
+      "links": [
+        "system.omni.overview",
+        "equation.template.linear"
+      ],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T00:00:00.000Z",
+      "updatedAt": "2026-02-27T00:00:00.000Z"
+    },
+    {
+      "id": "equation.2026-02-27-002",
+      "path": "codex/equations/solved/2026-02-27-equation-002.json",
+      "title": "Emotion Resonance Drift",
+      "type": "equation-solved",
+      "category": "equations/solved",
+      "tags": [
+        "equation",
+        "emotion",
+        "behavior"
+      ],
+      "links": [
+        "law.cognitive.02",
+        "equation.template.differential"
+      ],
+      "autoLinks": [
+        "glossary.resonance"
+      ],
+      "lineage": [],
+      "createdAt": "2026-02-27T00:00:00.000Z",
+      "updatedAt": "2026-02-27T00:00:00.000Z"
+    },
+    {
+      "id": "equations.templates.differential",
+      "path": "codex/equations/templates/differential.md",
+      "title": "Differential",
+      "type": "equation-template",
+      "category": "equations/templates",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:41.380Z",
+      "updatedAt": "2026-02-27T15:58:46.146Z"
+    },
+    {
+      "id": "equations.templates.linear",
+      "path": "codex/equations/templates/linear.md",
+      "title": "Linear",
+      "type": "equation-template",
+      "category": "equations/templates",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:25.194Z",
+      "updatedAt": "2026-02-27T15:58:37.782Z"
+    },
+    {
+      "id": "equations.templates.quadratic",
+      "path": "codex/equations/templates/quadratic.md",
+      "title": "Quadratic",
+      "type": "equation-template",
+      "category": "equations/templates",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:41.302Z",
+      "updatedAt": "2026-02-27T15:58:46.146Z"
+    },
+    {
+      "id": "glossary.context-window",
+      "path": "codex/glossary/terms.json",
+      "title": "Context Window",
+      "type": "glossary",
+      "category": "glossary/terms",
+      "tags": [
+        "context",
+        "runtime"
+      ],
+      "links": [
+        "law.cognitive.01",
+        "system.omni.overview"
+      ],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:41.621Z",
+      "updatedAt": "2026-02-27T15:58:46.146Z",
+      "symbol": "C_t"
+    },
+    {
+      "id": "glossary.lineage",
+      "path": "codex/glossary/terms.json",
+      "title": "Lineage",
+      "type": "glossary",
+      "category": "glossary/terms",
+      "tags": [
+        "history",
+        "graph"
+      ],
+      "links": [
+        "system.mind-os.lineage",
+        "system.omni.intelligence-lineage"
+      ],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:41.621Z",
+      "updatedAt": "2026-02-27T15:58:46.146Z",
+      "symbol": "L"
+    },
+    {
+      "id": "glossary.resonance",
+      "path": "codex/glossary/terms.json",
+      "title": "Resonance",
+      "type": "glossary",
+      "category": "glossary/terms",
+      "tags": [
+        "emotion",
+        "behavior"
+      ],
+      "links": [
+        "equation.2026-02-27-002",
+        "law.cognitive.02"
+      ],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:41.621Z",
+      "updatedAt": "2026-02-27T15:58:46.146Z",
+      "symbol": "R"
+    },
+    {
+      "id": "laws.cognitive.01-perception",
+      "path": "codex/laws/cognitive/01-perception.md",
+      "title": "01 Perception",
+      "type": "law",
+      "category": "laws/cognitive",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:41.688Z",
+      "updatedAt": "2026-02-27T15:57:48.099Z"
+    },
+    {
+      "id": "laws.cognitive.02-memory",
+      "path": "codex/laws/cognitive/02-memory.md",
+      "title": "02 Memory",
+      "type": "law",
+      "category": "laws/cognitive",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:41.733Z",
+      "updatedAt": "2026-02-27T15:57:48.099Z"
+    },
+    {
+      "id": "laws.quantum.01-superposition",
+      "path": "codex/laws/quantum/01-superposition.md",
+      "title": "01 Superposition",
+      "type": "law",
+      "category": "laws/quantum",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:41.548Z",
+      "updatedAt": "2026-02-27T15:57:48.099Z"
+    },
+    {
+      "id": "laws.quantum.02-entanglement",
+      "path": "codex/laws/quantum/02-entanglement.md",
+      "title": "02 Entanglement",
+      "type": "law",
+      "category": "laws/quantum",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:41.627Z",
+      "updatedAt": "2026-02-27T15:57:48.099Z"
+    },
+    {
+      "id": "mythic.archetypes.architect",
+      "path": "codex/mythic/archetypes/architect.md",
+      "title": "Architect",
+      "type": "archetype",
+      "category": "mythic/archetypes",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:13.273Z",
+      "updatedAt": "2026-02-27T15:58:37.781Z"
+    },
+    {
+      "id": "mythic.archetypes.sovereign",
+      "path": "codex/mythic/archetypes/sovereign.md",
+      "title": "Sovereign",
+      "type": "archetype",
+      "category": "mythic/archetypes",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:13.386Z",
+      "updatedAt": "2026-02-27T15:58:37.782Z"
+    },
+    {
+      "id": "mythic.archetypes.witness",
+      "path": "codex/mythic/archetypes/witness.md",
+      "title": "Witness",
+      "type": "archetype",
+      "category": "mythic/archetypes",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:13.341Z",
+      "updatedAt": "2026-02-27T15:58:37.781Z"
+    },
+    {
+      "id": "mythic.checkpoints.2026-mkp-tri-closure",
+      "path": "codex/mythic/checkpoints/2026-mkp-tri-closure.md",
+      "title": "2026 Mkp Tri Closure",
+      "type": "mythic-checkpoint",
+      "category": "mythic/checkpoints",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:13.184Z",
+      "updatedAt": "2026-02-27T15:58:37.780Z"
+    },
+    {
+      "id": "mythic.checkpoints.2026-omni-ascension",
+      "path": "codex/mythic/checkpoints/2026-omni-ascension.md",
+      "title": "2026 Omni Ascension",
+      "type": "mythic-checkpoint",
+      "category": "mythic/checkpoints",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:13.117Z",
+      "updatedAt": "2026-02-27T15:58:37.780Z"
+    },
+    {
+      "id": "systems.mind-os.architecture",
+      "path": "codex/systems/mind-os/architecture.md",
+      "title": "Architecture",
+      "type": "system",
+      "category": "systems/mind-os",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:55.273Z",
+      "updatedAt": "2026-02-27T15:57:59.384Z"
+    },
+    {
+      "id": "systems.mind-os.lineage",
+      "path": "codex/systems/mind-os/lineage.md",
+      "title": "Lineage",
+      "type": "system",
+      "category": "systems/mind-os",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:55.340Z",
+      "updatedAt": "2026-02-27T15:57:59.384Z"
+    },
+    {
+      "id": "systems.mind-os.overview",
+      "path": "codex/systems/mind-os/overview.md",
+      "title": "Overview",
+      "type": "system",
+      "category": "systems/mind-os",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:55.212Z",
+      "updatedAt": "2026-02-27T15:57:59.382Z"
+    },
+    {
+      "id": "systems.omni.image-engine",
+      "path": "codex/systems/omni/image-engine.md",
+      "title": "Image Engine",
+      "type": "system",
+      "category": "systems/omni",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:55.503Z",
+      "updatedAt": "2026-02-27T15:57:59.384Z"
+    },
+    {
+      "id": "systems.omni.intelligence-lineage",
+      "path": "codex/systems/omni/intelligence-lineage.md",
+      "title": "Intelligence Lineage",
+      "type": "system",
+      "category": "systems/omni",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:55.460Z",
+      "updatedAt": "2026-02-27T15:57:59.384Z"
+    },
+    {
+      "id": "systems.omni.overview",
+      "path": "codex/systems/omni/overview.md",
+      "title": "Overview",
+      "type": "system",
+      "category": "systems/omni",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:57:55.400Z",
+      "updatedAt": "2026-02-27T15:57:59.384Z"
+    },
+    {
+      "id": "systems.omni.video-engine",
+      "path": "codex/systems/omni/video-engine.md",
+      "title": "Video Engine",
+      "type": "system",
+      "category": "systems/omni",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:13.055Z",
+      "updatedAt": "2026-02-27T15:58:37.780Z"
+    },
+    {
+      "id": "visual-dialect.motifs.crown",
+      "path": "codex/visual-dialect/motifs/crown.md",
+      "title": "Crown",
+      "type": "visual-motif",
+      "category": "visual-dialect/motifs",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:25.056Z",
+      "updatedAt": "2026-02-27T15:58:37.782Z"
+    },
+    {
+      "id": "visual-dialect.motifs.flame",
+      "path": "codex/visual-dialect/motifs/flame.md",
+      "title": "Flame",
+      "type": "visual-motif",
+      "category": "visual-dialect/motifs",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:25.003Z",
+      "updatedAt": "2026-02-27T15:58:37.782Z"
+    },
+    {
+      "id": "visual-dialect.motifs.neon-thread",
+      "path": "codex/visual-dialect/motifs/neon-thread.md",
+      "title": "Neon Thread",
+      "type": "visual-motif",
+      "category": "visual-dialect/motifs",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:25.113Z",
+      "updatedAt": "2026-02-27T15:58:37.782Z"
+    },
+    {
+      "id": "visual-dialect.registers.color-register",
+      "path": "codex/visual-dialect/registers/color-register.md",
+      "title": "Color Register",
+      "type": "visual-register",
+      "category": "visual-dialect/registers",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:24.743Z",
+      "updatedAt": "2026-02-27T15:58:37.782Z"
+    },
+    {
+      "id": "visual-dialect.registers.emotional-register",
+      "path": "codex/visual-dialect/registers/emotional-register.md",
+      "title": "Emotional Register",
+      "type": "visual-register",
+      "category": "visual-dialect/registers",
+      "tags": [],
+      "links": [],
+      "autoLinks": [],
+      "lineage": [],
+      "createdAt": "2026-02-27T15:58:24.901Z",
+      "updatedAt": "2026-02-27T15:58:37.782Z"
+    }
+  ],
+  "crossLinks": [
+    {
+      "source": "equation.2026-02-27-002",
+      "target": "glossary.resonance",
+      "reason": "tag-overlap:emotion,behavior",
+      "score": 0.667
+    },
+    {
+      "source": "glossary.resonance",
+      "target": "equation.2026-02-27-002",
+      "reason": "explicit",
+      "score": 1
+    },
+    {
+      "source": "glossary.resonance",
+      "target": "equation.2026-02-27-002",
+      "reason": "tag-overlap:emotion,behavior",
+      "score": 0.667
+    },
+    {
+      "source": "legacy.codex.00-index",
+      "target": "legacy.codex.10-architecture",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.00-index",
+      "target": "legacy.codex.20-protocols",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.00-index",
+      "target": "legacy.codex.30-patterns",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.00-index",
+      "target": "legacy.codex.50-mind-path-map",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.00-index",
+      "target": "legacy.codex.60-internal-mind-contracts",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.10-architecture",
+      "target": "legacy.codex.00-index",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.10-architecture",
+      "target": "legacy.codex.20-protocols",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.10-architecture",
+      "target": "legacy.codex.30-patterns",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.10-architecture",
+      "target": "legacy.codex.50-mind-path-map",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.10-architecture",
+      "target": "legacy.codex.60-internal-mind-contracts",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.20-protocols",
+      "target": "legacy.codex.00-index",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.20-protocols",
+      "target": "legacy.codex.10-architecture",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.20-protocols",
+      "target": "legacy.codex.30-patterns",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.20-protocols",
+      "target": "legacy.codex.50-mind-path-map",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.20-protocols",
+      "target": "legacy.codex.60-internal-mind-contracts",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.30-patterns",
+      "target": "legacy.codex.00-index",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.30-patterns",
+      "target": "legacy.codex.10-architecture",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.30-patterns",
+      "target": "legacy.codex.20-protocols",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.30-patterns",
+      "target": "legacy.codex.50-mind-path-map",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.30-patterns",
+      "target": "legacy.codex.60-internal-mind-contracts",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.50-mind-path-map",
+      "target": "legacy.codex.00-index",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.50-mind-path-map",
+      "target": "legacy.codex.10-architecture",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.50-mind-path-map",
+      "target": "legacy.codex.20-protocols",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.50-mind-path-map",
+      "target": "legacy.codex.30-patterns",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.50-mind-path-map",
+      "target": "legacy.codex.60-internal-mind-contracts",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.60-internal-mind-contracts",
+      "target": "legacy.codex.00-index",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.60-internal-mind-contracts",
+      "target": "legacy.codex.10-architecture",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.60-internal-mind-contracts",
+      "target": "legacy.codex.20-protocols",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.60-internal-mind-contracts",
+      "target": "legacy.codex.30-patterns",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    },
+    {
+      "source": "legacy.codex.60-internal-mind-contracts",
+      "target": "legacy.codex.50-mind-path-map",
+      "reason": "tag-overlap:legacy,codex",
+      "score": 1
+    }
+  ]
+}
