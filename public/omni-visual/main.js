@@ -61,7 +61,7 @@ const shellGeometry = new THREE.SphereGeometry(1.2, 72, 64);
 const shellMaterial = new THREE.MeshPhysicalMaterial({
   color: 0x4a61ff,
   transparent: true,
-  opacity: 0.16,
+  opacity: 0.24,
   emissive: 0x6f74ff,
   emissiveIntensity: 0.72,
   roughness: 0.1,
@@ -87,7 +87,7 @@ function createArc(radius, tube, colorA, colorB, tilt) {
     clearcoat: 0.9,
     clearcoatRoughness: 0.18,
     transparent: true,
-    opacity: 0.9
+    opacity: 0.96
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.rotation.set(tilt.x, tilt.y, tilt.z);
@@ -303,8 +303,8 @@ function animate(now) {
     ? 0.86
     : 0.7 + (Math.sin(time * 2) * 0.12 + 0.12);
   shellMaterial.opacity = prefersReducedMotion
-    ? 0.2
-    : 0.13 + (Math.sin(time * 1.7 + 1) * 0.05 + 0.05);
+    ? 0.28
+    : 0.2 + (Math.sin(time * 1.7 + 1) * 0.07 + 0.07);
 
   renderer.render(scene, camera);
   rafId = window.requestAnimationFrame(animate);
