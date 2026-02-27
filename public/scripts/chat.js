@@ -823,34 +823,98 @@
 
     const onStatus = typeof hooks?.onStatus === "function" ? hooks.onStatus : null;
 
+    const buildRequestBody = (inputPayload, stableProfile = false) => {
+      const qualityMode = String(inputPayload?.qualityMode || "BALANCED").toUpperCase();
+      const format = String(inputPayload?.format || "both").toLowerCase();
+      const maxSizeMB = Number(inputPayload?.maxSizeMB || 2);
+      const durationSeconds = Number(inputPayload?.durationSeconds || 4);
+      const width = Number(inputPayload?.width || 512);
+      const height = Number(inputPayload?.height || 512);
+      const fps = Number(inputPayload?.fps || 12);
+
+      if (!stableProfile) {
+        return {
+          prompt: String(inputPayload?.prompt || "").trim(),
+          qualityMode,
+          format,
+          maxSizeMB,
+          durationSeconds,
+          width,
+          height,
+          fps,
+          safetyProfile: buildSafetyProfile()
+        };
+      }
+
+      return {
+        prompt: String(inputPayload?.prompt || "").trim(),
+        qualityMode: "LONG_SOFT",
+        format,
+        maxSizeMB: Math.min(2, maxSizeMB || 2),
+        durationSeconds: 2,
+        width: 384,
+        height: 384,
+        fps: 8,
+        safetyProfile: buildSafetyProfile()
+      };
+    };
+
+    const submitVideoJob = async (requestBody) => {
+      const response = await fetch("/api/video/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      return { response, data };
+    };
+
+    const pollVideoJobUntilDone = async (jobId, timeoutMs, pollIntervalMs) => {
+      const startedAt = Date.now();
+      let latest = { id: jobId, status: "queued" };
+
+      while (Date.now() - startedAt < timeoutMs) {
+        latest = await requestVideoJobStatus(jobId);
+
+        if (latest.status === "succeeded") {
+          return { outcome: "succeeded", latest };
+        }
+
+        if (latest.status === "failed") {
+          return { outcome: "failed", latest };
+        }
+
+        if (onStatus) {
+          onStatus({
+            status: latest.status || "running",
+            detail: latest.status === "queued" ? "Queued in worker..." : "Generating frames and encoding..."
+          });
+        }
+
+        await sleep(pollIntervalMs);
+      }
+
+      return { outcome: "timeout", latest };
+    };
+
+    const timeoutMs = 45_000;
+    const pollIntervalMs = 1_500;
+
     if (onStatus) {
       onStatus({ status: "queued", detail: "Submitting video job..." });
     }
 
-    const response = await fetch("/api/video/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        prompt: String(payload?.prompt || "").trim(),
-        qualityMode: String(payload?.qualityMode || "BALANCED").toUpperCase(),
-        format: String(payload?.format || "both").toLowerCase(),
-        maxSizeMB: Number(payload?.maxSizeMB || 2),
-        durationSeconds: Number(payload?.durationSeconds || 4),
-        width: Number(payload?.width || 512),
-        height: Number(payload?.height || 512),
-        fps: Number(payload?.fps || 12),
-        safetyProfile: buildSafetyProfile()
-      })
-    });
-
-    let data = null;
-    try {
-      data = await response.json();
-    } catch {
-      data = null;
-    }
+    const primaryRequestBody = buildRequestBody(payload, false);
+    const { response, data } = await submitVideoJob(primaryRequestBody);
 
     if (!response.ok) {
       if (response.status === 403) {
@@ -912,45 +976,79 @@
       throw new Error("Video job id was not returned");
     }
 
-    let latest = job;
-    const startedAt = Date.now();
-    const timeoutMs = 75_000;
-
-    while (Date.now() - startedAt < timeoutMs) {
-      if (latest.status === "succeeded") {
-        if (onStatus) {
-          onStatus({ status: "succeeded", detail: "Video generation completed." });
-        }
-        return mapVideoJobToResult(latest);
-      }
-      if (latest.status === "failed") {
-        const message = String(latest.errorMessage || "Video generation failed");
-        if (isSafetyBlockedVideoError(message)) {
-          throw new Error(message);
-        }
-        const localFallback = buildVideoFallbackResult(payload, message);
-        if (onStatus) {
-          onStatus({ status: "succeeded", detail: "Video fallback generated from local keyframes." });
-        }
-        return localFallback;
-      }
-
+    const firstPoll = await pollVideoJobUntilDone(job.id, timeoutMs, pollIntervalMs);
+    if (firstPoll.outcome === "succeeded") {
       if (onStatus) {
-        onStatus({
-          status: latest.status || "running",
-          detail: latest.status === "queued" ? "Queued in worker..." : "Generating frames and encoding..."
-        });
+        onStatus({ status: "succeeded", detail: "Video generation completed." });
       }
+      return mapVideoJobToResult(firstPoll.latest);
+    }
 
-      await sleep(2500);
-      latest = await requestVideoJobStatus(job.id);
+    if (firstPoll.outcome === "failed") {
+      const message = String(firstPoll.latest?.errorMessage || "Video generation failed");
+      if (isSafetyBlockedVideoError(message)) {
+        throw new Error(message);
+      }
+      const localFallback = buildVideoFallbackResult(payload, message);
+      if (onStatus) {
+        onStatus({ status: "succeeded", detail: "Video fallback generated from local keyframes." });
+      }
+      return localFallback;
     }
 
     if (onStatus) {
-      onStatus({ status: "succeeded", detail: "Video fallback generated after timeout." });
+      onStatus({
+        status: "running",
+        detail: "Primary video job timed out. Retrying once with stability profile (384x384, 8 FPS, 2s)..."
+      });
     }
 
-    return buildVideoFallbackResult(payload, "Video generation timed out while waiting for completion");
+    const stableRequestBody = buildRequestBody(payload, true);
+    const { response: retryResponse, data: retryData } = await submitVideoJob(stableRequestBody);
+
+    if (!retryResponse.ok) {
+      const message = String(retryData?.error || "Video generation retry failed");
+      if (retryResponse.status === 403 || isSafetyBlockedVideoError(message)) {
+        throw new Error(message);
+      }
+      if (onStatus) {
+        onStatus({ status: "succeeded", detail: "Video fallback generated after retry submission failure." });
+      }
+      return buildVideoFallbackResult(stableRequestBody, message);
+    }
+
+    const retryJob = retryData || null;
+    if (!retryJob?.id) {
+      if (onStatus) {
+        onStatus({ status: "succeeded", detail: "Video fallback generated after retry id failure." });
+      }
+      return buildVideoFallbackResult(stableRequestBody, "Video retry job id was not returned");
+    }
+
+    const secondPoll = await pollVideoJobUntilDone(retryJob.id, timeoutMs, pollIntervalMs);
+    if (secondPoll.outcome === "succeeded") {
+      if (onStatus) {
+        onStatus({ status: "succeeded", detail: "Video generation completed on retry with stability profile." });
+      }
+      return mapVideoJobToResult(secondPoll.latest);
+    }
+
+    if (secondPoll.outcome === "failed") {
+      const message = String(secondPoll.latest?.errorMessage || "Video generation retry failed");
+      if (isSafetyBlockedVideoError(message)) {
+        throw new Error(message);
+      }
+      if (onStatus) {
+        onStatus({ status: "succeeded", detail: "Video fallback generated after retry failure." });
+      }
+      return buildVideoFallbackResult(stableRequestBody, message);
+    }
+
+    if (onStatus) {
+      onStatus({ status: "succeeded", detail: "Video fallback generated after retry timeout." });
+    }
+
+    return buildVideoFallbackResult(stableRequestBody, "Video generation timed out after one retry");
   }
 
   function toModelLabel(model) {
