@@ -5,9 +5,11 @@ compatibility_date = "2024-11-01"
 [ai]
 binding = "AI"
 
+[vars]
+OMNI_ENV = "development"
+
 # Optional model aliases for omni runtime routing.
 # Uncomment and set these to provider model IDs available in your account.
-# [vars]
 # MODEL_OMNI = "@cf/meta/llama-3.1-8b-instruct"
 # MODEL_GPT_4O = "@cf/openai/gpt-4o"
 # MODEL_GPT_4O_MINI = "@cf/openai/gpt-4o-mini"
