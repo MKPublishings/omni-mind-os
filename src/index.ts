@@ -60,6 +60,9 @@ export interface Env {
   OMNI_AUTONOMY_LEVEL?: string;
   OMNI_ADMIN_KEY?: string;
   OMNI_MEDIA_API_BASE_URL?: string;
+  OMNI_MEDIA_BASE_URL?: string;
+  OMNI_MEDIA_HOST?: string;
+  OMNI_MEDIA_PORT?: string;
   OMNI_MEDIA_API_KEY?: string;
   OMNI_MEDIA_API_TIMEOUT_MS?: string;
   OMNI_MEDIA_FALLBACK_VIDEO_URL?: string;
@@ -1333,6 +1336,22 @@ function sanitizePromptText(prompt: string): string {
     .replace(/[\x00-\x1F\x7F]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function resolveMediaBaseUrl(env: Env): string {
+  const explicitApiBase = sanitizePromptText(String(env.OMNI_MEDIA_API_BASE_URL || "")).trim();
+  if (explicitApiBase) return explicitApiBase;
+
+  const explicitBase = sanitizePromptText(String(env.OMNI_MEDIA_BASE_URL || "")).trim();
+  if (explicitBase) return explicitBase;
+
+  const host = sanitizePromptText(String(env.OMNI_MEDIA_HOST || "")).trim();
+  const port = sanitizePromptText(String(env.OMNI_MEDIA_PORT || "")).trim();
+  if (host && port) {
+    return `http://${host}:${port}`;
+  }
+
+  return "";
 }
 
 const OMNI_STYLE_PACKS: Record<string, { name: string; tags: string[] }> = {
@@ -3036,7 +3055,7 @@ export default {
       }
 
       if (url.pathname === "/api/video/generate" && request.method === "POST") {
-        const baseUrl = sanitizePromptText(String(env.OMNI_MEDIA_API_BASE_URL || "")).trim();
+        const baseUrl = resolveMediaBaseUrl(env);
         const fallbackVideoUrl = sanitizePromptText(
           String(env.OMNI_MEDIA_FALLBACK_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4")
         ).trim();
@@ -3125,7 +3144,7 @@ export default {
           return new Response(
             JSON.stringify({
               error:
-                "Prompt-grounded video backend is not configured. Set OMNI_MEDIA_API_BASE_URL and disable placeholder-only mode.",
+                "Prompt-grounded video backend is not configured. Set OMNI_MEDIA_API_BASE_URL (or OMNI_MEDIA_BASE_URL / OMNI_MEDIA_HOST+OMNI_MEDIA_PORT) and disable placeholder-only mode.",
               code: "video-backend-not-configured"
             }),
             {
@@ -3327,10 +3346,13 @@ export default {
       }
 
       if (url.pathname === "/omni_video_exports" && request.method === "POST") {
-        const baseUrl = sanitizePromptText(String(env.OMNI_MEDIA_API_BASE_URL || "")).trim();
+        const baseUrl = resolveMediaBaseUrl(env);
         if (!baseUrl) {
           return new Response(
-            JSON.stringify({ error: "OMNI_MEDIA_API_BASE_URL is required for /omni_video_exports proxy" }),
+            JSON.stringify({
+              error:
+                "OMNI media base URL is required for /omni_video_exports proxy. Set OMNI_MEDIA_API_BASE_URL (or OMNI_MEDIA_BASE_URL / OMNI_MEDIA_HOST+OMNI_MEDIA_PORT)."
+            }),
             {
               status: 503,
               headers: {
@@ -3382,7 +3404,7 @@ export default {
       }
 
       if (url.pathname === "/api/video/health" && request.method === "GET") {
-        const baseUrl = sanitizePromptText(String(env.OMNI_MEDIA_API_BASE_URL || "")).trim();
+        const baseUrl = resolveMediaBaseUrl(env);
         const allowPlaceholderVideo = /^(1|true|yes|on)$/i.test(
           sanitizePromptText(String(env.OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO || "")).trim()
         );
