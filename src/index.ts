@@ -221,6 +221,8 @@ const INTERNET_LEARNING_KEY = "omni_internet_learning_v1";
 const INTERNET_LEARNING_MAX_ENTRIES = 120;
 const VIDEO_JOB_KEY_PREFIX = "video:job:";
 const VIDEO_JOB_TTL_SEC = 6 * 60 * 60;
+const VIDEO_JOB_MAX_ATTEMPTS = 3;
+const VIDEO_JOB_ATTEMPT_TIMEOUT_MS = 120_000;
 
 const VIDEO_STYLE_REGISTRY: StyleRegistry = {
   styles: {
@@ -1956,66 +1958,6 @@ function isSafetyVideoErrorMessage(value: unknown): boolean {
   return /illegal|age-restricted|blocked|forbidden|explicit sexual/.test(text);
 }
 
-function buildVideoFallbackKeyframeUrls(prompt: string, count = 6): string[] {
-  const frameCount = Math.max(3, Math.min(12, Number(count) || 6));
-  const safePrompt = sanitizePromptText(String(prompt || "Generated video preview")).slice(0, 220) || "Generated video preview";
-  const urls: string[] = [];
-
-  for (let i = 0; i < frameCount; i += 1) {
-    const shift = (i * 18) % 360;
-    const label = `Frame ${i + 1}/${frameCount}`;
-    const progress = Math.round(((i + 1) / frameCount) * 100);
-    const barWidth = Math.round((360 * progress) / 100);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${(218 + shift) % 360},75%,17%)"/><stop offset="52%" stop-color="hsl(${(244 + shift) % 360},78%,23%)"/><stop offset="100%" stop-color="hsl(${(194 + shift) % 360},82%,26%)"/></linearGradient><linearGradient id="scan" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(125,230,255,0.15)"/><stop offset="100%" stop-color="rgba(125,230,255,0.45)"/></linearGradient></defs><rect width="512" height="512" fill="url(#bg)"/><rect x="18" y="18" width="476" height="476" rx="22" ry="22" fill="rgba(4,8,18,0.52)" stroke="rgba(138,224,255,0.32)"/><rect x="28" y="28" width="456" height="30" rx="10" fill="rgba(10,18,32,0.72)"/><text x="42" y="48" fill="#bdefff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="700">OMNI VIDEO SYNTH</text><text x="355" y="48" fill="#c6f4ff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13">${label}</text><rect x="36" y="74" width="440" height="328" rx="14" fill="rgba(0,0,0,0.34)" stroke="rgba(138,224,255,0.22)"/><rect x="36" y="240" width="440" height="18" fill="url(#scan)" opacity="0.65"/><foreignObject x="50" y="96" width="412" height="220"><div xmlns="http://www.w3.org/1999/xhtml" style="color:#e9fbff;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:20px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden;">${safePrompt}</div></foreignObject><rect x="76" y="420" width="360" height="10" rx="5" fill="rgba(255,255,255,0.2)"/><rect x="76" y="420" width="${barWidth}" height="10" rx="5" fill="#7de6ff"/><text x="76" y="446" fill="#c6f4ff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Rendering visual fallback • ${progress}%</text><text x="76" y="468" fill="#9bcdd9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Style: Omni cinematic neon</text></svg>`;
-    urls.push(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
-  }
-
-  return urls;
-}
-
-function buildFallbackPhase1VideoPayload(
-  prompt: string,
-  body: VideoPhase1RequestBody,
-  reason = "Video pipeline unavailable"
-): Phase1VideoGenerationPayload {
-  const durationSec = clamp(Number((body as VideoGenerateRequestBody)?.durationSeconds ?? body?.durationSec ?? 4), 1, 180);
-  const width = clamp(Number((body as VideoGenerateRequestBody)?.width || 512), 128, 4096);
-  const height = clamp(Number((body as VideoGenerateRequestBody)?.height || 512), 128, 4096);
-  const fps = clamp(Number((body as VideoGenerateRequestBody)?.fps || 12), 1, 60);
-  const keyframeUrls = buildVideoFallbackKeyframeUrls(prompt, 6);
-
-  const result = {
-    id: `fallback-${crypto.randomUUID()}`,
-    mp4Url: undefined,
-    gifUrl: undefined,
-    sizeMB: {
-      mp4: undefined,
-      gif: undefined
-    },
-    meta: {
-      durationSec,
-      resolution: { width, height },
-      fps,
-      sceneGraph: null,
-      shots: [],
-      keyframes: keyframeUrls.map((imageUrl, index) => ({
-        id: `fallback-kf-${index + 1}`,
-        imageId: `fallback-img-${index + 1}`,
-        imageUrl,
-        timeSec: Number(((index / Math.max(1, keyframeUrls.length - 1)) * durationSec).toFixed(3)),
-        description: prompt
-      })),
-      fallbackReason: String(reason || "Video pipeline unavailable")
-    }
-  };
-
-  return {
-    result,
-    previews: { keyframeUrls },
-    createdAt: Date.now()
-  };
-}
-
 function videoJobKey(jobId: string): string {
   return `${VIDEO_JOB_KEY_PREFIX}${jobId}`;
 }
@@ -2083,6 +2025,57 @@ function resolveEffectiveVideoFormat(requested: VideoFormat): { format: VideoFor
   }
 
   return { format: requested, downgraded: false };
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${Math.floor(timeoutMs / 1000)}s`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }) as Promise<T>;
+}
+
+function buildVideoRetryBodies(base: VideoGenerateRequestBody): VideoGenerateRequestBody[] {
+  const first = {
+    ...base,
+    qualityMode: coerceVideoQualityMode(base.qualityMode),
+    format: coerceVideoFormat(base.format),
+    durationSeconds: clamp(Number(base.durationSeconds ?? base.durationSec ?? 4), 1, 180),
+    width: clamp(Number(base.width || 512), 128, 4096),
+    height: clamp(Number(base.height || 512), 128, 4096),
+    fps: clamp(Number(base.fps || 12), 1, 60),
+    maxSizeMB: clamp(Number(base.maxSizeMB || 2), 0.1, 512)
+  } as VideoGenerateRequestBody;
+
+  const second = {
+    ...first,
+    qualityMode: "BALANCED",
+    durationSeconds: Math.min(3, first.durationSeconds || 3),
+    width: Math.min(448, first.width || 448),
+    height: Math.min(448, first.height || 448),
+    fps: Math.min(10, first.fps || 10),
+    maxSizeMB: Math.min(2, Number(first.maxSizeMB || 2))
+  } as VideoGenerateRequestBody;
+
+  const third = {
+    ...first,
+    qualityMode: "LONG_SOFT",
+    format: first.format === "mp4" ? "gif" : first.format,
+    durationSeconds: Math.min(2, first.durationSeconds || 2),
+    width: Math.min(384, first.width || 384),
+    height: Math.min(384, first.height || 384),
+    fps: Math.min(8, first.fps || 8),
+    maxSizeMB: Math.min(2, Number(first.maxSizeMB || 2))
+  } as VideoGenerateRequestBody;
+
+  return [first, second, third];
 }
 
 function isBrowserPlayableVideoUrl(value: unknown): boolean {
@@ -2212,6 +2205,39 @@ async function runPhase1VideoGeneration(
   };
 }
 
+async function runPhase1VideoGenerationWithRetries(
+  env: Env,
+  prompt: string,
+  body: VideoGenerateRequestBody
+): Promise<Phase1VideoGenerationPayload> {
+  const attempts = buildVideoRetryBodies(body).slice(0, VIDEO_JOB_MAX_ATTEMPTS);
+  const errors: string[] = [];
+
+  for (let index = 0; index < attempts.length; index += 1) {
+    const attemptBody = attempts[index];
+    try {
+      const payload = await withTimeout(
+        runPhase1VideoGeneration(env, prompt, attemptBody),
+        VIDEO_JOB_ATTEMPT_TIMEOUT_MS,
+        `video-attempt-${index + 1}`
+      );
+
+      const hasMp4 = Boolean(String(payload?.result?.mp4Url || "").trim());
+      const hasGif = Boolean(String(payload?.result?.gifUrl || "").trim());
+      if (!hasMp4 && !hasGif) {
+        throw new Error("No playable media URLs returned from video pipeline");
+      }
+
+      return payload;
+    } catch (error: any) {
+      const message = String(error?.message || "unknown generation error");
+      errors.push(`attempt-${index + 1}: ${message}`);
+    }
+  }
+
+  throw new Error(`Video stream interrupted after ${attempts.length} attempts. ${errors.join(" | ")}`);
+}
+
 async function processVideoJob(
   env: Env,
   logger: OmniLogger,
@@ -2228,7 +2254,7 @@ async function processVideoJob(
   await saveVideoJob(env, running);
 
   try {
-    const payload = await runPhase1VideoGeneration(env, current.prompt, body);
+    const payload = await runPhase1VideoGenerationWithRetries(env, current.prompt, body);
     const result = payload.result;
     const succeeded: OmniVideoJob = {
       ...running,
@@ -2246,33 +2272,23 @@ async function processVideoJob(
   } catch (error: any) {
     logger.error("video_job_processing_error", error);
     const message = String(error?.message || "Video generation failed");
-    if (isSafetyVideoErrorMessage(message)) {
-      const failed: OmniVideoJob = {
-        ...running,
-        status: "failed",
-        errorMessage: message
-      };
-      await saveVideoJob(env, failed);
-      return;
-    }
-
-    const fallbackPayload = buildFallbackPhase1VideoPayload(running.prompt, body, message);
-    const fallbackResult = fallbackPayload.result;
-    const succeededWithFallback: OmniVideoJob = {
+    const failed: OmniVideoJob = {
       ...running,
-      status: "succeeded",
-      durationSeconds: Number(fallbackResult?.meta?.durationSec || running.durationSeconds || 4),
-      width: Number(fallbackResult?.meta?.resolution?.width || running.width || 512),
-      height: Number(fallbackResult?.meta?.resolution?.height || running.height || 512),
-      fps: Number(fallbackResult?.meta?.fps || running.fps || 12),
-      mp4Url: undefined,
-      gifUrl: undefined,
-      thumbnailUrl: fallbackPayload.previews.keyframeUrls[0] || undefined,
-      keyframePreviewUrls: fallbackPayload.previews.keyframeUrls,
-      errorMessage: `Recovered with fallback: ${message}`
+      status: "failed",
+      errorMessage: isSafetyVideoErrorMessage(message)
+        ? message
+        : `Video-only mode: generation failed without fallback. ${message}`
     };
-    await saveVideoJob(env, succeededWithFallback);
+    await saveVideoJob(env, failed);
   }
+}
+
+let videoJobQueueTail: Promise<void> = Promise.resolve();
+
+function enqueueVideoJob(task: () => Promise<void>): Promise<void> {
+  const next = videoJobQueueTail.then(task, task);
+  videoJobQueueTail = next.catch(() => undefined);
+  return next;
 }
 
 // Warmup connections on first request (non-blocking)
@@ -2324,6 +2340,7 @@ export default {
       const isApiRoute =
         url.pathname === "/api/omni" ||
         url.pathname === "/api/image" ||
+        url.pathname === "/api/video/health" ||
         url.pathname === "/api/ping" ||
         url.pathname === "/api/modes" ||
         url.pathname === "/api/modes/details" ||
@@ -2709,6 +2726,33 @@ export default {
         return withCors(await apiPing());
       }
 
+      if (url.pathname === "/api/video/health" && request.method === "GET") {
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            runtime: {
+              mp4LikelySupported: runtimeLikelySupportsMp4Encoding(),
+              gifSupported: true
+            },
+            queue: {
+              concurrency: 1,
+              policy: "fifo-single-runner"
+            },
+            generationPolicy: {
+              fallback: "disabled",
+              mode: "video-only"
+            },
+            recommendedTimeoutSec: Math.floor(VIDEO_JOB_ATTEMPT_TIMEOUT_MS / 1000)
+          }),
+          {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      }
+
       if (url.pathname === "/api/modes" && request.method === "GET") {
         const includeDetails = String(url.searchParams.get("details") || "").toLowerCase() === "true";
         return withCors(includeDetails ? await listModeDetails() : await listModes());
@@ -2897,11 +2941,11 @@ export default {
 
         await saveVideoJob(env, job);
         ctx.waitUntil(
-          processVideoJob(env, logger, jobId, {
+          enqueueVideoJob(() => processVideoJob(env, logger, jobId, {
             ...body,
             prompt,
             maxSizeMB: Number(body?.maxSizeMB || 2)
-          })
+          }))
         );
 
         return new Response(JSON.stringify(job), {
@@ -2986,6 +3030,16 @@ export default {
       }
 
       if (url.pathname === "/api/ping" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
+      if (url.pathname === "/api/video/health" && request.method !== "GET") {
         return new Response("Method Not Allowed", {
           status: 405,
           headers: {
@@ -3247,18 +3301,13 @@ export default {
               }
             });
           }
-
-          const fallbackPayload = buildFallbackPhase1VideoPayload(prompt, body, message);
           return new Response(
             JSON.stringify({
-              ok: true,
-              degraded: true,
-              fallbackReason: message,
-              result: fallbackPayload.result,
-              previews: fallbackPayload.previews,
-              createdAt: fallbackPayload.createdAt
+              ok: false,
+              error: `Video-only mode: generation failed without fallback. ${message}`
             }),
             {
+              status: 500,
               headers: {
                 ...CORS_HEADERS,
                 "Content-Type": "application/json"
