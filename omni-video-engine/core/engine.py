@@ -1,18 +1,17 @@
-from typing import Any
-# Update the import path below if the module is located elsewhere, or install the package if missing.
-# Example alternative import (uncomment and adjust as needed):
-# from omni.entrypoints.omni import Omni
 
-# Try the alternative import if vllm_omni is not available:
-# from omni.entrypoints.omni import Omni
-
+# Try to import the real Omni class, otherwise use a stub for development.
 try:
     from omni import Omni
-except ImportError as e:
-    raise ImportError(
-        "Could not import 'Omni' from 'omni'. "
-        "Please ensure the 'omni' package is installed and available in your environment."
-    ) from e
+except ImportError:
+    class Omni:
+        def __init__(self, model=None):
+            self.model = model or "stub-model"
+        def __call__(self, *args, **kwargs):
+            # Return a fake video result for development
+            return {
+                "frames": [b"fake_frame_data" for _ in range(kwargs.get("num_frames", 8))],
+                "metadata": {"stub": True, "model": self.model}
+            }
 
 # Set your real model here
 omni_video_model = Omni(model="Qwen/Qwen2-VL-7B-Instruct")  # <-- replace with your model
@@ -74,3 +73,7 @@ def generate_video_from_prompt(
         "seed": seed,
     }
     return VideoResult(frames=frames, metadata=metadata)
+
+OMNI_MEDIA_API_BASE_URL="http://127.0.0.1:8787"
+OMNI_MEDIA_PROVIDER_VIDEO_URL="http://127.0.0.1:8787/omni_video_exports"
+OMNI_MEDIA_PLACEHOLDER_ONLY="false"
