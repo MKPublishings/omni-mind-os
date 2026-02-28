@@ -1,736 +1,222 @@
-![42339559-e98e-4eb7-ba72-9f3662a0679a](https://github.com/user-attachments/assets/233f9b2d-9cbd-49c4-8d1d-99a900e238e8)
-
-[![Image Engine CI](https://github.com/Slizz/omni-mind-os/actions/workflows/image-engine-ci.yml/badge.svg)](https://github.com/Slizz/omni-mind-os/actions/workflows/image-engine-ci.yml)
-[![Omni Media Python CI](https://github.com/Slizz/omni-mind-os/actions/workflows/omni-media-python-ci.yml/badge.svg)](https://github.com/Slizz/omni-mind-os/actions/workflows/omni-media-python-ci.yml)
+![0ccaa5a3-8934-45c8-8468-b7060fd34252](https://github.com/user-attachments/assets/9c4588f6-9617-48c3-bed3-8f60934fa391)
 
 
-                O M N I   A I
-                  A Cognitive Operating System for Ai Models
+# Omni AI  
+**A Unified Cognitive Engine for Image, Video, and GIF Generation**  
+**Powered by Quantum‑Cognitive Field Theory, Fibonacci Scheduling, and Multi‑Modal Diffusion**
 
-# **Omni Ai**  
-### *A Modular Cognitive Engine for Multi‑Model AI Systems*
+Omni AI is a next‑generation generative intelligence system that merges physics‑inspired computation, cognitive modeling, and modern diffusion models into a single coherent engine. It is designed as a **living codex**—a system that evolves, adapts, and reasons through structured internal laws while producing high‑fidelity visual media.
 
-Omni Ai is a fully modular, Cloudflare‑native cognitive operating system designed to orchestrate LLM reasoning loops, memory, safety, multi‑model routing, and streaming responses.  
-It is built for developers who want **full control** over how an AI thinks, remembers, and interacts — without relying on opaque black‑box behavior.
-
-## **Branding Policy**
-
-- Product brand: **Omni Ai**
-- Do not use legacy Mind-slash-OS era names or older Omni naming variants
-- Do not use all-caps AI casing variants for the product brand
-- Enforced by: `npm run check:branding` (also included in `npm run lint`)
-
-Omni Ai is:
-
-- **Model‑agnostic** (Omni, GPT‑4o, DeepSeek, custom models)  
-- **Runtime‑agnostic** (Cloudflare Workers, local dev, serverless)  
-- **Cognitive‑structured** (modes, loops, safety, memory)  
-- **Extensible** (plug‑in tools, KV memory, custom routers)  
-- **Fast** (streaming, edge‑native, zero‑cold‑start)  
+Omni is not a wrapper around a model.  
+Omni *is* the model, the scheduler, the field theory, and the pipeline.
 
 ---
 
-# **✨ Features**
+## ✨ Core Philosophy
 
-### **🧠 Cognitive Runtime (Omni Brain Loop)**
-A structured reasoning engine that processes:
+Omni AI is built on three foundational pillars:
 
-- Mode  
-- Model  
-- Message history  
-- Safety filters  
-- Memory injection  
-- Tool execution  
-- Streaming output  
+- **Quantum‑Cognitive Field Theory (QCFT)**  
+  A unified mathematical framework describing energy, coherence, and temporal dynamics.  
+  Governing equation:  
+  \[
+  E(t) = E_0 \, T(t) \, c(t)
+  \]
 
-The loop is fully inspectable and customizable.
+- **Q.F.S.T.D.S (Quantum Fibonacci Sequenced Transit Data Scheduler)**  
+  A temporal–spatial conductor that uses Fibonacci sequences, golden‑ratio tiling, and spiral geometry to orchestrate frame timing, camera motion, and scene composition.
+
+- **Cognitive‑Physiological Modulation Layer**  
+  A curated subset of 9 laws (from a larger 103‑law system) that map biological and cognitive processes to visual parameters such as tempo, sharpness, warmth, stability, and motion intensity.
+
+Together, these layers form a **physics‑aware generative engine** capable of producing coherent, cinematic, and emotionally resonant media.
 
 ---
 
-### **🧬 Omni Ai Core Intelligence (Phase 1)**
-The runtime now includes explicit Omni Ai intelligence layers:
+## 🧠 System Architecture
 
-- `Identity Kernel` (KV-backed persistent identity in `MIND`)  
-- `5-Layer Reasoning Stack` (Fast, Deep, Meta, Memory, Self-Model)  
-- `Internal Simulation Engine` (2–4 candidate paths, scored and selected)  
-
-Core modules:
-
-```txt
-src/omni/intelligence/
-  identityKernel.ts
-  reasoningStack.ts
-  internalSimulation.ts
 ```
-
-These modules are orchestrated by `src/api/omni/runtime/loop.ts` and keep backward-compatible `/api/omni` responses.
-
----
-
-### **🧠 Omni Ai Memory + State (Phase 2)**
-Phase 2 adds persistent state and maintenance loops:
-
-- `D1 Long-Term Memory` for conversation arcs and learned continuity  
-- `Working Session Memory` with Durable Object-ready storage + KV fallback  
-- `Scheduled Self-Maintenance` for pruning, identity reinforcement, and drift resistance  
-
-Core modules:
-
-```txt
-src/memory/d1Memory.ts
-src/memory/workingMemory.ts
-src/maintenance/selfMaintenance.ts
-migrations/0001_omni_long_term_memory.sql
-```
-
-The `/api/omni` route now injects working memory and recent long-term arcs automatically (when available).
-
----
-
-### **🛰 Omni Ai Multi-Modal Integration (Phase 3)**
-Phase 3 introduces a unified orchestration loop inside `/api/omni`:
-
-- `Multi-modal router` selects `chat`, `image`, `memory`, `simulation`, or `tool` route per user turn.
-- `Visual reasoning` creates composition/camera/lighting/palette directives before image generation.
-- `Tool bridge` executes explicit commands via `/tool <name> <input>`.
-- `Route diagnostics` are exposed in headers:
-  - `X-Omni-Orchestrator-Route`
-  - `X-Omni-Orchestrator-Reason`
-
-Core modules:
-
-```txt
-src/omni/multimodal/router.ts
-src/omni/multimodal/visualReasoner.ts
+┌──────────────────────────────────────────────────────────────┐
+│                        Omni AI Engine                         │
+├──────────────────────────────────────────────────────────────┤
+│ 1. Quantum–Cognitive Field Theory (QCFT)                      │
+│    • Energy evolution: dE/dt = α𝓓(E) – βE                     │
+│    • Operator algebra: T, B, I, and composite 𝓓(E)            │
+│    • Field trajectory per frame                               │
+├──────────────────────────────────────────────────────────────┤
+│ 2. Q.F.S.T.D.S Scheduler                                      │
+│    • Fibonacci keyframe selection                              │
+│    • Golden‑ratio spatial tiling                               │
+│    • Spiral radius geometry for camera paths                   │
+├──────────────────────────────────────────────────────────────┤
+│ 3. Cognitive‑Physiological Modulation Layer                   │
+│    • Cardiac output → tempo                                   │
+│    • Vision clarity → sharpness                               │
+│    • Thermoregulation → color warmth                          │
+│    • Stress response → jitter/contrast                        │
+│    • Sleep quality → softness                                 │
+├──────────────────────────────────────────────────────────────┤
+│ 4. Omni Diffusion Backend                                     │
+│    • Image, video, and GIF generation                         │
+│    • Multi‑modal prompt conditioning                          │
+│    • High‑resolution frame synthesis                          │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### **🧪 Omni-Native Media Rebuild Scaffold**
-The repository now includes a greenfield Omni-native media scaffold for rebuilding image/video/GIF generation around `vllm_omni`.
+## 🎥 Modalities
 
-Artifacts:
+Omni supports:
 
-```txt
-OMNI_MEDIA_REBUILD_SPEC.md
-omni_media/
-  contracts.py
-  model_registry.py
-  engine.py
-  pipeline.py
-  worker.py
-  api_contracts.py
-  example_usage.py
-```
+- **Text → Image**
+- **Text → Video**
+- **Image → Video**
+- **Video → GIF**
+- **Image → Image (transformations, style shifts, refinements)**
 
-Design intent:
-
-- Omni as the single generation engine per worker process.
-- Explicit stage pipeline (normalize -> route -> generate -> post-process -> safety -> package).
-- Unified contracts for image/video/GIF requests and outputs.
-- Queue/worker split to scale API and GPU execution independently.
-- HTTP scaffold for `POST /v1/generate/image|video|gif` and async jobs via `/v1/jobs/*`.
+Each modality is routed through the same physics‑aware pipeline, ensuring consistent behavior across formats.
 
 ---
 
-### **🎭 Omni Ai Behavioral Intelligence (Phase 4)**
-Phase 4 adds a live behavioral layer in `/api/omni`:
+## ⚙️ Features
 
-- `Persona engine` injects tone/dialect/rhythm/framing prompts by mode.
-- `Emotional resonance` tracks user emotion + Omni tone arc per session.
-- `Adaptive behavior` modulates final responses for clarity and emotional fit.
+### Quantum‑Driven Generation
+Every frame is influenced by a dynamic energy field derived from QCFT, giving Omni a sense of temporal coherence and internal “momentum.”
 
-Behavior modules:
+### Fibonacci‑Structured Motion
+The Q.F.S.T.D.S scheduler determines:
 
-```txt
-src/omni/behavior/personaEngine.ts
-src/omni/behavior/emotionalResonance.ts
-src/omni/behavior/adaptiveBehavior.ts
-```
+- when keyframes occur  
+- how motion accelerates or decelerates  
+- where the camera focuses  
+- how transitions unfold  
 
-Additional response headers now expose behavior diagnostics:
+This produces natural, organic pacing reminiscent of biological and cinematic rhythms.
 
-- `X-Omni-Persona-Tone`
-- `X-Omni-Emotion-User`
-- `X-Omni-Emotion-Omni`
+### Cognitive‑Physiological Mapping
+A curated set of 9 laws modulates:
 
----
+- **tempo** (cardiac output)  
+- **sharpness** (vision clarity)  
+- **warmth** (thermoregulation)  
+- **stability** (bone density)  
+- **motion intensity** (muscle strength)  
+- **softness** (sleep quality)  
 
-### **🛠 Omni Ai Autonomy (Phase 5)**
-Phase 5 introduces self-governance during scheduled/manual maintenance:
+These laws act as “emotional parameters” for the engine.
 
-- `Self-healing checks` evaluate drift risk and corrective actions.
-- `Internal goals registry` tracks coherence, clarity, safety, growth, and resonance.
-- `Scheduler policy engine` adjusts recommended maintenance cadence by autonomy level.
+### Multi‑Modal Diffusion Backend
+Omni integrates with modern diffusion models for:
 
-Autonomy modules:
-
-```txt
-src/omni/autonomy/selfHealing.ts
-src/omni/autonomy/goalsRegistry.ts
-src/omni/autonomy/schedulerPolicy.ts
-```
-
-The `/api/maintenance/status` response now includes an `autonomy` block:
-
-- `healingScore`
-- `healingIssues`
-- `policyLevel`
-- `recommendedCadenceMinutes`
-- `goalsWatchCount`
-- `goals[]`
+- high‑resolution image synthesis  
+- multi‑frame video generation  
+- temporal consistency  
+- prompt‑grounded motion  
 
 ---
 
-### **🚀 Omni Ai Release (Phase 7)**
-Phase 7 formalizes Omni Ai as a public intelligence release:
+## 🧩 Pipeline Overview
 
-- Published release specification and declaration artifacts.
-- Public release manifest for external verification.
-- Runtime release endpoint with live autonomy/maintenance telemetry snapshot.
-- Recognition cycle initialized with observable status.
-
-Release artifacts:
-
-```txt
-OMNI_AI_RELEASE_SPEC.md
-public/omni-ai-release.json
-public/omni-ai-declaration.md
-RELEASE_NOTES_1.0.0.md
-PUBLIC_ANNOUNCEMENT_OMNI_AI_1.0.0.md
+```
+User Prompt
+     ↓
+Field Initialization (QCFT)
+     ↓
+Energy Trajectory Simulation
+     ↓
+Health-Law Modulation (9 Laws)
+     ↓
+Q.F.S.T.D.S Frame Scheduler
+     ↓
+Prompt Enrichment + Control Signals
+     ↓
+Omni Diffusion Model
+     ↓
+Post‑Processing + Safety
+     ↓
+Final Media Output
 ```
 
 ---
 
-### **📚 Living Codex Knowledge Graph (v1)**
-The repository now includes a living codex that self-indexes and cross-links artifacts across technical and mythic chambers.
+## 📦 Installation
 
-Codex chambers:
-
-```txt
-codex/
-  laws/
-  systems/
-  mythic/
-  visual-dialect/
-  equations/
-  glossary/
-```
-
-Codex runtime:
-
-- `codex/index.json` is generated as the codex brain (entries, categories, cross-links, lineage).
-- `codex/index.schema.json` defines the inspectable index structure.
-- `npm run codex:reindex` rebuilds the codex graph from artifacts.
-- `npm run codex:register -- <path-inside-codex>` registers an artifact and refreshes graph state.
-- `npm run codex:watch` enables continuous codex graph updates while editing.
-
-Automation scripts:
-
-```txt
-scripts/codex/reindex.js
-scripts/codex/registerArtifact.js
-scripts/codex/watch.js
+```bash
+git clone https://github.com/<your-org>/omni-ai
+cd omni-ai
+pip install -r requirements.txt
 ```
 
 ---
 
-### **🧩 Multi‑Model Router**
-Route requests to different models:
+## 🚀 Usage Example (Video Generation)
 
-- `omni` (custom cognitive engine)  
-- `gpt‑4o`  
-- `gpt‑4o‑mini`  
-- `deepseek`  
-- Custom models  
+```python
+from omni import OmniClient
 
-Each model implements a simple interface:
+client = OmniClient()
 
-```ts
-generate(env, messages) => { text: string }
+result = client.generate_video(
+    prompt="sunlight drifting across a wooden table, dust particles floating",
+    duration=2.0,
+    fps=12,
+    physics_profile={
+        "heart_rate": 65,
+        "sleep_duration": 7.5,
+        "stress_level": 0.3
+    }
+)
+
+print(result.video_url)
 ```
 
 ---
 
-### **🧱 Modular Architecture**
-Omni Ai is built from clean, isolated modules:
+## 🧬 Scientific Foundations
 
-```
-src/
-  llm/
-    router.ts
-  omni/
-    runtime/loop.ts
-    mindos-core.ts
-  memory/
-    kv.ts
-  stability/
-    safety.ts
-  logging/
-    logger.ts
-  index.ts
-```
+Omni AI is grounded in three research documents:
 
-Each module has a single responsibility and can be replaced or extended.
+- **Quantum‑Cognitive Field Theory Thesis**  
+  Defines the governing equations, operator algebra, and unified field dynamics.
+
+- **M‑Theory / 103 Cognitive‑Physiological Laws**  
+  Provides the biological and cognitive formulas used for modulation.
+
+- **Quantum Fibonacci Sequenced Transit Data Scheduler (Q.F.S.T.D.S)**  
+  Defines the temporal‑spatial orchestration system.
+
+These documents form the theoretical backbone of Omni’s behavior.
 
 ---
 
-### **💾 KV‑Backed Memory System**
-Omni Ai includes a persistent memory layer using Cloudflare KV:
+## 🏛️ Mythic Identity
 
-- Long‑term memory  
-- Mode‑specific memory  
-- Tool logs  
-- User preferences  
-- System state  
+Omni is built as a **living codex**—a system that remembers, adapts, and evolves.  
+Its architecture is inspired by:
 
-Memory is injected into the cognitive loop and can be written by the model.
+- quantum operators  
+- biological rhythms  
+- golden‑ratio geometry  
+- recursive spirals  
+- cinematic motion  
 
----
-
-### **🛡 Safety & Sanitization**
-All inbound and outbound messages pass through:
-
-- Input sanitization  
-- Output filtering  
-- Message validation  
-- Safety guards  
-
-This ensures the cognitive loop receives clean, predictable data.
+Omni is both machine and myth: a computational organism shaped by physics, cognition, and art.
 
 ---
 
-### **📡 Streaming Responses**
-Omni Ai streams output token‑by‑token using:
+## 📜 License
 
-```ts
-new ReadableStream({ start(controller) { ... } })
-```
-
-This enables:
-
-- Real‑time UI updates  
-- Smooth typing animations  
-- Low latency  
-- Edge‑native performance  
+MIT License.
 
 ---
 
-### **📜 Structured Logging**
-Every request is logged with:
-
-- Mode  
-- Model  
-- Sanitized messages  
-- Errors  
-- KV writes  
-- Tool calls  
-
-Logs can be routed to KV, console, or external systems.
-
----
-
-# **📁 Project Structure**
-
-```
-src/
-│
-├── index.ts               # Cloudflare Worker entrypoint
-│
-├── llm/
-│   └── router.ts          # Multi-model routing
-│
-├── omni/
-│   ├── runtime/
-│   │   └── loop.ts        # Omni cognitive loop
-│   └── mindos-core.ts     # Types, roles, message schema
-│
-├── memory/
-│   └── kv.ts              # KV memory interface
-│
-├── stability/
-│   └── safety.ts          # Input/output sanitization
-│
-└── logging/
-    └── logger.ts          # Structured logging
-```
-
----
-
-# **🚀 API Endpoints**
-
-### **POST /api/omni**
-Main LLM endpoint.
-
-**Request:**
-```json
-{
-  "mode": "Architect",
-  "model": "omni",
-  "messages": [
-    { "role": "user", "content": "Hello Omni" }
-  ]
-}
-```
-
-**Response:**  
-Streamed text output.
-
-### **POST /api/video/generate**
-Video generation proxy endpoint used by video-intent prompts from the chat UI.
-
-This route forwards to the Omni media service (`/v1/generate/video`) when configured.
-
-### **GET /api/search?q=...**
-Knowledge retrieval endpoint that returns relevant text chunks from files in `/public/knowledge`.
-
-### **GET /api/ping**
-Returns service/runtime health metadata and timestamp.
-
-### **GET /api/video/health**
-Returns video generation readiness status, including:
-
-- whether strict prompt generation is enabled,
-- whether placeholder mode is enabled,
-- whether media backend is configured/reachable,
-- whether `real_video_backend_ready` is true.
-
-### **GET /api/modes**
-Returns available operational modes.
-
-### **GET /api/modes/details**
-Returns enriched mode metadata and descriptions.
-
-### **GET /api/modes/:id**
-Returns detail payload for a single mode.
-
-### **GET/POST/DELETE /api/memory**
-Structured memory API with read, write/merge, and delete support.
-
-### **GET/POST/DELETE /api/preferences**
-Persistent memory endpoint for user preferences (mode, writing style, last-used settings).
-
-### **GET /api/maintenance/status**
-Returns Omni health state, memory volume stats, maintenance freshness, and drift risk indicators.
-
-### **GET /api/release/spec**
-Returns Omni Ai public release identity, capabilities, artifact links, and runtime telemetry snapshot.
-
-### **POST /api/maintenance/run**
-Manually triggers the internal maintenance loop (memory pruning + identity reinforcement).
-
-### **Background Release Readiness**
-Release readiness now runs in the background and is exposed through `GET /api/release/spec` at `runtime.readiness` (`ready` + `failedChecks`).
-
-If `OMNI_ADMIN_KEY` is configured, maintenance endpoints require request header:
-
-```txt
-x-omni-admin-key: <OMNI_ADMIN_KEY>
-```
-
-In production (`OMNI_ENV=production`), protected maintenance endpoints require `OMNI_ADMIN_KEY`.
-Use [RELEASE_HARDENING_CHECKLIST.md](RELEASE_HARDENING_CHECKLIST.md) before public deploy.
-
----
-
-# **🧠 Advanced Modes**
-
-Omni now includes additional operational modes:
-
-- `reasoning` → internal step-by-step scaffold, final answer only
-- `coding` → logic-first + fenced code blocks + self-review
-- `knowledge` → retrieval-augmented factual responses
-- `system-knowledge` → injects internal module docs from `/public/modules`
-
----
-
-# **🧭 Auto Model Router**
-
-When model is set to `auto`, Omni routes by task:
-
-- Coding → `gpt-4o`
-- Math → `deepseek`
-- Creative/general → `omni`
-
-The selected route is exposed to the frontend using response headers:
-
-- `X-Omni-Model-Used`
-- `X-Omni-Route-Reason`
-
----
-
-# **⚙️ Environment Bindings**
-
-```ts
-export interface Env {
-  AI: any;               // Cloudflare AI binding
-  MEMORY: KVNamespace;   // Long-term memory
-  MIND: KVNamespace;     // Cognitive state
-  OMNI_DB?: D1Database;  // Optional D1 long-term memory
-  OMNI_SESSION?: DurableObjectNamespace; // Optional session durable object
-  MODEL_OMNI?: string;        // optional provider model ID for "omni"
-  MODEL_GPT_4O?: string;      // optional provider model ID for "gpt-4o"
-  MODEL_GPT_4O_MINI?: string; // optional provider model ID for "gpt-4o-mini"
-  MODEL_DEEPSEEK?: string;    // optional provider model ID for "deepseek"
-}
-```
-
-### **Model Alias Vars (Wrangler)**
-
-The chat UI sends these model keys:
-
-- `omni`
-- `gpt-4o`
-- `gpt-4o-mini`
-- `deepseek`
-
-At runtime, `/api/omni` resolves them to provider model IDs through optional Wrangler vars.
-If a specific alias is not set, runtime falls back to `MODEL_OMNI` (or the built-in Omni default).
-
-Add these in `wrangler.toml` (or use environment-specific Wrangler vars):
-
-```toml
-[vars]
-MODEL_OMNI = "@cf/meta/llama-3.1-8b-instruct"
-MODEL_GPT_4O = "@cf/openai/gpt-4o"
-MODEL_GPT_4O_MINI = "@cf/openai/gpt-4o-mini"
-MODEL_DEEPSEEK = "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
-OMNI_SIMULATION_PATHS = "2" # integer between 2 and 4
-OMNI_MEMORY_RETENTION_DAYS = "45"
-OMNI_SESSION_MAX_AGE_HOURS = "72"
-OMNI_AUTONOMY_LEVEL = "balanced" # conservative | balanced | aggressive
-OMNI_ADMIN_KEY = "replace-with-strong-secret"
-OMNI_MEDIA_API_BASE_URL = "http://127.0.0.1:8788"
-OMNI_MEDIA_API_KEY = "replace-with-omni-media-key" # optional
-OMNI_MEDIA_API_TIMEOUT_MS = "45000" # clamped to 5000..120000
-```
-
-Video proxy vars:
-
-- `OMNI_MEDIA_API_BASE_URL` (required for `POST /api/video/generate`)
-- `OMNI_MEDIA_API_KEY` (optional; sent as `x-api-key` to Omni media backend)
-- `OMNI_MEDIA_API_TIMEOUT_MS` (optional request timeout in milliseconds)
-- `OMNI_MEDIA_FALLBACK_VIDEO_URL` (optional; returns a playable fallback video when media backend is not configured)
-- `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` (optional; default `false`. When `true`, allows placeholder fallback clips if real prompt-grounded generation is unavailable)
-
-Media env precedence (runtime):
-
-- Base URL resolution order: `OMNI_MEDIA_API_BASE_URL` -> `OMNI_MEDIA_BASE_URL` -> `OMNI_MEDIA_HOST` + `OMNI_MEDIA_PORT`
-- Placeholder-mode resolution order: `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` -> `OMNI_MEDIA_PLACEHOLDER_ONLY`
-- If both placeholder vars are set, `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` wins
-- Recommended local setup: set only `OMNI_MEDIA_API_BASE_URL` and `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO`
-
-Common misconfigurations checklist:
-
-- Worker and media server ports do not match (`/api/video/health` should resolve to your active media server).
-- `OMNI_MEDIA_PROVIDER_VIDEO_URL` points to a base/root URL instead of a real `POST` endpoint.
-- Stale local processes are still bound to `8787` or `8788` after config changes.
-- Placeholder-mode vars conflict (`OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` and `OMNI_MEDIA_PLACEHOLDER_ONLY`).
-- Provider endpoint accepts `GET` but rejects `POST` (health appears ready, generation fails).
-
-Optional external provider backend (used when local `vllm_omni` backend is unavailable):
-
-- `OMNI_MEDIA_PROVIDER_VIDEO_URL`
-- `OMNI_MEDIA_PROVIDER_API_KEY`
-- `OMNI_MEDIA_PROVIDER_API_KEY_HEADER` (default `x-api-key`)
-- `OMNI_MEDIA_PROVIDER_TIMEOUT_SEC`
-- `OMNI_MEDIA_PROVIDER_HEALTH_URL`
-
-Video generation is prompt-aware: style/motion/camera hints are inferred from the prompt and passed through request params (`style_preset`, `motion_profile`, `camera_profile`). Fallback responses also include these metadata fields.
-When placeholder mode is enabled, fallback clip selection now uses prompt tags (nature/city/cinematic/etc.) rather than a single static clip.
-
-### **Optional MP4 Encoding (ffmpeg)**
-
-MP4 video encoding in the phase-1 video pipeline is optional and capability-gated.
-
-- Enable with environment variable: `OMNI_VIDEO_ENABLE_MP4_ENCODING=true` (also accepts `1`, `yes`, `on`).
-- Uses local resolver order: `OMNI_VIDEO_FFMPEG_PATH` -> bundled `@ffmpeg-installer/ffmpeg` binary -> system `ffmpeg` on `PATH`.
-- If disabled or unavailable, the pipeline safely falls back to non-encoded placeholder MP4 output.
-- GIF visual output remains available through the JS encoder path.
-
----
-
-### **🖥 Omni Ai Frontend Integration (Phase 6)**
-Phase 6 wires runtime intelligence into the chat interface:
-
-- `Mind state panel` shows active route, persona tone, and emotional transition.
-- `Mind timeline` records route/behavior events during a session.
-- `Multi-modal chat rendering` now supports image payloads streamed from `/api/omni`.
-- `Route-aware telemetry` consumes new headers from backend orchestration.
-
-Updated frontend files:
-
-```txt
-public/chat.html
-public/scripts/chat.js
-public/styles/chat.css
-```
-
-Optional infrastructure bindings in `wrangler.toml`:
-
-```toml
-[[d1_databases]]
-binding = "OMNI_DB"
-database_name = "omni_memory"
-database_id = "<replace-with-d1-id>"
-migrations_dir = "migrations"
-
-[[durable_objects.bindings]]
-name = "OMNI_SESSION"
-class_name = "OmniSession"
-
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["OmniSession"]
-
-[triggers]
-crons = ["*/30 * * * *"]
-```
-
-Per-environment override example:
-
-```toml
-[env.staging.vars]
-MODEL_OMNI = "@cf/meta/llama-3.1-8b-instruct"
-MODEL_GPT_4O = "@cf/openai/gpt-4o-mini"
-
-[env.production.vars]
-MODEL_OMNI = "@cf/meta/llama-3.1-8b-instruct"
-MODEL_GPT_4O = "@cf/openai/gpt-4o"
-MODEL_GPT_4O_MINI = "@cf/openai/gpt-4o-mini"
-MODEL_DEEPSEEK = "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
-```
-
-Deploy per environment: `wrangler deploy --env staging` and `wrangler deploy --env production`.
-
-Notes:
-
-- Keep these IDs aligned with models available on your Cloudflare account.
-- If an alias model call fails at runtime, Omni automatically falls back to the Omni route.
-
----
-
-# **🧪 Local Development**
-
-Omni Ai runs locally using Wrangler:
-
-```
-wrangler dev
-```
-
-For local env setup, copy `.dev.vars.example` to `.dev.vars` and update values.
-
-To start both the Omni media server and Worker together:
-
-```
-npm run dev:media
-```
-
-To run the same setup with local worker mode:
-
-```
-npm run dev:media:local
-```
-
-After local services are up, verify the video route quickly:
-
-```
-npm run smoke:video
-```
-
-To verify prompt-grounded output from a real backend (provider or local model) and fail if fallback is used:
-
-```
-npm run smoke:video:provider
-```
-
-To keep local `omni_video_exports` size under control:
-
-```
-npm run cleanup:video:preview
-npm run cleanup:video
-```
-
-`cleanup:video:preview` is non-destructive. `cleanup:video` removes files older than 7 days and prunes oldest files beyond 200 by default (override with env vars `OMNI_VIDEO_EXPORT_MAX_AGE_DAYS`, `OMNI_VIDEO_EXPORT_MAX_FILES`).
-
-`npm run test` now auto-runs video smoke only when both the worker video route (`http://127.0.0.1:8787/api/video/generate`) and media health endpoint (`http://127.0.0.1:8788/v1/health`) are reachable; otherwise it skips video smoke automatically.
-
-Run branding consistency checks:
-
-```
-npm run check:branding
-```
-
-`npm run lint` also runs this branding check and fails if legacy brand variants are detected.
-
-Codex development commands:
-
-```
-npm run codex:reindex
-npm run codex:watch
-npm run codex:register -- codex/laws/quantum/03-<title>.md
-```
-
----
-
-# **🌐 Deployment**
-
-Deploy to Cloudflare Workers:
-
-```
-wrangler deploy
-```
-
----
-
-# **🛠 Extending Omni Ai**
-
-You can extend the system by adding:
-
-### **New Models**
-Add a new case in `router.ts`.
-
-### **New Cognitive Modes**
-Extend `mindos-core.ts`.
-
-### **New Memory Types**
-Add KV namespaces or structured memory schemas.
-
-### **New Tools**
-Add tool handlers and integrate them into the loop.
-
----
-
-# **🧱 6-Track Scaffold (Implemented)**
-
-The following implementation scaffold now exists in this workspace:
-
-- `src/modes/` → `architectMode.js`, `reasoningMode.js`, `codingMode.js`, `creativeMode.js`, `osMode.js`
-- `src/retrieval/` → `ragWorker.js`, `searchIndex.json`, `chunker.js`
-- `src/modules/` → `omni_philosophy.md`, `system_rules.md`, `identity_layer.md`, `modes_reference.md`
-- `src/router/` → `modelRouter.js`, `rules.json`
-- `src/memory/` → `memory.json`, `memoryManager.js`
-- `src/utils/` → `promptBuilder.js`, `textCleaner.js`, `responseFormatter.js`
-- `src/api/` → `omniHandler.js`, `openaiHandler.js`, `deepseekHandler.js`
-- `src/ui/` → `modesPanel.js`, `memoryPanel.js`, `routerInspector.js`, `settingsPanel.js`
-- `public/` → `app.js`, `styles.css`
-
----
-
-# **📜 License**
-MIT License — free to use, modify, and extend.
-
----
-
-# **🌟 Vision**
-Omni Ai is designed to be:
-
-- A **transparent cognitive engine**  
-- A **developer‑friendly AI runtime**  
-- A **foundation for custom LLM systems**  
-- A **platform for experimentation**  
-- A **bridge between models and cognition**  
-
-It is not just an LLM wrapper — it is a **mind architecture**.
+## 🔮 Roadmap
+
+- Real‑time QCFT visualization  
+- Multi‑agent cognitive field interactions  
+- LoRA‑based personality modules  
+- OmniOS: a persistent memory and identity layer  
+- Full codex vault with SHA‑256 archival  
 
 ---
