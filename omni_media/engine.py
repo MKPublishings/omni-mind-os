@@ -131,6 +131,33 @@ class OmniMediaEngine:
             mp4_bytes=getattr(result, "mp4_bytes", None),
         )
 
+    def assemble_video_scenes(self, scenes: list[VideoObject], fps: int | None = None) -> VideoObject:
+        if not scenes:
+            raise ValueError("at least one scene is required for video assembly")
+
+        target_fps = int(fps or scenes[0].fps or 12)
+        merged_frames: list[ImageObject] = []
+        width = int(scenes[0].width)
+        height = int(scenes[0].height)
+
+        for scene in scenes:
+            merged_frames.extend(scene.frames)
+
+        if not merged_frames:
+            raise ValueError("scene assembly produced no frames")
+
+        duration = len(merged_frames) / max(1, target_fps)
+        merged_mp4 = scenes[0].mp4_bytes if len(scenes) == 1 else None
+
+        return VideoObject(
+            frames=merged_frames,
+            fps=target_fps,
+            duration_sec=float(duration),
+            width=width,
+            height=height,
+            mp4_bytes=merged_mp4,
+        )
+
     def generate_gif_from_video(self, video: VideoObject, loop: int = 0) -> bytes:
         try:
             image_module = importlib.import_module("PIL.Image")

@@ -14,6 +14,7 @@ This package provides a greenfield Omni-native media generation scaffold with:
 - `model_registry.py` -> canonical model profile map
 - `engine.py` -> Omni generation wrappers (`Omni(model=...)`)
 - `pipeline.py` -> normalization, routing, generation, safety, packaging
+- `video_prompt_planner.py` -> prompt-to-scene storyboard planning and duration policies
 - `worker.py` -> in-memory queue and worker loop
 - `api_contracts.py` -> request/response DTOs for HTTP service layer
 - `storage.py` -> local and S3-like output persistence adapters

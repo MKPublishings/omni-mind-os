@@ -12,52 +12,19 @@ from .contracts import GenerateRequest, GenerationParams, MediaOutput
 from .hooks import DefaultMediaHooks
 from .pipeline import OmniMediaPipeline
 from .storage import LocalFileStorageAdapter, StorageAdapter
+from .video_prompt_planner import compile_video_generation_spec
 from .worker import InMemoryJobQueue, Job, OmniMediaWorker
-
-
-def _derive_video_style_from_prompt(prompt_text: str) -> dict[str, str]:
-    prompt = str(prompt_text or "").lower()
-
-    style_preset = "natural"
-    if any(token in prompt for token in ["cinematic", "film", "movie", "dramatic", "epic", "anamorphic"]):
-        style_preset = "cinematic"
-    elif any(token in prompt for token in ["anime", "cartoon", "pixar", "stylized", "illustrated"]):
-        style_preset = "stylized"
-    elif any(token in prompt for token in ["noir", "monochrome", "black and white", "gritty"]):
-        style_preset = "noir"
-    elif any(token in prompt for token in ["neon", "cyberpunk", "sci-fi", "futuristic"]):
-        style_preset = "neon"
-
-    motion_profile = "normal"
-    if any(token in prompt for token in ["slow motion", "slow-mo", "dramatic slow"]):
-        motion_profile = "slow"
-    elif any(token in prompt for token in ["fast", "action", "chase", "dynamic", "high energy"]):
-        motion_profile = "fast"
-
-    camera_profile = "standard"
-    if any(token in prompt for token in ["aerial", "drone", "overhead", "bird's eye", "birds eye"]):
-        camera_profile = "aerial"
-    elif any(token in prompt for token in ["close up", "close-up", "macro", "portrait"]):
-        camera_profile = "close-up"
-    elif any(token in prompt for token in ["wide", "landscape", "establishing shot"]):
-        camera_profile = "wide"
-
-    return {
-        "style_preset": style_preset,
-        "motion_profile": motion_profile,
-        "camera_profile": camera_profile,
-    }
 
 
 def _select_prompt_aware_fallback_url(prompt_text: str, default_url: str) -> str:
     prompt = str(prompt_text or "").lower()
 
     if any(token in prompt for token in ["cinematic", "epic", "dramatic", "action"]):
-        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+        return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
     if any(token in prompt for token in ["city", "urban", "night", "cyberpunk", "neon", "robot", "future"]):
-        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
     if any(token in prompt for token in ["nature", "forest", "bird", "crow", "animal", "wildlife", "outdoor"]):
-        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
 
     return default_url
 
@@ -217,7 +184,7 @@ class OmniMediaService:
                     "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
                 )
             ).strip()
-            prompt_style = _derive_video_style_from_prompt(request.prompt)
+            video_spec = compile_video_generation_spec(request.prompt)
             fallback_url = _select_prompt_aware_fallback_url(request.prompt, configured_fallback_url)
             if fallback_url:
                 response.status = "completed"
@@ -231,9 +198,12 @@ class OmniMediaService:
                             "fallback": True,
                             "fallback_reason": "omni-runtime-unavailable",
                             "source": "OMNI_MEDIA_FALLBACK_VIDEO_URL",
-                            "style_preset": prompt_style["style_preset"],
-                            "motion_profile": prompt_style["motion_profile"],
-                            "camera_profile": prompt_style["camera_profile"],
+                            "style_preset": video_spec.style_preset,
+                            "motion_profile": video_spec.motion_profile,
+                            "camera_profile": video_spec.camera_profile,
+                            "scene_count": video_spec.metadata.get("scene_count"),
+                            "duration_sec": video_spec.metadata.get("duration_sec"),
+                            "scene_plan": video_spec.metadata.get("scene_plan"),
                             "prompt_aware": True,
                         },
                     )
@@ -242,9 +212,12 @@ class OmniMediaService:
                     **(response.metadata or {}),
                     "fallback": True,
                     "fallback_reason": "omni-runtime-unavailable",
-                    "style_preset": prompt_style["style_preset"],
-                    "motion_profile": prompt_style["motion_profile"],
-                    "camera_profile": prompt_style["camera_profile"],
+                    "style_preset": video_spec.style_preset,
+                    "motion_profile": video_spec.motion_profile,
+                    "camera_profile": video_spec.camera_profile,
+                    "scene_count": video_spec.metadata.get("scene_count"),
+                    "duration_sec": video_spec.metadata.get("duration_sec"),
+                    "scene_plan": video_spec.metadata.get("scene_plan"),
                     "prompt_aware": True,
                 }
 

@@ -285,13 +285,13 @@ function selectFallbackVideoUrl(promptText: string, configuredDefault: string): 
   const prompt = String(promptText || "").toLowerCase();
 
   if (/\b(cinematic|epic|dramatic|action)\b/i.test(prompt)) {
-    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+    return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
   }
   if (/\b(city|urban|night|cyberpunk|neon|robot|future)\b/i.test(prompt)) {
-    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
+    return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
   }
   if (/\b(nature|forest|bird|crow|animal|wildlife|outdoor)\b/i.test(prompt)) {
-    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
   }
 
   return configuredDefault;
