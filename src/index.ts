@@ -67,6 +67,7 @@ export interface Env {
   OMNI_MEDIA_API_TIMEOUT_MS?: string;
   OMNI_MEDIA_FALLBACK_VIDEO_URL?: string;
   OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO?: string;
+  OMNI_MEDIA_PLACEHOLDER_ONLY?: string;
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
 }
@@ -1336,6 +1337,24 @@ function sanitizePromptText(prompt: string): string {
     .replace(/[\x00-\x1F\x7F]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function parseOptionalBoolFlag(value: unknown): boolean | null {
+  const text = sanitizePromptText(String(value || "")).trim();
+  if (!text) return null;
+  if (/^(1|true|yes|on)$/i.test(text)) return true;
+  if (/^(0|false|no|off)$/i.test(text)) return false;
+  return null;
+}
+
+function resolvePlaceholderVideoAllowed(env: Env): boolean {
+  const allow = parseOptionalBoolFlag(env.OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO);
+  if (allow !== null) return allow;
+
+  const placeholderOnly = parseOptionalBoolFlag(env.OMNI_MEDIA_PLACEHOLDER_ONLY);
+  if (placeholderOnly !== null) return placeholderOnly;
+
+  return false;
 }
 
 function resolveMediaBaseUrl(env: Env): string {
@@ -3059,9 +3078,7 @@ export default {
         const fallbackVideoUrl = sanitizePromptText(
           String(env.OMNI_MEDIA_FALLBACK_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4")
         ).trim();
-        const allowPlaceholderVideo = /^(1|true|yes|on)$/i.test(
-          sanitizePromptText(String(env.OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO || "")).trim()
-        );
+        const allowPlaceholderVideo = resolvePlaceholderVideoAllowed(env);
 
         const body = (await request.json().catch(() => ({}))) as any;
         const prompt = sanitizePromptText(String(body?.prompt || "")).trim();
@@ -3405,9 +3422,7 @@ export default {
 
       if (url.pathname === "/api/video/health" && request.method === "GET") {
         const baseUrl = resolveMediaBaseUrl(env);
-        const allowPlaceholderVideo = /^(1|true|yes|on)$/i.test(
-          sanitizePromptText(String(env.OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO || "")).trim()
-        );
+        const allowPlaceholderVideo = resolvePlaceholderVideoAllowed(env);
 
         const payload: Record<string, unknown> = {
           ok: true,

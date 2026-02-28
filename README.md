@@ -513,6 +513,21 @@ Video proxy vars:
 - `OMNI_MEDIA_FALLBACK_VIDEO_URL` (optional; returns a playable fallback video when media backend is not configured)
 - `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` (optional; default `false`. When `true`, allows placeholder fallback clips if real prompt-grounded generation is unavailable)
 
+Media env precedence (runtime):
+
+- Base URL resolution order: `OMNI_MEDIA_API_BASE_URL` -> `OMNI_MEDIA_BASE_URL` -> `OMNI_MEDIA_HOST` + `OMNI_MEDIA_PORT`
+- Placeholder-mode resolution order: `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` -> `OMNI_MEDIA_PLACEHOLDER_ONLY`
+- If both placeholder vars are set, `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` wins
+- Recommended local setup: set only `OMNI_MEDIA_API_BASE_URL` and `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO`
+
+Common misconfigurations checklist:
+
+- Worker and media server ports do not match (`/api/video/health` should resolve to your active media server).
+- `OMNI_MEDIA_PROVIDER_VIDEO_URL` points to a base/root URL instead of a real `POST` endpoint.
+- Stale local processes are still bound to `8787` or `8788` after config changes.
+- Placeholder-mode vars conflict (`OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` and `OMNI_MEDIA_PLACEHOLDER_ONLY`).
+- Provider endpoint accepts `GET` but rejects `POST` (health appears ready, generation fails).
+
 Optional external provider backend (used when local `vllm_omni` backend is unavailable):
 
 - `OMNI_MEDIA_PROVIDER_VIDEO_URL`

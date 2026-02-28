@@ -80,6 +80,21 @@ Worker proxy integration (for `POST /api/video/generate` in the Cloudflare worke
 - `OMNI_MEDIA_API_KEY` (worker var; optional, forwarded as `x-api-key`)
 - `OMNI_MEDIA_API_TIMEOUT_MS` (worker var; optional timeout in milliseconds)
 
+Media env precedence (runtime):
+
+- Base URL resolution order: `OMNI_MEDIA_API_BASE_URL` -> `OMNI_MEDIA_BASE_URL` -> `OMNI_MEDIA_HOST` + `OMNI_MEDIA_PORT`
+- Placeholder-mode resolution order: `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` -> `OMNI_MEDIA_PLACEHOLDER_ONLY`
+- If both placeholder vars are set, `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` wins
+- Recommended local setup: set only `OMNI_MEDIA_API_BASE_URL` and `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO`
+
+Common misconfigurations checklist:
+
+- Worker and media server ports do not match (`/api/video/health` should resolve to your active media server).
+- `OMNI_MEDIA_PROVIDER_VIDEO_URL` points to a base/root URL instead of a real `POST` endpoint.
+- Stale local processes are still bound to `8787` or `8788` after config changes.
+- Placeholder-mode vars conflict (`OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` and `OMNI_MEDIA_PLACEHOLDER_ONLY`).
+- Provider endpoint accepts `GET` but rejects `POST` (health appears ready, generation fails).
+
 ## Endpoints
 
 - `POST /v1/generate/image`

@@ -18,6 +18,29 @@ from .video_prompt_planner import compile_video_generation_spec
 from .worker import InMemoryJobQueue, Job, OmniMediaWorker
 
 
+def _parse_optional_bool_env(value: str | None) -> bool | None:
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+    if text in {"1", "true", "yes", "on"}:
+        return True
+    if text in {"0", "false", "no", "off"}:
+        return False
+    return None
+
+
+def _is_placeholder_video_allowed() -> bool:
+    allow_value = _parse_optional_bool_env(os.getenv("OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO", ""))
+    if allow_value is not None:
+        return allow_value
+
+    placeholder_only_value = _parse_optional_bool_env(os.getenv("OMNI_MEDIA_PLACEHOLDER_ONLY", ""))
+    if placeholder_only_value is not None:
+        return placeholder_only_value
+
+    return False
+
+
 def _select_prompt_aware_fallback_url(prompt_text: str, default_url: str) -> str:
     prompt = str(prompt_text or "").lower()
     catalog: list[tuple[str, list[str]]] = [
@@ -123,12 +146,7 @@ class OmniMediaService:
             self._stats[key] = int(self._stats.get(key, 0)) + int(value)
 
     def get_video_backend_health(self) -> dict[str, Any]:
-        allow_placeholder = str(os.getenv("OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO", "")).strip().lower() in {
-            "1",
-            "true",
-            "yes",
-            "on",
-        }
+        allow_placeholder = _is_placeholder_video_allowed()
 
         engine = getattr(self.pipeline, "engine", None)
         probe = engine.probe_backend() if engine and hasattr(engine, "probe_backend") else {
@@ -297,12 +315,7 @@ class OmniMediaService:
             and response.status != "completed"
             and "vllm_omni is not installed or unavailable" in str(response.error or "")
         ):
-            allow_placeholder = str(os.getenv("OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO", "")).strip().lower() in {
-                "1",
-                "true",
-                "yes",
-                "on",
-            }
+            allow_placeholder = _is_placeholder_video_allowed()
             if not allow_placeholder:
                 response.error = (
                     "Prompt-grounded video backend is unavailable (vllm_omni missing). "
