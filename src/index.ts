@@ -246,6 +246,57 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function deriveVideoStyleFromPrompt(promptText: string): {
+  stylePreset: string;
+  motionProfile: string;
+  cameraProfile: string;
+} {
+  const prompt = String(promptText || "").toLowerCase();
+
+  let stylePreset = "natural";
+  if (/\b(cinematic|film|movie|dramatic|epic|anamorphic)\b/i.test(prompt)) {
+    stylePreset = "cinematic";
+  } else if (/\b(anime|cartoon|pixar|stylized|illustrated)\b/i.test(prompt)) {
+    stylePreset = "stylized";
+  } else if (/\b(noir|monochrome|black\s*and\s*white|gritty)\b/i.test(prompt)) {
+    stylePreset = "noir";
+  } else if (/\b(neon|cyberpunk|sci[-\s]?fi|futuristic)\b/i.test(prompt)) {
+    stylePreset = "neon";
+  }
+
+  const motionProfile = /\b(slow\s*motion|slow-mo|dramatic\s*slow)\b/i.test(prompt)
+    ? "slow"
+    : /\b(fast|action|chase|dynamic|high\s*energy)\b/i.test(prompt)
+    ? "fast"
+    : "normal";
+
+  const cameraProfile = /\b(aerial|drone|overhead|bird'?s\s*eye)\b/i.test(prompt)
+    ? "aerial"
+    : /\b(close\s*up|macro|portrait)\b/i.test(prompt)
+    ? "close-up"
+    : /\b(wide|landscape|establishing\s*shot)\b/i.test(prompt)
+    ? "wide"
+    : "standard";
+
+  return { stylePreset, motionProfile, cameraProfile };
+}
+
+function selectFallbackVideoUrl(promptText: string, configuredDefault: string): string {
+  const prompt = String(promptText || "").toLowerCase();
+
+  if (/\b(cinematic|epic|dramatic|action)\b/i.test(prompt)) {
+    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+  }
+  if (/\b(city|urban|night|cyberpunk|neon|robot|future)\b/i.test(prompt)) {
+    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
+  }
+  if (/\b(nature|forest|bird|crow|animal|wildlife|outdoor)\b/i.test(prompt)) {
+    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+  }
+
+  return configuredDefault;
+}
+
 function computeAdaptiveResponseMax(messages: OmniMessage[], env: Env): number {
   const configuredMin = toPositiveInt(env.OMNI_RESPONSE_MIN_CHARS, 2000);
   const configuredBase = toPositiveInt(env.OMNI_RESPONSE_BASE_CHARS, 4500);
@@ -2976,6 +3027,9 @@ export default {
           );
         }
 
+        const promptStyle = deriveVideoStyleFromPrompt(prompt);
+        const fallbackUrlForPrompt = selectFallbackVideoUrl(prompt, fallbackVideoUrl);
+
         if (!baseUrl) {
           return new Response(
             JSON.stringify({
@@ -2984,19 +3038,27 @@ export default {
               outputs: [
                 {
                   type: "video",
-                  url: fallbackVideoUrl,
+                  url: fallbackUrlForPrompt,
                   data: null,
                   metadata: {
                     fallback: true,
                     fallback_reason: "video-service-not-configured",
-                    source: "OMNI_MEDIA_FALLBACK_VIDEO_URL"
+                    source: "OMNI_MEDIA_FALLBACK_VIDEO_URL",
+                    style_preset: promptStyle.stylePreset,
+                    motion_profile: promptStyle.motionProfile,
+                    camera_profile: promptStyle.cameraProfile,
+                    prompt_aware: true
                   }
                 }
               ],
               error: null,
               metadata: {
                 fallback: true,
-                fallback_reason: "video-service-not-configured"
+                fallback_reason: "video-service-not-configured",
+                style_preset: promptStyle.stylePreset,
+                motion_profile: promptStyle.motionProfile,
+                camera_profile: promptStyle.cameraProfile,
+                prompt_aware: true
               }
             }),
             {
@@ -3011,11 +3073,37 @@ export default {
 
         const normalizedBase = baseUrl.replace(/\/+$/, "");
         const targetUrl = `${normalizedBase}/v1/generate/video`;
+        const userParams = typeof body?.params === "object" && body?.params ? body.params : {};
+        const upstreamParams = {
+          width: Number.isFinite(Number(userParams?.width)) ? Number(userParams.width) : 768,
+          height: Number.isFinite(Number(userParams?.height)) ? Number(userParams.height) : 432,
+          num_frames: Number.isFinite(Number(userParams?.num_frames)) ? Number(userParams.num_frames) : 24,
+          fps: Number.isFinite(Number(userParams?.fps))
+            ? Number(userParams.fps)
+            : promptStyle.motionProfile === "slow"
+            ? 10
+            : promptStyle.motionProfile === "fast"
+            ? 16
+            : 12,
+          num_inference_steps: Number.isFinite(Number(userParams?.num_inference_steps))
+            ? Number(userParams.num_inference_steps)
+            : 30,
+          guidance_scale: Number.isFinite(Number(userParams?.guidance_scale))
+            ? Number(userParams.guidance_scale)
+            : promptStyle.stylePreset === "cinematic"
+            ? 8
+            : 7.5,
+          style_preset: sanitizePromptText(String(userParams?.style_preset || promptStyle.stylePreset)).trim() || promptStyle.stylePreset,
+          motion_profile:
+            sanitizePromptText(String(userParams?.motion_profile || promptStyle.motionProfile)).trim() || promptStyle.motionProfile,
+          camera_profile:
+            sanitizePromptText(String(userParams?.camera_profile || promptStyle.cameraProfile)).trim() || promptStyle.cameraProfile
+        };
         const upstreamPayload = {
           prompt,
           negative_prompt: typeof body?.negative_prompt === "string" ? body.negative_prompt : undefined,
-          mode: sanitizePromptText(String(body?.mode || "default")).trim() || "default",
-          params: typeof body?.params === "object" && body?.params ? body.params : {},
+          mode: sanitizePromptText(String(body?.mode || promptStyle.stylePreset)).trim() || promptStyle.stylePreset,
+          params: upstreamParams,
           safety_level: sanitizePromptText(String(body?.safety_level || "default")).trim() || "default",
           watermark: body?.watermark !== false,
           return_format: sanitizePromptText(String(body?.return_format || "url")).trim() || "url"
@@ -3066,20 +3154,28 @@ export default {
                 outputs: [
                   {
                     type: "video",
-                    url: fallbackVideoUrl,
+                    url: fallbackUrlForPrompt,
                     data: null,
                     metadata: {
                       fallback: true,
                       fallback_reason: "video-proxy-error",
                       source: "OMNI_MEDIA_FALLBACK_VIDEO_URL",
-                      proxy_error: String(error?.message || "unknown error")
+                      proxy_error: String(error?.message || "unknown error"),
+                      style_preset: promptStyle.stylePreset,
+                      motion_profile: promptStyle.motionProfile,
+                      camera_profile: promptStyle.cameraProfile,
+                      prompt_aware: true
                     }
                   }
                 ],
                 error: null,
                 metadata: {
                   fallback: true,
-                  fallback_reason: "video-proxy-error"
+                  fallback_reason: "video-proxy-error",
+                  style_preset: promptStyle.stylePreset,
+                  motion_profile: promptStyle.motionProfile,
+                  camera_profile: promptStyle.cameraProfile,
+                  prompt_aware: true
                 }
               }),
               {

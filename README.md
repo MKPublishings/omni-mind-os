@@ -504,6 +504,8 @@ Video proxy vars:
 - `OMNI_MEDIA_API_TIMEOUT_MS` (optional request timeout in milliseconds)
 - `OMNI_MEDIA_FALLBACK_VIDEO_URL` (optional; returns a playable fallback video when media backend is not configured)
 
+Video generation is prompt-aware: style/motion/camera hints are inferred from the prompt and passed through request params (`style_preset`, `motion_profile`, `camera_profile`). Fallback responses also include these metadata fields.
+
 ### **Optional MP4 Encoding (ffmpeg)**
 
 MP4 video encoding in the phase-1 video pipeline is optional and capability-gated.

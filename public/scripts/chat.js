@@ -419,6 +419,42 @@
       .trim() || raw;
   }
 
+  function deriveVideoStyleProfile(promptText) {
+    const prompt = String(promptText || "").toLowerCase();
+
+    let stylePreset = "natural";
+    if (/\b(cinematic|film|movie|dramatic|epic|anamorphic)\b/i.test(prompt)) {
+      stylePreset = "cinematic";
+    } else if (/\b(anime|cartoon|pixar|stylized|illustrated)\b/i.test(prompt)) {
+      stylePreset = "stylized";
+    } else if (/\b(noir|black\s*and\s*white|monochrome|gritty)\b/i.test(prompt)) {
+      stylePreset = "noir";
+    } else if (/\b(neon|cyberpunk|sci[-\s]?fi|futuristic)\b/i.test(prompt)) {
+      stylePreset = "neon";
+    }
+
+    const motion = /\b(slow\s*motion|slow-mo|dramatic\s*slow)\b/i.test(prompt)
+      ? "slow"
+      : /\b(fast|action|chase|dynamic|high\s*energy)\b/i.test(prompt)
+      ? "fast"
+      : "normal";
+
+    const camera = /\b(aerial|drone|overhead|bird'?s\s*eye)\b/i.test(prompt)
+      ? "aerial"
+      : /\b(close\s*up|macro|portrait)\b/i.test(prompt)
+      ? "close-up"
+      : /\b(wide|landscape|establishing\s*shot)\b/i.test(prompt)
+      ? "wide"
+      : "standard";
+
+    return {
+      stylePreset,
+      motion,
+      camera,
+      promptAware: true
+    };
+  }
+
   function parseStyleCommand(content) {
     const text = String(content || "").trim();
     if (!text.toLowerCase().startsWith("/style")) return null;
@@ -1317,6 +1353,10 @@
     const generatedAt = Number(meta.generatedAt || Date.now());
     const prompt = String(meta.videoPrompt || "Generated video").trim() || "Generated video";
     const createdLabel = formatGeneratedTimestamp(generatedAt);
+    const stylePreset = String(meta.videoStylePreset || "").trim();
+    const motionProfile = String(meta.videoMotionProfile || "").trim();
+    const cameraProfile = String(meta.videoCameraProfile || "").trim();
+    const fallbackTag = Boolean(meta.videoFallback) ? "Fallback" : "";
 
     const card = document.createElement("div");
     card.className = "generated-image-card";
@@ -1338,10 +1378,16 @@
     download.textContent = "Download video";
     actions.appendChild(download);
 
-    if (createdLabel) {
+    if (createdLabel || stylePreset || motionProfile || cameraProfile || fallbackTag) {
       const info = document.createElement("div");
       info.className = "generated-image-meta";
-      info.textContent = `Created: ${createdLabel}`;
+      info.textContent = [
+        stylePreset ? `Style: ${stylePreset}` : "",
+        motionProfile ? `Motion: ${motionProfile}` : "",
+        cameraProfile ? `Camera: ${cameraProfile}` : "",
+        fallbackTag,
+        createdLabel ? `Created: ${createdLabel}` : ""
+      ].filter(Boolean).join(" • ");
       actions.appendChild(info);
     }
 
@@ -1468,7 +1514,11 @@
         imageResolution: msg.imageResolution || "",
         imageStyleId: msg.imageStyleId || "",
         videoUrl: msg.videoUrl || "",
-        videoPrompt: msg.videoPrompt || ""
+        videoPrompt: msg.videoPrompt || "",
+        videoStylePreset: msg.videoStylePreset || "",
+        videoMotionProfile: msg.videoMotionProfile || "",
+        videoCameraProfile: msg.videoCameraProfile || "",
+        videoFallback: Boolean(msg.videoFallback)
       });
     }
     updateMindStateUI(session);
@@ -1675,16 +1725,20 @@
       throw new Error(preflight.message);
     }
 
+    const styleProfile = deriveVideoStyleProfile(prompt);
     const payload = {
       prompt,
-      mode: "default",
+      mode: styleProfile.stylePreset,
       params: {
         width: 768,
         height: 432,
         num_frames: 24,
-        fps: 12,
+        fps: styleProfile.motion === "slow" ? 10 : styleProfile.motion === "fast" ? 16 : 12,
         num_inference_steps: 30,
-        guidance_scale: 7.5
+        guidance_scale: styleProfile.stylePreset === "cinematic" ? 8 : 7.5,
+        style_preset: styleProfile.stylePreset,
+        motion_profile: styleProfile.motion,
+        camera_profile: styleProfile.camera
       },
       safety_level: safetyProfile?.explicitAllowed ? "default" : "strict",
       watermark: true,
@@ -1737,7 +1791,13 @@
 
     return {
       videoUrl,
-      metadata: videoOut?.metadata || {},
+      metadata: {
+        ...(videoOut?.metadata || {}),
+        style_preset: String(videoOut?.metadata?.style_preset || styleProfile.stylePreset),
+        motion_profile: String(videoOut?.metadata?.motion_profile || styleProfile.motion),
+        camera_profile: String(videoOut?.metadata?.camera_profile || styleProfile.camera),
+        prompt_aware: true
+      },
       requestId: String(data?.id || "")
     };
   }
@@ -2287,6 +2347,10 @@
           const videoCard = createGeneratedVideoCard({
             videoUrl: videoResult.videoUrl,
             videoPrompt,
+            videoStylePreset: String(videoResult?.metadata?.style_preset || "").trim(),
+            videoMotionProfile: String(videoResult?.metadata?.motion_profile || "").trim(),
+            videoCameraProfile: String(videoResult?.metadata?.camera_profile || "").trim(),
+            videoFallback: Boolean(videoResult?.metadata?.fallback),
             generatedAt
           });
           if (videoCard) {
@@ -2304,6 +2368,10 @@
           type: "video",
           videoUrl: videoResult.videoUrl,
           videoPrompt,
+          videoStylePreset: String(videoResult?.metadata?.style_preset || "").trim(),
+          videoMotionProfile: String(videoResult?.metadata?.motion_profile || "").trim(),
+          videoCameraProfile: String(videoResult?.metadata?.camera_profile || "").trim(),
+          videoFallback: Boolean(videoResult?.metadata?.fallback),
           generatedAt,
           timestamp: Date.now()
         });
