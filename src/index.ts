@@ -59,6 +59,9 @@ export interface Env {
   OMNI_SESSION_MAX_AGE_HOURS?: string;
   OMNI_AUTONOMY_LEVEL?: string;
   OMNI_ADMIN_KEY?: string;
+  OMNI_MEDIA_API_BASE_URL?: string;
+  OMNI_MEDIA_API_KEY?: string;
+  OMNI_MEDIA_API_TIMEOUT_MS?: string;
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
 }
@@ -1911,6 +1914,7 @@ export default {
       const isApiRoute =
         url.pathname === "/api/omni" ||
         url.pathname === "/api/image" ||
+        url.pathname === "/api/video/generate" ||
         url.pathname === "/api/ping" ||
         url.pathname === "/api/modes" ||
         url.pathname === "/api/modes/details" ||
@@ -2471,6 +2475,16 @@ export default {
         });
       }
 
+      if (url.pathname === "/api/video/generate" && request.method !== "POST") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "POST, OPTIONS"
+          }
+        });
+      }
+
       if (url.pathname === "/api/ping" && request.method !== "GET") {
         return new Response("Method Not Allowed", {
           status: 405,
@@ -2919,6 +2933,120 @@ export default {
               "Content-Type": "application/json"
             }
           });
+        }
+      }
+
+      if (url.pathname === "/api/video/generate" && request.method === "POST") {
+        const baseUrl = sanitizePromptText(String(env.OMNI_MEDIA_API_BASE_URL || "")).trim();
+        if (!baseUrl) {
+          return new Response(
+            JSON.stringify({ error: "Video service is not configured. Set OMNI_MEDIA_API_BASE_URL." }),
+            {
+              status: 503,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
+        const body = (await request.json().catch(() => ({}))) as any;
+        const prompt = sanitizePromptText(String(body?.prompt || "")).trim();
+        if (!prompt) {
+          return new Response(JSON.stringify({ error: "Prompt is required" }), {
+            status: 400,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const safetyProfile = normalizeSafetyProfile(body?.safetyProfile);
+        const safetyDecision = evaluateSexualSafetyPrompt(prompt, safetyProfile);
+        if (safetyDecision.blocked) {
+          return new Response(
+            JSON.stringify({
+              error:
+                safetyDecision.reason === "illegal-content-blocked"
+                  ? "Illegal sexual content is blocked for all access tiers."
+                  : "Explicit sexual content is age-restricted and unavailable for this profile.",
+              code: safetyDecision.reason
+            }),
+            {
+              status: 403,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
+        const normalizedBase = baseUrl.replace(/\/+$/, "");
+        const targetUrl = `${normalizedBase}/v1/generate/video`;
+        const upstreamPayload = {
+          prompt,
+          negative_prompt: typeof body?.negative_prompt === "string" ? body.negative_prompt : undefined,
+          mode: sanitizePromptText(String(body?.mode || "default")).trim() || "default",
+          params: typeof body?.params === "object" && body?.params ? body.params : {},
+          safety_level: sanitizePromptText(String(body?.safety_level || "default")).trim() || "default",
+          watermark: body?.watermark !== false,
+          return_format: sanitizePromptText(String(body?.return_format || "url")).trim() || "url"
+        };
+
+        const controller = new AbortController();
+        const timeoutMs = clamp(Number(env.OMNI_MEDIA_API_TIMEOUT_MS || "45000"), 5000, 120000);
+        const timeoutHandle = setTimeout(() => {
+          try {
+            controller.abort("video-service-timeout");
+          } catch {
+            // ignore
+          }
+        }, timeoutMs);
+
+        try {
+          const upstreamHeaders: Record<string, string> = {
+            "Content-Type": "application/json"
+          };
+
+          const serviceApiKey = sanitizePromptText(String(env.OMNI_MEDIA_API_KEY || "")).trim();
+          if (serviceApiKey) {
+            upstreamHeaders["x-api-key"] = serviceApiKey;
+          }
+
+          const upstreamResponse = await fetch(targetUrl, {
+            method: "POST",
+            headers: upstreamHeaders,
+            body: JSON.stringify(upstreamPayload),
+            signal: controller.signal
+          });
+
+          const rawText = await upstreamResponse.text();
+          return new Response(rawText, {
+            status: upstreamResponse.status,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        } catch (error: any) {
+          logger.error("video_proxy_error", error);
+          return new Response(
+            JSON.stringify({
+              error: `Video generation proxy failed: ${String(error?.message || "unknown error")}`
+            }),
+            {
+              status: 502,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        } finally {
+          clearTimeout(timeoutHandle);
         }
       }
 

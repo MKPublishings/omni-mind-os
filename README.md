@@ -376,6 +376,11 @@ Main LLM endpoint.
 **Response:**  
 Streamed text output.
 
+### **POST /api/video/generate**
+Video generation proxy endpoint used by video-intent prompts from the chat UI.
+
+This route forwards to the Omni media service (`/v1/generate/video`) when configured.
+
 ### **GET /api/search?q=...**
 Knowledge retrieval endpoint that returns relevant text chunks from files in `/public/knowledge`.
 
@@ -487,7 +492,16 @@ OMNI_MEMORY_RETENTION_DAYS = "45"
 OMNI_SESSION_MAX_AGE_HOURS = "72"
 OMNI_AUTONOMY_LEVEL = "balanced" # conservative | balanced | aggressive
 OMNI_ADMIN_KEY = "replace-with-strong-secret"
+OMNI_MEDIA_API_BASE_URL = "http://127.0.0.1:8788"
+OMNI_MEDIA_API_KEY = "replace-with-omni-media-key" # optional
+OMNI_MEDIA_API_TIMEOUT_MS = "45000" # clamped to 5000..120000
 ```
+
+Video proxy vars:
+
+- `OMNI_MEDIA_API_BASE_URL` (required for `POST /api/video/generate`)
+- `OMNI_MEDIA_API_KEY` (optional; sent as `x-api-key` to Omni media backend)
+- `OMNI_MEDIA_API_TIMEOUT_MS` (optional request timeout in milliseconds)
 
 ### **Optional MP4 Encoding (ffmpeg)**
 
@@ -566,6 +580,20 @@ Omni Ai runs locally using Wrangler:
 
 ```
 wrangler dev
+```
+
+For local env setup, copy `.dev.vars.example` to `.dev.vars` and update values.
+
+To start both the Omni media server and Worker together:
+
+```
+npm run dev:media
+```
+
+To run the same setup with local worker mode:
+
+```
+npm run dev:media:local
 ```
 
 Run branding consistency checks:

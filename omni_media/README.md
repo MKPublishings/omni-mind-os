@@ -72,6 +72,12 @@ Audit configuration:
 
 Audit events include request id, route, requester identity, status code, latency, success flag, and error (if any).
 
+Worker proxy integration (for `POST /api/video/generate` in the Cloudflare worker):
+
+- `OMNI_MEDIA_API_BASE_URL` (worker var; required)
+- `OMNI_MEDIA_API_KEY` (worker var; optional, forwarded as `x-api-key`)
+- `OMNI_MEDIA_API_TIMEOUT_MS` (worker var; optional timeout in milliseconds)
+
 ## Endpoints
 
 - `POST /v1/generate/image`

@@ -1,0 +1,23 @@
+# Local development variables for Wrangler (`wrangler dev`).
+# Copy this file to `.dev.vars` and fill in real secrets/values.
+
+# ===== Worker runtime =====
+OMNI_ENV="development"
+OMNI_MEDIA_API_BASE_URL="http://127.0.0.1:8788"
+OMNI_MEDIA_API_KEY="replace-with-omni-media-key"
+OMNI_MEDIA_API_TIMEOUT_MS="45000"
+
+# Optional admin protection for maintenance endpoints.
+OMNI_ADMIN_KEY="replace-with-strong-secret"
+
+# Optional model aliases.
+MODEL_OMNI="@cf/meta/llama-3.1-8b-instruct"
+MODEL_GPT_4O="@cf/openai/gpt-4o"
+MODEL_GPT_4O_MINI="@cf/openai/gpt-4o-mini"
+MODEL_DEEPSEEK="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
+
+# ===== Omni media service (Python process) =====
+# Use the same key as OMNI_MEDIA_API_KEY when API key auth is enabled.
+OMNI_MEDIA_API_KEYS="replace-with-omni-media-key"
+OMNI_MEDIA_HOST="127.0.0.1"
+OMNI_MEDIA_PORT="8788"

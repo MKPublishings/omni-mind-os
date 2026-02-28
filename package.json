@@ -5,6 +5,8 @@
   "description": "Omni Ai — A Cognitive Operating System",
   "scripts": {
     "dev": "wrangler dev",
+    "dev:media": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev/start-media-and-worker.ps1",
+    "dev:media:local": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev/start-media-and-worker.ps1 -Local",
     "deploy": "wrangler deploy",
     "preview": "wrangler dev --local",
     "lint": "npm run lint:code && npm run check:branding",
