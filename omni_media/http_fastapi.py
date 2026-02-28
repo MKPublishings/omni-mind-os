@@ -414,4 +414,8 @@ def create_fastapi_app(service: OmniMediaService | None = None) -> Any:
             )
             raise
 
+
     return app
+
+# Expose the FastAPI app for uvicorn
+app = create_fastapi_app()
