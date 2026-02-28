@@ -33,6 +33,28 @@ class OmniMediaEngine:
         self._clients[profile.key] = client
         return client
 
+    def probe_backend(self) -> dict[str, Any]:
+        try:
+            omni_module = importlib.import_module("vllm_omni.entrypoints.omni")
+            omni_cls = getattr(omni_module, "Omni", None)
+            has_class = callable(omni_cls)
+            return {
+                "real_video_backend_ready": bool(has_class),
+                "backend": "vllm_omni",
+                "import_ok": True,
+                "omni_class_ok": bool(has_class),
+                "cached_clients": len(self._clients),
+            }
+        except Exception as exc:
+            return {
+                "real_video_backend_ready": False,
+                "backend": "vllm_omni",
+                "import_ok": False,
+                "omni_class_ok": False,
+                "cached_clients": len(self._clients),
+                "error": str(exc),
+            }
+
     def generate_image(
         self,
         profile: ModelProfile,

@@ -63,6 +63,7 @@ export interface Env {
   OMNI_MEDIA_API_KEY?: string;
   OMNI_MEDIA_API_TIMEOUT_MS?: string;
   OMNI_MEDIA_FALLBACK_VIDEO_URL?: string;
+  OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO?: string;
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
 }
@@ -283,18 +284,45 @@ function deriveVideoStyleFromPrompt(promptText: string): {
 
 function selectFallbackVideoUrl(promptText: string, configuredDefault: string): string {
   const prompt = String(promptText || "").toLowerCase();
+  const catalog: Array<{ url: string; tags: string[] }> = [
+    {
+      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      tags: ["nature", "forest", "wildlife", "outdoor", "mountain", "rain"]
+    },
+    {
+      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      tags: ["cinematic", "dramatic", "action", "epic", "slow", "moody"]
+    },
+    {
+      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+      tags: ["bright", "day", "fun", "travel", "colorful"]
+    },
+    {
+      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+      tags: ["city", "urban", "street", "night", "driving", "neon"]
+    },
+    {
+      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
+      tags: ["road", "terrain", "outdoor", "wide", "drone", "landscape"]
+    }
+  ];
 
-  if (/\b(cinematic|epic|dramatic|action)\b/i.test(prompt)) {
-    return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
-  }
-  if (/\b(city|urban|night|cyberpunk|neon|robot|future)\b/i.test(prompt)) {
-    return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
-  }
-  if (/\b(nature|forest|bird|crow|animal|wildlife|outdoor)\b/i.test(prompt)) {
-    return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+  let bestUrl = configuredDefault;
+  let bestScore = -1;
+
+  for (const item of catalog) {
+    let score = 0;
+    for (const tag of item.tags) {
+      if (prompt.includes(tag)) score += 1;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestUrl = item.url;
+    }
   }
 
-  return configuredDefault;
+  if (bestScore > 0) return bestUrl;
+  return configuredDefault || catalog[0].url;
 }
 
 function computeAdaptiveResponseMax(messages: OmniMessage[], env: Env): number {
@@ -1967,6 +1995,8 @@ export default {
         url.pathname === "/api/omni" ||
         url.pathname === "/api/image" ||
         url.pathname === "/api/video/generate" ||
+        url.pathname === "/omni_video_exports" ||
+        url.pathname === "/api/video/health" ||
         url.pathname === "/api/ping" ||
         url.pathname === "/api/modes" ||
         url.pathname === "/api/modes/details" ||
@@ -2537,6 +2567,23 @@ export default {
         });
       }
 
+      if (url.pathname === "/omni_video_exports" && request.method !== "POST") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: CORS_HEADERS
+        });
+      }
+
+      if (url.pathname === "/api/video/health" && request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: {
+            ...CORS_HEADERS,
+            "Allow": "GET, OPTIONS"
+          }
+        });
+      }
+
       if (url.pathname === "/api/ping" && request.method !== "GET") {
         return new Response("Method Not Allowed", {
           status: 405,
@@ -2993,6 +3040,9 @@ export default {
         const fallbackVideoUrl = sanitizePromptText(
           String(env.OMNI_MEDIA_FALLBACK_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4")
         ).trim();
+        const allowPlaceholderVideo = /^(1|true|yes|on)$/i.test(
+          sanitizePromptText(String(env.OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO || "")).trim()
+        );
 
         const body = (await request.json().catch(() => ({}))) as any;
         const prompt = sanitizePromptText(String(body?.prompt || "")).trim();
@@ -3030,7 +3080,7 @@ export default {
         const promptStyle = deriveVideoStyleFromPrompt(prompt);
         const fallbackUrlForPrompt = selectFallbackVideoUrl(prompt, fallbackVideoUrl);
 
-        if (!baseUrl) {
+        if (!baseUrl && allowPlaceholderVideo) {
           return new Response(
             JSON.stringify({
               id: crypto.randomUUID(),
@@ -3071,7 +3121,25 @@ export default {
           );
         }
 
+        if (!baseUrl) {
+          return new Response(
+            JSON.stringify({
+              error:
+                "Prompt-grounded video backend is not configured. Set OMNI_MEDIA_API_BASE_URL and disable placeholder-only mode.",
+              code: "video-backend-not-configured"
+            }),
+            {
+              status: 503,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
         const normalizedBase = baseUrl.replace(/\/+$/, "");
+        const healthUrl = `${normalizedBase}/v1/health`;
         const targetUrl = `${normalizedBase}/v1/generate/video`;
         const userParams = typeof body?.params === "object" && body?.params ? body.params : {};
         const upstreamParams = {
@@ -3120,6 +3188,56 @@ export default {
         }, timeoutMs);
 
         try {
+          if (!allowPlaceholderVideo) {
+            try {
+              const healthResponse = await fetch(healthUrl, {
+                method: "GET",
+                signal: controller.signal
+              });
+              const healthData = (await healthResponse.json().catch(() => ({}))) as any;
+              const backend = healthData?.video_backend || {};
+              const realReady = Boolean(backend?.real_video_backend_ready);
+              if (!realReady) {
+                const backendError = String(backend?.error || "").trim();
+                const providerError = String(backend?.provider_error || "").trim();
+                const detail = [backendError, providerError].filter(Boolean).join(" | ");
+                return new Response(
+                  JSON.stringify({
+                    error:
+                      "Prompt-grounded video backend is not ready." +
+                      (detail ? ` ${detail}` : "") +
+                      " Enable OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO=true only if you explicitly want placeholder clips.",
+                    code: "video-backend-not-ready",
+                    backend
+                  }),
+                  {
+                    status: 503,
+                    headers: {
+                      ...CORS_HEADERS,
+                      "Content-Type": "application/json"
+                    }
+                  }
+                );
+              }
+            } catch {
+              return new Response(
+                JSON.stringify({
+                  error:
+                    "Prompt-grounded video backend health check failed before generation. " +
+                    "Enable OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO=true only if you explicitly want placeholder clips.",
+                  code: "video-backend-health-check-failed"
+                }),
+                {
+                  status: 503,
+                  headers: {
+                    ...CORS_HEADERS,
+                    "Content-Type": "application/json"
+                  }
+                }
+              );
+            }
+          }
+
           const upstreamHeaders: Record<string, string> = {
             "Content-Type": "application/json"
           };
@@ -3146,7 +3264,7 @@ export default {
           });
         } catch (error: any) {
           logger.error("video_proxy_error", error);
-          if (fallbackVideoUrl) {
+          if (allowPlaceholderVideo && fallbackVideoUrl) {
             return new Response(
               JSON.stringify({
                 id: crypto.randomUUID(),
@@ -3190,7 +3308,10 @@ export default {
 
           return new Response(
             JSON.stringify({
-              error: `Video generation proxy failed: ${String(error?.message || "unknown error")}`
+              error:
+                `Prompt-grounded video generation failed: ${String(error?.message || "unknown error")}. ` +
+                "Enable OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO=true only if you explicitly want placeholder clips.",
+              code: "video-generation-unavailable"
             }),
             {
               status: 502,
@@ -3200,6 +3321,126 @@ export default {
               }
             }
           );
+        } finally {
+          clearTimeout(timeoutHandle);
+        }
+      }
+
+      if (url.pathname === "/omni_video_exports" && request.method === "POST") {
+        const baseUrl = sanitizePromptText(String(env.OMNI_MEDIA_API_BASE_URL || "")).trim();
+        if (!baseUrl) {
+          return new Response(
+            JSON.stringify({ error: "OMNI_MEDIA_API_BASE_URL is required for /omni_video_exports proxy" }),
+            {
+              status: 503,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
+        const targetUrl = `${baseUrl.replace(/\/+$/, "")}/omni_video_exports`;
+        const upstreamHeaders: Record<string, string> = {
+          "Content-Type": "application/json"
+        };
+        const serviceApiKey = sanitizePromptText(String(env.OMNI_MEDIA_API_KEY || "")).trim();
+        if (serviceApiKey) {
+          upstreamHeaders["x-api-key"] = serviceApiKey;
+        }
+
+        try {
+          const rawBody = await request.text();
+          const upstreamResponse = await fetch(targetUrl, {
+            method: "POST",
+            headers: upstreamHeaders,
+            body: rawBody
+          });
+          const rawText = await upstreamResponse.text();
+          return new Response(rawText, {
+            status: upstreamResponse.status,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        } catch (error: any) {
+          return new Response(
+            JSON.stringify({
+              error: `Failed to proxy /omni_video_exports: ${String(error?.message || "unknown error")}`
+            }),
+            {
+              status: 502,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+      }
+
+      if (url.pathname === "/api/video/health" && request.method === "GET") {
+        const baseUrl = sanitizePromptText(String(env.OMNI_MEDIA_API_BASE_URL || "")).trim();
+        const allowPlaceholderVideo = /^(1|true|yes|on)$/i.test(
+          sanitizePromptText(String(env.OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO || "")).trim()
+        );
+
+        const payload: Record<string, unknown> = {
+          ok: true,
+          strict_prompt_generation: !allowPlaceholderVideo,
+          placeholder_mode_enabled: allowPlaceholderVideo,
+          media_base_configured: Boolean(baseUrl),
+          real_video_backend_ready: false,
+          media_health_source: baseUrl ? `${baseUrl.replace(/\/+$/, "")}/v1/health` : null
+        };
+
+        if (!baseUrl) {
+          return new Response(JSON.stringify(payload), {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+
+        const targetUrl = `${baseUrl.replace(/\/+$/, "")}/v1/health`;
+        const controller = new AbortController();
+        const timeoutMs = clamp(Number(env.OMNI_MEDIA_API_TIMEOUT_MS || "45000"), 5000, 120000);
+        const timeoutHandle = setTimeout(() => {
+          try {
+            controller.abort("video-health-timeout");
+          } catch {
+            // ignore
+          }
+        }, timeoutMs);
+
+        try {
+          const response = await fetch(targetUrl, {
+            method: "GET",
+            signal: controller.signal
+          });
+          const data = (await response.json().catch(() => ({}))) as any;
+          payload.media_health_status = response.status;
+          payload.media_health_ok = response.ok;
+          payload.real_video_backend_ready = Boolean(data?.video_backend?.real_video_backend_ready);
+          payload.media_video_backend = data?.video_backend || null;
+          return new Response(JSON.stringify(payload), {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
+        } catch (error: any) {
+          payload.media_health_ok = false;
+          payload.media_health_error = String(error?.message || "unknown error");
+          return new Response(JSON.stringify(payload), {
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json"
+            }
+          });
         } finally {
           clearTimeout(timeoutHandle);
         }

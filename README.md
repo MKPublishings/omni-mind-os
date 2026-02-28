@@ -387,6 +387,14 @@ Knowledge retrieval endpoint that returns relevant text chunks from files in `/p
 ### **GET /api/ping**
 Returns service/runtime health metadata and timestamp.
 
+### **GET /api/video/health**
+Returns video generation readiness status, including:
+
+- whether strict prompt generation is enabled,
+- whether placeholder mode is enabled,
+- whether media backend is configured/reachable,
+- whether `real_video_backend_ready` is true.
+
 ### **GET /api/modes**
 Returns available operational modes.
 
@@ -503,8 +511,18 @@ Video proxy vars:
 - `OMNI_MEDIA_API_KEY` (optional; sent as `x-api-key` to Omni media backend)
 - `OMNI_MEDIA_API_TIMEOUT_MS` (optional request timeout in milliseconds)
 - `OMNI_MEDIA_FALLBACK_VIDEO_URL` (optional; returns a playable fallback video when media backend is not configured)
+- `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` (optional; default `false`. When `true`, allows placeholder fallback clips if real prompt-grounded generation is unavailable)
+
+Optional external provider backend (used when local `vllm_omni` backend is unavailable):
+
+- `OMNI_MEDIA_PROVIDER_VIDEO_URL`
+- `OMNI_MEDIA_PROVIDER_API_KEY`
+- `OMNI_MEDIA_PROVIDER_API_KEY_HEADER` (default `x-api-key`)
+- `OMNI_MEDIA_PROVIDER_TIMEOUT_SEC`
+- `OMNI_MEDIA_PROVIDER_HEALTH_URL`
 
 Video generation is prompt-aware: style/motion/camera hints are inferred from the prompt and passed through request params (`style_preset`, `motion_profile`, `camera_profile`). Fallback responses also include these metadata fields.
+When placeholder mode is enabled, fallback clip selection now uses prompt tags (nature/city/cinematic/etc.) rather than a single static clip.
 
 ### **Optional MP4 Encoding (ffmpeg)**
 
@@ -604,6 +622,21 @@ After local services are up, verify the video route quickly:
 ```
 npm run smoke:video
 ```
+
+To verify prompt-grounded output from a real backend (provider or local model) and fail if fallback is used:
+
+```
+npm run smoke:video:provider
+```
+
+To keep local `omni_video_exports` size under control:
+
+```
+npm run cleanup:video:preview
+npm run cleanup:video
+```
+
+`cleanup:video:preview` is non-destructive. `cleanup:video` removes files older than 7 days and prunes oldest files beyond 200 by default (override with env vars `OMNI_VIDEO_EXPORT_MAX_AGE_DAYS`, `OMNI_VIDEO_EXPORT_MAX_FILES`).
 
 `npm run test` now auto-runs video smoke only when both the worker video route (`http://127.0.0.1:8787/api/video/generate`) and media health endpoint (`http://127.0.0.1:8788/v1/health`) are reachable; otherwise it skips video smoke automatically.
 

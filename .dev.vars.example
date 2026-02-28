@@ -7,6 +7,14 @@ OMNI_MEDIA_API_BASE_URL="http://127.0.0.1:8788"
 OMNI_MEDIA_API_KEY="replace-with-omni-media-key"
 OMNI_MEDIA_API_TIMEOUT_MS="45000"
 OMNI_MEDIA_FALLBACK_VIDEO_URL="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO="false"
+
+# Optional external provider path for real prompt-grounded video generation
+OMNI_MEDIA_PROVIDER_VIDEO_URL=""
+OMNI_MEDIA_PROVIDER_API_KEY=""
+OMNI_MEDIA_PROVIDER_API_KEY_HEADER="x-api-key"
+OMNI_MEDIA_PROVIDER_TIMEOUT_SEC="90"
+OMNI_MEDIA_PROVIDER_HEALTH_URL=""
 
 # Optional admin protection for maintenance endpoints.
 OMNI_ADMIN_KEY="replace-with-strong-secret"

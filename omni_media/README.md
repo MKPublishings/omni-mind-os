@@ -19,6 +19,7 @@ This package provides a greenfield Omni-native media generation scaffold with:
 - `api_contracts.py` -> request/response DTOs for HTTP service layer
 - `storage.py` -> local and S3-like output persistence adapters
 - `service.py` -> sync generation + async queue orchestration
+- `provider_adapter.py` -> optional external video provider integration
 - `http_fastapi.py` -> `/v1/generate/*` and `/v1/jobs/*` endpoint scaffold
 - `run_server.py` -> local server entrypoint using uvicorn
 - `hooks.py` -> output safety validation and watermark hooks
@@ -104,3 +105,5 @@ The suite validates:
 - Per-modality rate limiting behavior
 - Response shape for generation endpoints
 - Admin diagnostics endpoint responses
+
+`GET /v1/health` includes `video_backend.real_video_backend_ready` and placeholder mode flags so you can quickly verify whether true prompt-grounded video generation is active.
