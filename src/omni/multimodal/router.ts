@@ -30,7 +30,7 @@ function extractToolDirective(text: string): ToolDirective | null {
 type RouteScore = {
   route: OmniRouteKind;
   score: number;
-  reason: string;
+        { route: "simulation", score: 0.2, reason: "simulation-intent-detected" }
 };
 
 function hasAny(text: string, patterns: RegExp[]): boolean {
@@ -53,10 +53,12 @@ function scoreRouteCandidates(text: string, mode: string): { candidates: RouteSc
   if (normalizedMode === "simulation") {
     candidates.find((c) => c.route === "simulation")!.score += 0.55;
     signals.push("mode:simulation");
-  }
 
-  if (/^#(image|memory|simulation|chat)\b/i.test(lower)) {
-    const explicit = String(lower.match(/^#(image|memory|simulation|chat)\b/i)?.[1] || "chat") as OmniRouteKind;
+      // Only trigger memory route if input starts with '/memory'
+      if (/^\/memory\b/i.test(lower)) {
+        candidates.find((c) => c.route === "memory")!.score += 0.7;
+        signals.push("explicit-route:/memory");
+      }
     const target = candidates.find((c) => c.route === explicit);
     if (target) {
       target.score += 0.7;
