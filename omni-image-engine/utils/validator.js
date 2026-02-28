@@ -38,22 +38,13 @@ function validateImageEngine() {
 }
 
 function validateOmniEngine() {
-    const { validateVideoEngine } = require("../video/utils/validator");
-    const image = validateImageEngine();
-    const video = validateVideoEngine();
-    return {
-        valid: Boolean(image.valid && video.valid),
-        ffmpegAvailable: video.ffmpegAvailable
-    };
+    return validateImageEngine();
 }
 
 if (require.main === module) {
     try {
-        const report = validateOmniEngine();
+        validateOmniEngine();
         console.log("[OMNI-IMAGE-ENGINE] Validator passed.");
-        if (!report.ffmpegAvailable) {
-            console.log("[OMNI-IMAGE-ENGINE] ffmpeg not found (strict video output requires ffmpeg unless allowManifestFallback=true).");
-        }
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error("[OMNI-IMAGE-ENGINE][ERROR]", message);

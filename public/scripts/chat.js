@@ -357,11 +357,11 @@
     if (!hasVerifiedAgeProfile()) {
       return {
         ok: false,
-        message: "Age verification is required before generating images or videos. Complete the age gate and try again."
+        message: "Age verification is required before generating images. Complete the age gate and try again."
       };
     }
 
-    const promptLimit = mediaKind === "video" || mediaKind === "gif" ? 24000 : 1600;
+    const promptLimit = 1600;
     if (prompt.length > promptLimit) {
       return {
         ok: false,
@@ -375,42 +375,23 @@
   function detectAutoMediaIntent(text) {
     const raw = String(text || "").trim();
     const value = raw.toLowerCase();
-    if (!value) return { kind: "chat", prompt: "", format: "both" };
+    if (!value) return { kind: "chat", prompt: "" };
 
-    if (value.startsWith("/image") || value.startsWith("/video")) {
-      return { kind: "command", prompt: raw, format: "both" };
+    if (value.startsWith("/image")) {
+      return { kind: "command", prompt: raw };
     }
 
-    const hasMakeVerb = /\b(generate|create|make|render|animate|produce|design)\b/i.test(value);
-    const asksVideo = /\b(video|clip|animation|animate|cinematic\s+shot|motion)\b/i.test(value);
-    const asksGif = /\b(gif|loop|animated\s+gif)\b/i.test(value);
     const asksImage = /\b(image|picture|illustration|art|photo|logo|poster|wallpaper)\b/i.test(value);
 
-    if (asksGif && (hasMakeVerb || asksVideo || asksImage)) {
-      return { kind: "video", prompt: extractVideoPrompt(raw), format: "gif" };
-    }
-
-    if (asksVideo && (hasMakeVerb || asksImage || /\bturn\b[\s\S]{0,20}\binto\b/i.test(value))) {
-      return { kind: "video", prompt: extractVideoPrompt(raw), format: "both" };
-    }
-
     if (isImageGenerationRequest(raw)) {
-      return { kind: "image", prompt: extractImagePrompt(raw), format: "both" };
+      return { kind: "image", prompt: extractImagePrompt(raw) };
     }
 
-    return { kind: "chat", prompt: raw, format: "both" };
-  }
+    if (asksImage) {
+      return { kind: "image", prompt: extractImagePrompt(raw) };
+    }
 
-  function extractVideoPrompt(text) {
-    const raw = String(text || "").trim();
-    if (!raw) return "";
-
-    const withoutLead = raw
-      .replace(/^\s*(please\s+)?(generate|create|make|render|animate|produce)\s+(a\s+)?(gif|video|clip|animation)\s*(of|for)?\s*/i, "")
-      .replace(/\b(as\s+a\s+gif|as\s+gif|in\s+video\s+form)\b/gi, "")
-      .trim();
-
-    return withoutLead || raw;
+    return { kind: "chat", prompt: raw };
   }
 
   function parseStyleCommand(content) {
@@ -529,83 +510,6 @@
     };
   }
 
-  function parseVideoCommand(content) {
-    const text = String(content || "").trim();
-    const lower = text.toLowerCase();
-    if (!lower.startsWith("/video")) return null;
-
-    const raw = text.slice(6).trim();
-    if (!raw) {
-      return { action: "help" };
-    }
-
-    let prompt = raw;
-    let qualityMode = "BALANCED";
-    let format = "both";
-    let maxSizeMB = 2;
-    let durationSeconds = 4;
-
-    const qualityMatch = raw.match(/--quality\s*=\s*(crisp_short|balanced|long_soft)/i);
-    if (qualityMatch?.[1]) {
-      qualityMode = String(qualityMatch[1]).toUpperCase();
-      prompt = prompt.replace(qualityMatch[0], " ").trim();
-    }
-
-    const formatMatch = raw.match(/--format\s*=\s*(mp4|gif|both)/i);
-    if (formatMatch?.[1]) {
-      format = String(formatMatch[1]).toLowerCase();
-      prompt = prompt.replace(formatMatch[0], " ").trim();
-    }
-
-    const maxMatch = raw.match(/--max\s*=\s*([0-9]+(?:\.[0-9]+)?)/i);
-    if (maxMatch?.[1]) {
-      const parsed = Number(maxMatch[1]);
-      if (Number.isFinite(parsed)) {
-        maxSizeMB = Math.max(0.1, Math.min(512, parsed));
-      }
-      prompt = prompt.replace(maxMatch[0], " ").trim();
-    }
-
-    const durationMatch = raw.match(/--(?:duration|length)\s*=\s*([0-9]+(?:\.[0-9]+)?)/i);
-    if (durationMatch?.[1]) {
-      const parsed = Number(durationMatch[1]);
-      if (Number.isFinite(parsed)) {
-        durationSeconds = Math.max(1, Math.min(180, parsed));
-      }
-      prompt = prompt.replace(durationMatch[0], " ").trim();
-    }
-
-    prompt = prompt.replace(/\s+/g, " ").trim();
-    if (!prompt) {
-      return { action: "help" };
-    }
-
-    return {
-      action: "generate",
-      prompt,
-      qualityMode,
-      format,
-      maxSizeMB,
-      durationSeconds
-    };
-  }
-
-  function formatAvailableStyles() {
-    return KNOWN_RENDER_STYLES.join(", ");
-  }
-
-  function formatAvailableCameras() {
-    return KNOWN_CAMERA_PROFILES.join(", ");
-  }
-
-  function formatAvailableLighting() {
-    return KNOWN_LIGHTING_PROFILES.join(", ");
-  }
-
-  function formatAvailableMaterials() {
-    return KNOWN_MATERIAL_PROFILES.join(", ");
-  }
-
   function buildStyleStatusMessage(session) {
     const active = getActiveImageStyle(session);
     const camera = getActiveCameraProfile(session);
@@ -704,264 +608,6 @@
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  function mapVideoJobToResult(job) {
-    return {
-      id: String(job?.id || ""),
-      mp4Url: String(job?.mp4Url || "") || undefined,
-      gifUrl: String(job?.gifUrl || "") || undefined,
-      sizeMB: {
-        mp4: undefined,
-        gif: undefined
-      },
-      meta: {
-        durationSec: Number(job?.durationSeconds || 0),
-        resolution: {
-          width: Number(job?.width || 0),
-          height: Number(job?.height || 0)
-        },
-        fps: Number(job?.fps || 0),
-        sceneGraph: null,
-        shots: [],
-        keyframes: []
-      },
-      previews: {
-        keyframeUrls: Array.isArray(job?.keyframePreviewUrls) ? job.keyframePreviewUrls : []
-      },
-      createdAt: Number(Date.parse(String(job?.createdAt || "")) || Date.now())
-    };
-  }
-
-  function isSafetyBlockedVideoError(message) {
-    const text = String(message || "").toLowerCase();
-    if (!text) return false;
-    return /illegal|age-restricted|blocked|forbidden|explicit sexual/.test(text);
-  }
-
-  async function requestVideoJobStatus(jobId) {
-    const response = await fetch(`/api/video/job/${encodeURIComponent(String(jobId || "").trim())}`, {
-      method: "GET"
-    });
-
-    let data = null;
-    try {
-      data = await response.json();
-    } catch {
-      data = null;
-    }
-
-    if (!response.ok) {
-      throw new Error(String(data?.error || "Unable to load video job status"));
-    }
-
-    return data || null;
-  }
-
-  async function requestPhase1Video(payload, hooks = {}) {
-    const preflight = preflightMediaGenerationCheck(payload?.prompt || "", "video");
-    if (!preflight.ok) {
-      throw new Error(preflight.message);
-    }
-
-    const onStatus = typeof hooks?.onStatus === "function" ? hooks.onStatus : null;
-
-    const buildRequestBody = (inputPayload, stableProfile = false) => {
-      const qualityMode = String(inputPayload?.qualityMode || "BALANCED").toUpperCase();
-      const format = String(inputPayload?.format || "both").toLowerCase();
-      const maxSizeMB = Number(inputPayload?.maxSizeMB || 2);
-      const durationSeconds = Number(inputPayload?.durationSeconds || 4);
-      const width = Number(inputPayload?.width || 512);
-      const height = Number(inputPayload?.height || 512);
-      const fps = Number(inputPayload?.fps || 12);
-
-      if (!stableProfile) {
-        return {
-          prompt: String(inputPayload?.prompt || "").trim(),
-          qualityMode,
-          format,
-          maxSizeMB,
-          durationSeconds,
-          width,
-          height,
-          fps,
-          safetyProfile: buildSafetyProfile()
-        };
-      }
-
-      return {
-        prompt: String(inputPayload?.prompt || "").trim(),
-        qualityMode: "LONG_SOFT",
-        format,
-        maxSizeMB: Math.min(2, maxSizeMB || 2),
-        durationSeconds: 2,
-        width: 384,
-        height: 384,
-        fps: 8,
-        safetyProfile: buildSafetyProfile()
-      };
-    };
-
-    const submitVideoJob = async (requestBody) => {
-      const response = await fetch("/api/video/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      let data = null;
-      try {
-        data = await response.json();
-      } catch {
-        data = null;
-      }
-
-      return { response, data };
-    };
-
-    const pollVideoJobUntilDone = async (jobId, timeoutMs, pollIntervalMs) => {
-      const startedAt = Date.now();
-      let latest = { id: jobId, status: "queued" };
-
-      while (Date.now() - startedAt < timeoutMs) {
-        latest = await requestVideoJobStatus(jobId);
-
-        if (latest.status === "succeeded") {
-          return { outcome: "succeeded", latest };
-        }
-
-        if (latest.status === "failed") {
-          return { outcome: "failed", latest };
-        }
-
-        if (onStatus) {
-          onStatus({
-            status: latest.status || "running",
-            detail: latest.status === "queued" ? "Queued in worker..." : "Generating frames and encoding..."
-          });
-        }
-
-        await sleep(pollIntervalMs);
-      }
-
-      return { outcome: "timeout", latest };
-    };
-
-    const timeoutMs = 180_000;
-    const pollIntervalMs = 2_000;
-
-    if (onStatus) {
-      onStatus({ status: "queued", detail: "Submitting video job..." });
-    }
-
-    const primaryRequestBody = buildRequestBody(payload, false);
-    const { response, data } = await submitVideoJob(primaryRequestBody);
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        throw new Error(String(data?.error || "Video request blocked by safety policy"));
-      }
-
-      if (onStatus) {
-        onStatus({ status: "running", detail: "Using legacy phase1 video path..." });
-      }
-
-      const fallbackResponse = await fetch("/api/video/phase1", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          prompt: String(payload?.prompt || "").trim(),
-          qualityMode: String(payload?.qualityMode || "BALANCED").toUpperCase(),
-          format: String(payload?.format || "both").toLowerCase(),
-          maxSizeMB: Number(payload?.maxSizeMB || 2),
-          durationSeconds: Number(payload?.durationSeconds || 4),
-          safetyProfile: buildSafetyProfile()
-        })
-      });
-
-      let fallbackData = null;
-      try {
-        fallbackData = await fallbackResponse.json();
-      } catch {
-        fallbackData = null;
-      }
-
-      if (!fallbackResponse.ok || !fallbackData?.ok) {
-        const message = String(fallbackData?.error || data?.error || "Video generation failed");
-        if (fallbackResponse.status === 403 || isSafetyBlockedVideoError(message)) {
-          throw new Error(message);
-        }
-        throw new Error(`Video-only mode: ${message}`);
-      }
-
-      const fallbackResult = fallbackData.result || null;
-      if (!fallbackResult) return null;
-      fallbackResult.previews = {
-        keyframeUrls: Array.isArray(fallbackData?.previews?.keyframeUrls) ? fallbackData.previews.keyframeUrls : []
-      };
-      fallbackResult.createdAt = Number(fallbackData?.createdAt || Date.now());
-      if (onStatus) {
-        onStatus({ status: "succeeded", detail: "Video generated via phase1 endpoint." });
-      }
-      return fallbackResult;
-    }
-
-    const job = data || null;
-    if (!job?.id) {
-      throw new Error("Video job id was not returned");
-    }
-
-    const firstPoll = await pollVideoJobUntilDone(job.id, timeoutMs, pollIntervalMs);
-    if (firstPoll.outcome === "succeeded") {
-      if (onStatus) {
-        onStatus({ status: "succeeded", detail: "Video generation completed." });
-      }
-      return mapVideoJobToResult(firstPoll.latest);
-    }
-
-    if (firstPoll.outcome === "failed") {
-      const message = String(firstPoll.latest?.errorMessage || "Video generation failed");
-      throw new Error(message);
-    }
-
-    if (onStatus) {
-      onStatus({
-        status: "running",
-        detail: "Primary video job timed out. Retrying once with stability profile (384x384, 8 FPS, 2s)..."
-      });
-    }
-
-    const stableRequestBody = buildRequestBody(payload, true);
-    const { response: retryResponse, data: retryData } = await submitVideoJob(stableRequestBody);
-
-    if (!retryResponse.ok) {
-      const message = String(retryData?.error || "Video generation retry failed");
-      throw new Error(message);
-    }
-
-    const retryJob = retryData || null;
-    if (!retryJob?.id) {
-      throw new Error("Video retry job id was not returned");
-    }
-
-    const secondPoll = await pollVideoJobUntilDone(retryJob.id, timeoutMs, pollIntervalMs);
-    if (secondPoll.outcome === "succeeded") {
-      if (onStatus) {
-        onStatus({ status: "succeeded", detail: "Video generation completed on retry with stability profile." });
-      }
-      return mapVideoJobToResult(secondPoll.latest);
-    }
-
-    if (secondPoll.outcome === "failed") {
-      const message = String(secondPoll.latest?.errorMessage || "Video generation retry failed");
-      throw new Error(message);
-    }
-
-    throw new Error("Video generation timed out after one retry.");
   }
 
   function toModelLabel(model) {
@@ -1590,16 +1236,6 @@
     return new Date(ts).toLocaleString();
   }
 
-  function isBrowserPlayableMediaUrl(value) {
-    const url = String(value || "").trim();
-    if (!url) return false;
-    if (url.startsWith("data:video/") || url.startsWith("data:image/gif")) return true;
-    if (url.startsWith("blob:") || url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")) {
-      return true;
-    }
-    return false;
-  }
-
   function createGeneratedImageCard(meta = {}) {
     const imageDataUrl = String(meta.imageDataUrl || "").trim();
     if (!imageDataUrl.startsWith("data:image/")) {
@@ -1644,141 +1280,6 @@
     card.appendChild(img);
     card.appendChild(actions);
 
-    return card;
-  }
-
-  function createGeneratedMediaCard(meta = {}) {
-    const generatedAt = Number(meta.generatedAt || Date.now());
-    const createdLabel = formatGeneratedTimestamp(generatedAt);
-    const mp4UrlRaw = String(meta.videoMp4Url || "").trim();
-    const gifUrlRaw = String(meta.videoGifUrl || "").trim();
-    const mp4Url = isBrowserPlayableMediaUrl(mp4UrlRaw) ? mp4UrlRaw : "";
-    const gifUrl = isBrowserPlayableMediaUrl(gifUrlRaw) ? gifUrlRaw : "";
-    const keyframeUrls = Array.isArray(meta.videoKeyframeUrls) ? meta.videoKeyframeUrls.map((item) => String(item || "").trim()).filter(Boolean) : [];
-    const hasGif = Boolean(gifUrl) && (/\.gif($|\?)/i.test(gifUrl) || gifUrl.startsWith("data:image/gif"));
-    const hasMp4 =
-      Boolean(mp4Url) &&
-      (/\.mp4($|\?)/i.test(mp4Url) || mp4Url.startsWith("data:video/") || /^https?:\/\//i.test(mp4Url) || mp4Url.startsWith("/") || mp4Url.startsWith("blob:"));
-    const hasPlayableVideo = hasMp4 || keyframeUrls.length > 0;
-
-    if (!hasPlayableVideo && !hasGif) {
-      return null;
-    }
-
-    const card = document.createElement("div");
-    card.className = "generated-media-card";
-
-    const viewer = document.createElement("div");
-    viewer.className = "generated-media-viewer";
-
-    let displayEl = null;
-
-    if (hasPlayableVideo) {
-      if (hasMp4) {
-        const video = document.createElement("video");
-        video.className = "generated-video-preview";
-        video.controls = true;
-        video.playsInline = true;
-        video.preload = "metadata";
-        video.src = mp4Url;
-        displayEl = video;
-      } else {
-        const frame = document.createElement("img");
-        frame.className = "generated-gif-preview";
-        frame.alt = "Generated video preview";
-        frame.src = keyframeUrls[0];
-
-        let index = 0;
-        const interval = setInterval(() => {
-          if (!frame.isConnected || keyframeUrls.length < 2) {
-            if (!frame.isConnected) clearInterval(interval);
-            return;
-          }
-          index = (index + 1) % keyframeUrls.length;
-          frame.src = keyframeUrls[index];
-        }, 360);
-
-        frame.addEventListener("remove", () => clearInterval(interval));
-        displayEl = frame;
-      }
-
-      if (displayEl) {
-        viewer.appendChild(displayEl);
-      }
-    } else if (hasGif) {
-      const gif = document.createElement("img");
-      gif.className = "generated-gif-preview";
-      gif.src = gifUrl;
-      gif.alt = "Generated GIF";
-      viewer.appendChild(gif);
-      displayEl = gif;
-    }
-
-    const actions = document.createElement("div");
-    actions.className = "generated-media-actions";
-
-    if (hasMp4) {
-      const downloadVideo = document.createElement("a");
-      downloadVideo.className = "generated-image-download";
-      downloadVideo.href = mp4Url;
-      downloadVideo.download = buildOmniExportFilename("video", "mp4", generatedAt, String(meta.videoPrompt || ""));
-      downloadVideo.textContent = "Download video";
-      actions.appendChild(downloadVideo);
-    }
-
-    if (hasGif) {
-      const downloadGif = document.createElement("a");
-      downloadGif.className = "generated-image-download";
-      downloadGif.href = gifUrl;
-      downloadGif.download = buildOmniExportFilename("gif", "gif", generatedAt, String(meta.videoPrompt || ""));
-      downloadGif.textContent = "Download GIF";
-      actions.appendChild(downloadGif);
-    }
-
-    if (displayEl) {
-      const fullscreenBtn = document.createElement("button");
-      fullscreenBtn.type = "button";
-      fullscreenBtn.className = "generated-media-fullscreen";
-      fullscreenBtn.textContent = "Fullscreen";
-      fullscreenBtn.addEventListener("click", async () => {
-        try {
-          const target = displayEl.tagName === "VIDEO" ? displayEl : viewer;
-          if (target && typeof target.requestFullscreen === "function") {
-            await target.requestFullscreen();
-          }
-        } catch {
-          // ignore fullscreen failures
-        }
-      });
-      actions.appendChild(fullscreenBtn);
-    }
-
-    const info = document.createElement("div");
-    info.className = "generated-image-meta";
-    const duration = Number(meta.videoDurationSec);
-    const resolution = String(meta.videoResolution || "").trim();
-    const qualityMode = String(meta.videoQualityMode || "").trim().toUpperCase();
-    const format = String(meta.videoFormat || "").trim().toLowerCase();
-    const fallbackReason = String(meta.videoFallbackReason || "").trim();
-    info.textContent = [
-      Number.isFinite(duration) && duration > 0 ? `${duration.toFixed(2)}s` : "",
-      resolution,
-      qualityMode,
-      format ? `format:${format}` : "",
-      fallbackReason ? "fallback" : "",
-      createdLabel ? `Created: ${createdLabel}` : ""
-    ].filter(Boolean).join(" • ");
-    actions.appendChild(info);
-
-    if (fallbackReason) {
-      const note = document.createElement("div");
-      note.className = "generated-image-meta";
-      note.textContent = `Fallback reason: ${fallbackReason}`;
-      actions.appendChild(note);
-    }
-
-    card.appendChild(viewer);
-    card.appendChild(actions);
     return card;
   }
 
@@ -1832,16 +1333,6 @@
         body.appendChild(spacer);
       }
       body.appendChild(imageCard);
-    }
-
-    const mediaCard = createGeneratedMediaCard(meta);
-    if (mediaCard) {
-      if ((content || "").trim() || imageCard) {
-        const spacer = document.createElement("div");
-        spacer.className = "generated-image-spacer";
-        body.appendChild(spacer);
-      }
-      body.appendChild(mediaCard);
     }
 
     inner.appendChild(header);
@@ -1898,13 +1389,7 @@
         imageFilename: msg.imageFilename || "",
         imagePrompt: msg.imagePrompt || "",
         imageResolution: msg.imageResolution || "",
-        imageStyleId: msg.imageStyleId || "",
-        videoMp4Url: msg.videoMp4Url || "",
-        videoGifUrl: msg.videoGifUrl || "",
-        videoPrompt: msg.videoPrompt || "",
-        videoDurationSec: msg.videoDurationSec || 0,
-        videoResolution: msg.videoResolution || "",
-        videoKeyframeUrls: Array.isArray(msg.videoKeyframeUrls) ? msg.videoKeyframeUrls : []
+        imageStyleId: msg.imageStyleId || ""
       });
     }
     updateMindStateUI(session);
@@ -1914,23 +1399,11 @@
     const mediaType = getMessageMediaType(msg);
     if (!mediaType) return false;
     if (filter === "images") return mediaType === "image";
-    if (filter === "gifs") return mediaType === "gif";
-    if (filter === "videos") return mediaType === "video";
     return true;
   }
 
   function getMessageMediaType(msg) {
     const imageDataUrl = String(msg?.imageDataUrl || "").trim();
-    const gifUrl = String(msg?.videoGifUrl || "").trim();
-    const mp4Url = String(msg?.videoMp4Url || "").trim();
-
-    if (/^data:image\/gif/i.test(imageDataUrl) || /\.gif($|\?)/i.test(imageDataUrl) || /\.gif($|\?)/i.test(gifUrl)) {
-      return "gif";
-    }
-
-    if (mp4Url || (String(msg?.type || "").toLowerCase() === "video" && !gifUrl)) {
-      return "video";
-    }
 
     if (imageDataUrl.startsWith("data:image/")) {
       return "image";
@@ -1942,9 +1415,7 @@
   function updateMediaFilterUI() {
     const map = {
       all: mediaFilterAllBtn,
-      images: mediaFilterImagesBtn,
-      gifs: mediaFilterGifsBtn,
-      videos: mediaFilterVideosBtn
+      images: mediaFilterImagesBtn
     };
 
     for (const [key, button] of Object.entries(map)) {
@@ -2299,8 +1770,7 @@
     const weatherCommand = parseWeatherCommand(trimmed);
     const inspectCommand = parseInspectCommand(trimmed);
     const learnCommand = parseLearnCommand(trimmed);
-    const videoCommand = parseVideoCommand(trimmed);
-    if (styleCommand || cameraCommand || lightCommand || materialsCommand || webCommand || weatherCommand || inspectCommand || learnCommand || videoCommand) {
+    if (styleCommand || cameraCommand || lightCommand || materialsCommand || webCommand || weatherCommand || inspectCommand || learnCommand) {
       const commandTimestamp = Date.now();
       session.messages.push({ role: "user", content: trimmed, timestamp: commandTimestamp });
       updateSessionMetaFromMessages(session);
@@ -2488,73 +1958,6 @@
         } catch (error) {
           assistantText = `Learning memory lookup failed: ${error instanceof Error ? error.message : "unknown error"}`;
         }
-      } else if (videoCommand) {
-        if (videoCommand.action === "help") {
-          assistantText = "Usage: `/video <prompt> [--quality=CRISP_SHORT|BALANCED|LONG_SOFT] [--format=mp4|gif|both] [--max=2] [--duration=4]`. Example: `/video neon rooftop close-up of Aiko --quality=BALANCED --format=both --duration=4 --max=2`.";
-        } else {
-          try {
-            const liveAssistant = appendMessage("assistant", "Video job: Queued...", {
-              model: session.model || "auto",
-              mode: getActiveMode(session),
-              timestamp: Date.now()
-            });
-            const liveBody = liveAssistant?.body || null;
-            liveCommandAssistantBody = liveBody;
-
-            const result = await requestPhase1Video(videoCommand, {
-              onStatus: (event) => {
-                if (!liveBody) return;
-                const label = String(event?.status || "running").toLowerCase();
-                const detail = String(event?.detail || "").trim();
-                const pretty = label === "queued"
-                  ? "Queued"
-                  : label === "running"
-                    ? "Running"
-                    : label === "succeeded"
-                      ? "Succeeded"
-                      : "Failed";
-                updateAssistantMessageBody(liveBody, `Video job status: **${pretty}**${detail ? `\n${detail}` : ""}`);
-              }
-            });
-            if (!result) {
-              assistantText = "Video generation failed: empty result.";
-            } else {
-              const generatedAt = Date.now();
-              const lines = [
-                `Phase 1 video generated: **${result.id || "(no id)"}**`,
-                `- Duration: **${Number(result?.meta?.durationSec || 0).toFixed(2)}s**`,
-                `- Resolution: **${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}**`,
-                `- FPS: **${Number(result?.meta?.fps || 0)}**`,
-                `- MP4 Size: **${typeof result?.sizeMB?.mp4 === "number" ? `${result.sizeMB.mp4} MB` : "n/a"}**`,
-                `- GIF Size: **${typeof result?.sizeMB?.gif === "number" ? `${result.sizeMB.gif} MB` : "n/a"}**`
-              ];
-
-              if (result.mp4Url) lines.push(`- MP4: ${result.mp4Url}`);
-              if (result.gifUrl) lines.push(`- GIF: ${result.gifUrl}`);
-
-              const keyframeCount = Array.isArray(result?.meta?.keyframes) ? result.meta.keyframes.length : 0;
-              const shotCount = Array.isArray(result?.meta?.shots) ? result.meta.shots.length : 0;
-              lines.push(`- Shots: **${shotCount}** | Keyframes: **${keyframeCount}**`);
-              if (result?.fallbackReason) lines.push(`- Fallback: **${String(result.fallbackReason)}**`);
-
-              assistantText = lines.join("\n");
-              assistantMediaMeta = {
-                generatedAt,
-                videoPrompt: videoCommand.prompt,
-                videoMp4Url: String(result?.mp4Url || ""),
-                videoGifUrl: String(result?.gifUrl || ""),
-                videoDurationSec: Number(result?.meta?.durationSec || 0),
-                videoResolution: `${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}`,
-                videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : [],
-                videoQualityMode: String(videoCommand?.qualityMode || "BALANCED").toUpperCase(),
-                videoFormat: String(videoCommand?.format || "both").toLowerCase(),
-                videoFallbackReason: String(result?.fallbackReason || "")
-              };
-            }
-          } catch (error) {
-            assistantText = `Video generation failed: ${error instanceof Error ? error.message : "unknown error"}`;
-          }
-        }
       } else {
         assistantText = "Rendering command received.";
       }
@@ -2675,106 +2078,6 @@
     if (inputEl) inputEl.value = "";
 
     const mediaIntent = detectAutoMediaIntent(trimmed);
-
-    if (mediaIntent.kind === "video") {
-      const mindState = ensureMindState(session);
-      if (mindState) {
-        mindState.route = "video";
-        appendMindTimeline(session, "route=video, source=prompt-aware-media-intent");
-        updateMindStateUI(session);
-      }
-
-      const assistantMessage = appendMessage("assistant", "Generating video clip...", {
-        model: session.model || "auto",
-        mode: activeMode
-      });
-      const assistantBodyEl = assistantMessage ? assistantMessage.body : null;
-
-      isStreaming = true;
-      if (sendBtn) sendBtn.disabled = true;
-      if (inputEl) inputEl.disabled = true;
-      if (typingIndicatorEl) typingIndicatorEl.style.display = "block";
-
-      try {
-        const videoPrompt = String(mediaIntent.prompt || trimmed).trim() || trimmed;
-        const result = await requestPhase1Video({
-          prompt: videoPrompt,
-          qualityMode: "BALANCED",
-          format: mediaIntent.format === "gif" ? "gif" : "both",
-          maxSizeMB: 2
-        });
-        const generatedAt = Date.now();
-
-        const lines = [
-          `Generated ${mediaIntent.format === "gif" ? "GIF clip" : "video clip"} for: **${videoPrompt}**`,
-          `- Duration: **${Number(result?.meta?.durationSec || 0).toFixed(2)}s**`,
-          `- Resolution: **${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}**`,
-          `- FPS: **${Number(result?.meta?.fps || 0)}**`
-        ];
-        if (result?.mp4Url) lines.push(`- MP4: ${result.mp4Url}`);
-        if (result?.gifUrl) lines.push(`- GIF: ${result.gifUrl}`);
-          if (result?.fallbackReason) lines.push(`- Fallback: **${String(result.fallbackReason)}**`);
-
-        updateAssistantMessageBody(assistantBodyEl, lines.join("\n"));
-
-        if (assistantBodyEl) {
-          const mediaCard = createGeneratedMediaCard({
-            generatedAt,
-            videoPrompt,
-            videoMp4Url: String(result?.mp4Url || ""),
-            videoGifUrl: String(result?.gifUrl || ""),
-            videoDurationSec: Number(result?.meta?.durationSec || 0),
-            videoResolution: `${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}`,
-            videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : [],
-            videoQualityMode: "BALANCED",
-            videoFormat: mediaIntent.format === "gif" ? "gif" : "both",
-            videoFallbackReason: String(result?.fallbackReason || "")
-          });
-          if (mediaCard) {
-            const spacer = document.createElement("div");
-            spacer.className = "generated-image-spacer";
-            assistantBodyEl.appendChild(spacer);
-            assistantBodyEl.appendChild(mediaCard);
-          }
-        }
-
-        session.messages.push({
-          role: "assistant",
-          content: `Generated video clip for: ${videoPrompt}`,
-          type: "video",
-          generatedAt,
-          videoPrompt,
-          videoMp4Url: String(result?.mp4Url || ""),
-          videoGifUrl: String(result?.gifUrl || ""),
-          videoDurationSec: Number(result?.meta?.durationSec || 0),
-          videoResolution: `${Number(result?.meta?.resolution?.width || 0)}x${Number(result?.meta?.resolution?.height || 0)}`,
-          videoKeyframeUrls: Array.isArray(result?.previews?.keyframeUrls) ? result.previews.keyframeUrls : [],
-          videoQualityMode: "BALANCED",
-          videoFormat: mediaIntent.format === "gif" ? "gif" : "both",
-          videoFallbackReason: String(result?.fallbackReason || ""),
-          timestamp: Date.now()
-        });
-        updateSessionMetaFromMessages(session);
-        saveState();
-        playNotificationSound("assistant");
-      } catch (err) {
-        console.error("Omni video generation error:", err);
-        updateAssistantMessageBody(
-          assistantBodyEl,
-          `[Error] Video generation failed. Try refining the prompt with clearer visual action.`
-        );
-        playNotificationSound("error");
-      } finally {
-        isStreaming = false;
-        updateJumpToLatestVisibility();
-        if (sendBtn) sendBtn.disabled = false;
-        if (inputEl) inputEl.disabled = false;
-        if (typingIndicatorEl) typingIndicatorEl.style.display = "none";
-        if (inputEl) inputEl.focus();
-      }
-
-      return;
-    }
 
     const shouldGenerateImage = mediaIntent.kind === "image";
     if (shouldGenerateImage) {

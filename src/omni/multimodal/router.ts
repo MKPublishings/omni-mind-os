@@ -77,8 +77,7 @@ function scoreRouteCandidates(text: string, mode: string): { candidates: RouteSc
 
   if (
     hasAny(lower, [
-      /\b(generate image|create image|render image|make an image|visualize this|image prompt|art prompt|portrait of|illustration of|photo of|thumbnail)\b/i,
-      /\b(video frame|storyboard frame|concept frame)\b/i
+      /\b(generate image|create image|render image|make an image|visualize this|image prompt|art prompt|portrait of|illustration of|photo of|thumbnail|storyboard frame|concept frame)\b/i
     ])
   ) {
     candidates.find((c) => c.route === "image")!.score += 0.47;

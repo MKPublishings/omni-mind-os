@@ -1,5 +1,4 @@
 const omniImageGenerator = require("./core/omniImageGenerator");
-const videoEngine = require("./video");
 const { Laws } = require("./core/lawRegistry");
 const logger = require("./utils/logger");
 const { ensureString } = require("./utils/validator");
@@ -13,25 +12,12 @@ function throwPolicyError(report) {
     throw error;
 }
 
-function throwClarificationError(routing) {
-    const error = new Error("Ambiguous prompt detected. Do you want a still image or a video?");
-    error.code = "PROMPT_REQUIRES_CLARIFICATION";
-    error.routing = routing;
-    throw error;
-}
-
 function enforceSafety(prompt, options = {}) {
     const report = evaluateContentPolicy(prompt, options);
     if (!report.allowed) {
         throwPolicyError(report);
     }
     return report;
-}
-
-function shouldRequestClarification(routing) {
-    if (!routing) return false;
-    const mixedIntent = (routing.matched?.image?.length || 0) > 0 && (routing.matched?.video?.length || 0) > 0;
-    return routing.intent === "ambiguous" || routing.shouldAskUser || mixedIntent;
 }
 
 async function omniImageGenerate(userPrompt, options = {}) {
@@ -64,34 +50,6 @@ async function omniImageGenerate(userPrompt, options = {}) {
     };
 }
 
-async function omniVideoGenerate(userPrompt, mode = "balanced", options = {}) {
-    const normalizedPrompt = ensureString(userPrompt).trim();
-    if (!normalizedPrompt) {
-        throw new Error("Video generation requires a non-empty prompt string");
-    }
-
-    const policy = enforceSafety(normalizedPrompt, options);
-
-    const validation = validatePromptForGeneration(normalizedPrompt, {
-        ...options,
-        requestedType: "video",
-        defaultType: "video",
-        strictRouting: false
-    });
-
-    logger.info("Video prompt:", validation.normalizedPrompt);
-    const result = await videoEngine.generateVideoClip(validation.normalizedPrompt, mode, {
-        ...options,
-        generation_mode: "video"
-    }, omniImageGenerator.generate);
-    logger.info("Video manifest created:", result.output.filePath);
-    return {
-        ...result,
-        policy,
-        routing: validation.routing
-    };
-}
-
 async function omniGenerate(userPrompt, options = {}) {
     const normalizedPrompt = ensureString(userPrompt).trim();
     if (!normalizedPrompt) {
@@ -102,22 +60,10 @@ async function omniGenerate(userPrompt, options = {}) {
 
     const validation = validatePromptForGeneration(normalizedPrompt, {
         ...options,
-        requestedType: "auto",
-        defaultType: options.defaultType || "image",
-        strictRouting: false
+        requestedType: "image",
+        defaultType: "image",
+        strictRouting: true
     });
-
-    if (shouldRequestClarification(validation.routing)) {
-        throwClarificationError(validation.routing);
-    }
-
-    if (validation.resolvedType === "video") {
-        const result = await omniVideoGenerate(validation.normalizedPrompt, options.mode || "balanced", options);
-        return {
-            ...result,
-            policy
-        };
-    }
 
     const result = await omniImageGenerate(validation.normalizedPrompt, options);
     return {
@@ -129,6 +75,5 @@ async function omniGenerate(userPrompt, options = {}) {
 module.exports = {
     omniGenerate,
     omniImageGenerate,
-    omniVideoGenerate,
     Laws
 };

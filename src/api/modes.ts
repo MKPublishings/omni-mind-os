@@ -9,7 +9,7 @@ const MODE_INFOS: ModeInfo[] = [
   { id: "auto", label: "Auto", summary: "Automatically routes by task and confidence.", aliases: ["default"] },
   { id: "architect", label: "Architect", summary: "Structured design and systems planning.", aliases: ["design"] },
   { id: "analyst", label: "Analyst", summary: "Comparative analysis and trade-off evaluation.", aliases: ["analysis"] },
-  { id: "visual", label: "Visual", summary: "Image/video prompt and visual reasoning support.", aliases: ["render"] },
+  { id: "visual", label: "Visual", summary: "Image prompt and visual reasoning support.", aliases: ["render"] },
   { id: "lore", label: "Lore", summary: "Narrative continuity and world-building context.", aliases: ["story"] },
   { id: "reasoning", label: "Reasoning", summary: "Step-wise logic and explanation-focused outputs.", aliases: ["logic"] },
   { id: "coding", label: "Coding", summary: "Implementation, refactor, and debugging assistance.", aliases: ["dev", "programming"] },

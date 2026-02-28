@@ -12,12 +12,10 @@
     "lint:fix": "eslint . --fix",
     "check:branding": "node ./scripts/check-branding.js",
     "build": "npm run validate:engine",
-    "test": "npm run smoke:image && npm run smoke:video",
+    "test": "npm run smoke:image",
     "typecheck": "tsc -p tsconfig.json",
     "smoke:image": "node ./omni-image-engine/utils/smokeTest.js",
-    "smoke:video": "node ./omni-image-engine/video/utils/videoSmokeTest.js",
     "validate:engine": "node ./omni-image-engine/utils/validator.js",
-    "validate:video": "node ./omni-image-engine/video/utils/validator.js",
     "mind:loop": "node ./scripts/mind/runOnRecentLogs.js",
     "mind:auto-debug": "node ./scripts/tools/runAutoDebug.js",
     "mind:tokens": "node ./scripts/tools/printTaskTokens.js",
@@ -39,9 +37,5 @@
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.56.1"
   },
-  "dependencies": {
-    "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "gifenc": "^1.0.3",
-    "upng-js": "^2.1.0"
-  }
+  "dependencies": {}
 }
