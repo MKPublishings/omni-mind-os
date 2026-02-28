@@ -30,7 +30,7 @@ function extractToolDirective(text: string): ToolDirective | null {
 type RouteScore = {
   route: OmniRouteKind;
   score: number;
-        { route: "simulation", score: 0.2, reason: "simulation-intent-detected" }
+  reason: string;
 };
 
 function hasAny(text: string, patterns: RegExp[]): boolean {
