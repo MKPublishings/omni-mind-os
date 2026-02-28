@@ -54,6 +54,16 @@ class ModelRegistry:
                 max_frames=120,
                 scheduler={"name": "long"},
             ),
+            # 4K super-resolution profile (CogVideoX base + SVD-SR refinement)
+            "video_4k": ModelProfile(
+                key="video_4k",
+                omni_model_id="omni/video-4k",
+                precision="fp16",
+                max_width=3840,
+                max_height=2160,
+                max_frames=64,
+                scheduler={"name": "4k-sr"},
+            ),
         }
 
     def get(self, key: str) -> ModelProfile:
@@ -69,6 +79,8 @@ class ModelRegistry:
             return self.get("image_hd" if normalized_mode in {"hd", "quality"} else "image_default")
 
         if normalized_modality in {"video", "gif"}:
+            if normalized_mode in {"4k", "ultra", "highres"}:
+                return self.get("video_4k")
             return self.get("video_long" if normalized_mode in {"long", "extended"} else "video_default")
 
         raise ValueError(f"Unsupported modality: {modality}")

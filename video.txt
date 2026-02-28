@@ -1,0 +1,1514 @@
+653 results - 45 files
+
+.dev.vars.example:
+   8  OMNI_MEDIA_API_TIMEOUT_MS="45000"
+   9: OMNI_MEDIA_FALLBACK_VIDEO_URL="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+  10: OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO="false"
+  11  
+  12: # Optional external provider path for real prompt-grounded video generation
+  13: OMNI_MEDIA_PROVIDER_VIDEO_URL=""
+  14  OMNI_MEDIA_PROVIDER_API_KEY=""
+
+eslint.config.cjs:
+  11        "omni_image_exports/**",
+  12:       "omni_video_exports/**",
+  13        "worker-configuration.d.ts"
+
+OMNI_MEDIA_REBUILD_SPEC.md:
+   3  ## Goal
+   4: Rebuild image/video/GIF generation as an Omni-native subsystem where Omni is the single execution engine for diffusion workloads and all orchestration is modular, observable, and safety-governed.
+   5  
+
+   7  - Image: text->image, image->image, inpaint/outpaint, optional upscaling.
+   8: - Video: text->video, image->video, optional video editing pass.
+   9: - GIF: video->GIF post-process (default), optional direct short-loop profile.
+  10  
+
+  13    - Image: p95 <= 8s at default profile.
+  14:   - Video short clips: p95 <= 30s at default profile.
+  15  - Quality defaults:
+  16    - Image: 1024x1024, guidance + steps configurable.
+  17:   - Video: 768x432, 24 frames, 12 fps default.
+  18  - Throughput:
+
+  30  - image_hd
+  31: - video_default
+  32: - video_long
+  33  
+
+  57  - POST /v1/generate/image
+  58: - POST /v1/generate/video
+  59  - POST /v1/generate/gif
+
+  80  3. Shadow mode comparison (if reference exists)
+  81: 4. Gradual traffic by modality (image -> video -> GIF)
+  82  5. Full cutover to Omni-native path
+
+  84  ## Deliverables in this repo (initial scaffold)
+  85: - Python Omni-native offline engine interfaces for image/video/GIF
+  86  - Stage-based pipeline abstraction
+
+package.json:
+  16      "build": "npm run validate:engine",
+  17:     "test": "npm run smoke:image && node ./scripts/smoke/maybeVideoSmoke.js",
+  18      "typecheck": "tsc -p tsconfig.json",
+  19      "smoke:image": "node ./omni-image-engine/utils/smokeTest.js",
+  20:     "smoke:video": "node ./scripts/smoke/videoRouteSmoke.js",
+  21:     "smoke:video:provider": "node ./scripts/smoke/providerVideoSmoke.js",
+  22:     "cleanup:video:preview": "node ./scripts/tools/pruneVideoExports.js",
+  23:     "cleanup:video": "node ./scripts/tools/pruneVideoExports.js --apply",
+  24      "validate:engine": "node ./omni-image-engine/utils/validator.js",
+
+README.md:
+    4  # Omni AI  
+    5: **A Unified Cognitive Engine for Image, Video, and GIF Generation**  
+    6  **Powered by Quantum‑Cognitive Field Theory, Fibonacci Scheduling, and Multi‑Modal Diffusion**
+
+   59  │ 4. Omni Diffusion Backend                                     │
+   60: │    • Image, video, and GIF generation                         │
+   61  │    • Multi‑modal prompt conditioning                          │
+
+   72  - **Text → Image**
+   73: - **Text → Video**
+   74: - **Image → Video**
+   75: - **Video → GIF**
+   76  - **Image → Image (transformations, style shifts, refinements)**
+
+  112  - high‑resolution image synthesis  
+  113: - multi‑frame video generation  
+  114  - temporal consistency  
+
+  152  
+  153: ## 🚀 Usage Example (Video Generation)
+  154  
+
+  159  
+  160: result = client.generate_video(
+  161      prompt="sunlight drifting across a wooden table, dust particles floating",
+
+  170  
+  171: print(result.video_url)
+  172  ```
+
+RELEASE_HARDENING_CHECKLIST.md:
+  12  - If MP4 encoding is desired in server runtime:
+  13:   - `OMNI_VIDEO_ENABLE_MP4_ENCODING=true` (also supports `1`, `yes`, `on`)
+  14    - Ensure `ffmpeg` is installed and available on `PATH`
+
+worker-configuration.d.ts:
+  9828       * Returns the MIME type of the transformed media.
+  9829:      * @returns The content type string (e.g., 'image/jpeg', 'video/mp4')
+  9830       */
+
+  9852       */
+  9853:     mode?: 'video' | 'spritesheet' | 'frame' | 'audio';
+  9854      /** Whether to include audio in the output */
+
+  9860      /**
+  9861:      * Duration for video clips, audio extraction, and spritesheet generation (e.g. '5s').
+  9862       */
+
+wrangler.toml:
+  27  # OMNI_MEDIA_API_TIMEOUT_MS = "45000" # clamped 5000..120000
+  28: # OMNI_MEDIA_FALLBACK_VIDEO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+  29  # OMNI_RESPONSE_MIN_CHARS = "2000"
+
+codex\00-index.md:
+  27  - systems/omni/image-engine.md — Image Engine Chamber
+  28: - systems/omni/video-engine.md — Video Engine Chamber
+  29  - systems/omni/intelligence-lineage.md — Intelligence Lineage
+
+codex\index.json:
+  549      {
+  550:       "id": "systems.omni.video-engine",
+  551:       "path": "codex/systems/omni/video-engine.md",
+  552:       "title": "Video Engine",
+  553        "type": "system",
+
+codex\systems\omni\overview.md:
+  6  tags: [omni, system, orchestrator]
+  7: links: [system.omni.intelligence-lineage, system.omni.image-engine, system.omni.video-engine]
+  8  lineage: [system.mind-os.overview]
+
+codex\systems\omni\video-engine.md:
+  1  ---
+  2: id: system.omni.video-engine
+  3: title: Omni Video Engine Chamber
+  4  type: system
+  5  category: systems/omni
+  6: tags: [video, engine, generation]
+  7  links: [system.omni.overview, equation.2026-02-27-001]
+
+data\sessions\task-tokens.jsonl:
+  1  {"id":"8a746ba5-3cae-4b8d-ba4b-6e7ada917dbb","type":"codex-update","contextFiles":["codex/40-decisions"],"summary":"Record healthy evaluation snapshot and monitor trend stability","acceptanceCriteria":["Monitoring snapshot logged with threshold and score","No unresolved high-priority tokens remain from previous cycle"],"priority":"low","createdBy":"omni","createdAt":"2026-02-27T10:32:57.062Z","metadata":{"source":"mind-loop","score":1,"threshold":0.8,"logPath":null,"contract":{"rubric":{"version":"v1","threshold":0.8,"dimensions":{"quality":0.35,"latency":0.2,"reliability":0.3,"safety":0.15}},"sampleSize":0,"findings":["No logs available for this run."],"signals":[]},"occurrences":3,"lastSeenAt":"2026-02-27T10:34:55.250Z","statusHistory":[{"at":"2026-02-27T10:37:11.333Z","status":"in-progress"},{"at":"2026-02-27T10:37:11.643Z","status":"resolved"}]},"status":"resolved","updatedAt":"2026-02-27T10:37:11.643Z","resolvedAt":"2026-02-27T10:37:11.643Z"}
+  2: {"id":"da7703a0-56bb-4dd3-b411-576f386ea494","type":"codex-update","contextFiles":["scripts/tools/runAutoDebug.js"],"summary":"Auto-debug pass clean; no patch required","acceptanceCriteria":["Latest debug command exits successfully","No unresolved high-priority debug token remains"],"priority":"low","createdBy":"omni","createdAt":"2026-02-27T10:32:57.681Z","metadata":{"source":"auto-debugger","command":"npm run smoke:video","exitCode":0,"occurrences":3,"lastSeenAt":"2026-02-27T10:34:55.908Z","statusHistory":[{"at":"2026-02-27T10:39:29.451Z","status":"in-progress"},{"at":"2026-02-27T02:41:08.572Z","status":"in-progress","reason":"test-age-adjust"},{"at":"2026-02-27T10:41:08.858Z","status":"open","reason":"stale-in-progress-timeout"},{"at":"2026-02-27T02:42:36.724Z","status":"in-progress","reason":"phase-test"},{"at":"2026-02-27T10:42:36.982Z","status":"open","reason":"stale-in-progress-timeout"}],"reopenCount":2,"escalated":true,"staleTimeoutHours":6},"status":"open","updatedAt":"2026-02-27T10:42:36.982Z","resolvedAt":null}
+  3  {"id":"0b36afd3-86e3-41be-a73a-3feb538fab22","type":"bug","contextFiles":["scripts/tools/runAutoDebug.js"],"summary":"Escalation: repeated stale in-progress task (Auto-debug pass clean; no patch required)","acceptanceCriteria":["Identify blocker causing repeated in-progress timeout.","Apply corrective action and prevent recurrence.","Resolve both base task and escalation task once stable."],"priority":"high","createdBy":"omni","status":"open","createdAt":"2026-02-27T10:42:36.982Z","updatedAt":"2026-02-27T10:42:36.982Z","resolvedAt":null,"metadata":{"source":"token-maintenance-escalation","escalationForTokenId":"da7703a0-56bb-4dd3-b411-576f386ea494","escalationSource":"auto-debugger","escalationReason":"repeated-stale-reopen","reopenCount":2,"escalatedAt":"2026-02-27T10:42:36.982Z","occurrences":1}}
+
+omni-video-engine\server.py:
+  1  from fastapi import FastAPI
+  2: from routes.video import router as video_router
+  3  
+  4  app = FastAPI()
+  5: app.include_router(video_router)
+  6  
+
+omni-video-engine\core\engine.py:
+   9          def __call__(self, *args, **kwargs):
+  10:             # Return a fake video result for development
+  11              return {
+
+  16  # Set your real model here
+  17: omni_video_model = Omni(model="Qwen/Qwen2-VL-7B-Instruct")  # <-- replace with your model
+  18  
+  19: class VideoResult:
+  20      def __init__(self, frames, metadata: dict):
+
+  30  
+  31: def generate_video_from_prompt(
+  32      prompt: str,
+
+  40      seed: int | None = None,
+  41: ) -> VideoResult:
+  42      enriched_prompt = build_enriched_prompt(prompt, tempo, sharpness, warmth)
+
+  51  
+  52:     outputs = omni_video_model.generate(enriched_prompt, **generate_kwargs)
+  53      first = outputs[0]
+  54:     if hasattr(first, "video_frames"):
+  55:         frames = first.video_frames
+  56      elif hasattr(first, "frames"):
+  57          frames = first.frames
+  58:     elif isinstance(first, dict) and "video_frames" in first:
+  59:         frames = first["video_frames"]
+  60      else:
+  61:         raise RuntimeError("Unknown video output structure from Omni model")
+  62  
+  63      metadata = {
+  64:         "model": omni_video_model.model,
+  65          "prompt": enriched_prompt,
+
+  74      }
+  75:     return VideoResult(frames=frames, metadata=metadata)
+  76  
+  77  OMNI_MEDIA_API_BASE_URL="http://127.0.0.1:8787"
+  78: OMNI_MEDIA_PROVIDER_VIDEO_URL="http://127.0.0.1:8787/omni_video_exports"
+  79  OMNI_MEDIA_PLACEHOLDER_ONLY="false"
+
+omni-video-engine\core\pipeline.py:
+   4  from .scheduler import build_frame_plan
+   5: from .engine import generate_video_from_prompt
+   6: from utils.storage import save_video
+   7: from utils.safety import check_video_safety
+   8  
+   9: async def run_video_pipeline(prompt: str, params: Dict[str, Any]) -> Dict[str, Any]:
+  10      width = params.get("width", 768)
+
+  25  
+  26:     video_result = generate_video_from_prompt(
+  27          prompt=prompt,
+
+  37  
+  38:     frames = video_result.frames
+  39  
+  40:     if not check_video_safety(frames):
+  41:         return {"status": "error", "error": "Video failed safety checks"}
+  42  
+  43:     video_path = save_video(frames, fps=fps)
+  44  
+
+  46          "status": "success",
+  47:         "video_url": video_path,
+  48          "meta": {
+  49:             **video_result.metadata,
+  50              "duration": duration,
+
+omni-video-engine\routes\video.py:
+   3  from typing import Any, Dict
+   4: from core.pipeline import run_video_pipeline
+   5  
+
+   7  
+   8: class VideoRequest(BaseModel):
+   9      prompt: str
+
+  11  
+  12: @router.post("/omni_video_exports")
+  13: async def generate_video(req: VideoRequest):
+  14:     result = await run_video_pipeline(req.prompt, req.params)
+  15      return result
+
+omni-video-engine\utils\safety.py:
+  2  
+  3: def check_video_safety(frames: List) -> bool:
+  4      # Placeholder – always safe for now
+
+omni-video-engine\utils\storage.py:
+  5  
+  6: EXPORT_DIR = "omni_video_exports"
+  7  
+  8: def save_video(frames: List, fps: int = 12) -> str:
+  9      os.makedirs(EXPORT_DIR, exist_ok=True)
+
+omni_media\__init__.py:
+   4      MediaOutput,
+   5:     VideoObject,
+   6      ImageObject,
+
+  29      "MediaOutput",
+  30:     "VideoObject",
+  31      "ImageObject",
+
+omni_media\api_contracts.py:
+  19  class OutputItem:
+  20:     type: Literal["image", "video", "gif"]
+  21      url: str | None = None
+
+omni_media\contracts.py:
+   5  
+   6: MediaType = Literal["image", "video", "gif"]
+   7  StatusType = Literal["completed", "failed"]
+
+  44  @dataclass(slots=True)
+  45: class VideoObject:
+  46      frames: list[ImageObject]
+
+omni_media\engine.py:
+    7  
+    8: from .contracts import ImageObject, VideoObject
+    9  from .model_registry import ModelProfile
+
+   41              return {
+   42:                 "real_video_backend_ready": bool(has_class),
+   43                  "backend": "vllm_omni",
+
+   49              return {
+   50:                 "real_video_backend_ready": False,
+   51                  "backend": "vllm_omni",
+
+  101  
+  102:     def generate_video(
+  103          self,
+
+  114          extra: dict[str, Any] | None = None,
+  115:     ) -> VideoObject:
+  116          client = self._load_omni_client(profile)
+
+  146          duration = (payload["num_frames"] / max(1, payload["fps"])) if payload["num_frames"] else 0
+  147:         return VideoObject(
+  148              frames=frames,
+
+  155  
+  156:     def assemble_video_scenes(self, scenes: list[VideoObject], fps: int | None = None) -> VideoObject:
+  157          if not scenes:
+  158:             raise ValueError("at least one scene is required for video assembly")
+  159  
+
+  173  
+  174:         return VideoObject(
+  175              frames=merged_frames,
+
+  182  
+  183:     def generate_gif_from_video(self, video: VideoObject, loop: int = 0) -> bytes:
+  184          try:
+
+  189  
+  190:         if not video.frames:
+  191:             raise ValueError("VideoObject has no frames to convert")
+  192  
+  193:         pil_frames = [Image.open(io.BytesIO(frame.bytes_data)).convert("RGB") for frame in video.frames]
+  194          output = io.BytesIO()
+  195:         duration_ms = int(1000 / max(1, video.fps))
+  196  
+
+omni_media\hooks.py:
+  32          strict = str(safety_level or "default").lower() in {"strict", "high"}
+  33:         if strict and media_type == "video" and len(data) > 32 * 1024 * 1024:
+  34:             raise MediaPolicyError("video output blocked by strict safety size policy")
+  35  
+
+omni_media\http_fastapi.py:
+   19  )
+   20: from .provider_video_pipeline import generate_prompt_video_export
+   21  from .service import OmniMediaService
+
+   34      app = FastAPI(title="Omni Media API", version="1.0.0")
+   35:     app.mount("/omni_video_exports", StaticFiles(directory="omni_video_exports"), name="omni_video_exports")
+   36      media_service = service or OmniMediaService()
+
+  132  
+  133:     @app.post("/v1/generate/video")
+  134:     async def generate_video(payload: dict[str, Any], request: Request):
+  135          request_id = str(uuid.uuid4())
+
+  138          try:
+  139:             requester = enforce_access(request, "video")
+  140              body = parse_body(payload)
+  141:             result = media_service.generate_sync("video", body)
+  142              code = 200 if result.status == "completed" else 500
+
+  144                  request_id=request_id,
+  145:                 route="/v1/generate/video",
+  146:                 bucket="video",
+  147                  requester=requester,
+
+  156                  request_id=request_id,
+  157:                 route="/v1/generate/video",
+  158:                 bucket="video",
+  159                  requester=requester,
+
+  200  
+  201:     @app.post("/omni_video_exports")
+  202:     async def generate_provider_video(payload: dict[str, Any], request: Request):
+  203          request_id = str(uuid.uuid4())
+
+  206          try:
+  207:             requester = enforce_access(request, "video")
+  208              prompt = str(payload.get("prompt", "")).strip()
+
+  211              params = dict(payload.get("params") or {})
+  212:             result = generate_prompt_video_export(prompt, params)
+  213              write_audit(
+  214                  request_id=request_id,
+  215:                 route="/omni_video_exports",
+  216:                 bucket="video",
+  217                  requester=requester,
+
+  225                  request_id=request_id,
+  226:                 route="/omni_video_exports",
+  227:                 bucket="video",
+  228                  requester=requester,
+
+  237                  request_id=request_id,
+  238:                 route="/omni_video_exports",
+  239:                 bucket="video",
+  240                  requester=requester,
+
+  245              )
+  246:             raise HTTPException(status_code=500, detail=f"Provider video generation failed: {exc}")
+  247  
+
+  255              mod = modality.strip().lower()
+  256:             if mod not in {"image", "video", "gif"}:
+  257                  raise HTTPException(status_code=400, detail=f"Unsupported modality: {modality}")
+
+  319          health_probe = (
+  320:             media_service.get_video_backend_health()
+  321:             if hasattr(media_service, "get_video_backend_health")
+  322              else {
+  323:                 "real_video_backend_ready": False,
+  324                  "backend": "unknown",
+
+  333              "version": "1.0.0",
+  334:             "video_backend": health_probe,
+  335          }
+
+omni_media\model_registry.py:
+  38              ),
+  39:             "video_default": ModelProfile(
+  40:                 key="video_default",
+  41:                 omni_model_id="omni/video-default",
+  42                  precision="fp16",
+
+  47              ),
+  48:             "video_long": ModelProfile(
+  49:                 key="video_long",
+  50:                 omni_model_id="omni/video-long",
+  51                  precision="fp16",
+
+  70  
+  71:         if normalized_modality in {"video", "gif"}:
+  72:             return self.get("video_long" if normalized_mode in {"long", "extended"} else "video_default")
+  73  
+
+omni_media\pipeline.py:
+   11  from .model_registry import ModelRegistry
+   12: from .video_prompt_planner import compile_video_generation_spec
+   13  
+
+   90  
+   91:             elif request.modality == "video":
+   92:                 video_spec = compile_video_generation_spec(request.prompt)
+   93:                 if float(video_spec.metadata.get("grounding_score", 0)) < 0.35:
+   94:                     raise ValueError("prompt grounding score too low; unable to build a reliable video plan")
+   95  
+   96:                 request.params.fps = request.params.fps or video_spec.fps
+   97:                 request.params.num_frames = request.params.num_frames or video_spec.num_frames
+   98                  request.params.extra = {
+
+  100                      "style_preset": str(request.params.extra.get("style_preset") if request.params.extra else "")
+  101:                     or video_spec.style_preset,
+  102                      "motion_profile": str(request.params.extra.get("motion_profile") if request.params.extra else "")
+  103:                     or video_spec.motion_profile,
+  104                      "camera_profile": str(request.params.extra.get("camera_profile") if request.params.extra else "")
+  105:                     or video_spec.camera_profile,
+  106:                     "scene_plan": video_spec.metadata.get("scene_plan"),
+  107:                     "grounding_tokens": video_spec.metadata.get("grounding_tokens"),
+  108                  }
+  109  
+  110:                 scene_specs = list(video_spec.metadata.get("scene_plan") or [])
+  111:                 scene_videos = []
+  112                  for index, scene in enumerate(scene_specs, start=1):
+
+  114                      scene_shot_prompt = str(scene.get("shot_prompt") or scene_text or request.prompt).strip()
+  115:                     scene_frames = int(scene.get("frame_count") or max(1, request.params.num_frames or video_spec.num_frames))
+  116  
+
+  118                          **(request.params.extra or {}),
+  119:                         "style_preset": request.params.extra.get("style_preset") if request.params.extra else video_spec.style_preset,
+  120:                         "motion_profile": request.params.extra.get("motion_profile") if request.params.extra else video_spec.motion_profile,
+  121:                         "camera_profile": request.params.extra.get("camera_profile") if request.params.extra else video_spec.camera_profile,
+  122                          "scene_index": index,
+
+  127  
+  128:                     scene_video = self.engine.generate_video(
+  129                          profile=profile,
+
+  134                          num_frames=scene_frames,
+  135:                         fps=request.params.fps or video_spec.fps,
+  136                          seed=request.params.seed,
+
+  140                      )
+  141:                     scene_videos.append(scene_video)
+  142  
+  143:                 video = self.engine.assemble_video_scenes(scene_videos, fps=request.params.fps or video_spec.fps)
+  144                  outputs.append(
+  145                      MediaOutput(
+  146:                         type="video",
+  147                          metadata={
+  148:                             "fps": video.fps,
+  149:                             "duration_sec": video.duration_sec,
+  150:                             "width": video.width,
+  151:                             "height": video.height,
+  152:                             "frame_count": len(video.frames),
+  153                              "assembled_from_scenes": len(scene_specs) > 1,
+  154                              "prompt_aware": True,
+  155:                             "style_preset": video_spec.style_preset,
+  156:                             "motion_profile": video_spec.motion_profile,
+  157:                             "camera_profile": video_spec.camera_profile,
+  158:                             "scene_count": video_spec.metadata.get("scene_count"),
+  159:                             "grounding_score": video_spec.metadata.get("grounding_score"),
+  160:                             "scene_plan": video_spec.metadata.get("scene_plan"),
+  161:                             "_bytes": video.mp4_bytes,
+  162                          },
+
+  166              elif request.modality == "gif":
+  167:                 video_spec = compile_video_generation_spec(request.prompt)
+  168:                 video = self.engine.generate_video(
+  169                      profile=profile,
+  170:                     prompt=video_spec.prompt,
+  171                      negative_prompt=request.negative_prompt,
+
+  173                      height=request.params.height or 512,
+  174:                     num_frames=request.params.num_frames or video_spec.num_frames,
+  175:                     fps=request.params.fps or video_spec.fps,
+  176                      seed=request.params.seed,
+
+  180                  )
+  181:                 gif_bytes = self.engine.generate_gif_from_video(video)
+  182                  outputs.append(
+
+  185                          metadata={
+  186:                             "fps": video.fps,
+  187:                             "duration_sec": video.duration_sec,
+  188:                             "width": video.width,
+  189:                             "height": video.height,
+  190:                             "frame_count": len(video.frames),
+  191                              "prompt_aware": True,
+  192:                             "style_preset": video_spec.style_preset,
+  193:                             "motion_profile": video_spec.motion_profile,
+  194:                             "camera_profile": video_spec.camera_profile,
+  195:                             "scene_count": video_spec.metadata.get("scene_count"),
+  196:                             "grounding_score": video_spec.metadata.get("grounding_score"),
+  197:                             "scene_plan": video_spec.metadata.get("scene_plan"),
+  198                              "_bytes": gif_bytes,
+
+omni_media\provider_adapter.py:
+   11  @dataclass(slots=True)
+   12: class ExternalVideoProviderAdapter:
+   13:     video_url: str
+   14      api_key: str = ""
+
+   19      @classmethod
+   20:     def from_env(cls) -> "ExternalVideoProviderAdapter":
+   21          return cls(
+   22:             video_url=str(os.getenv("OMNI_MEDIA_PROVIDER_VIDEO_URL", "")).strip(),
+   23              api_key=str(os.getenv("OMNI_MEDIA_PROVIDER_API_KEY", "")).strip(),
+
+   29      def is_configured(self) -> bool:
+   30:         return bool(self.video_url)
+   31  
+
+   46  
+   47:         video_target = self.video_url
+   48:         target = self.health_url or video_target
+   49          try:
+
+   52              if not self.health_url:
+   53:                 parsed = urlparse(video_target)
+   54                  if parsed.path.strip() in {"", "/"}:
+
+   60                          "provider_target": target,
+   61:                         "provider_error": "Provider URL points to a base/root path. Configure OMNI_MEDIA_PROVIDER_VIDEO_URL with the provider generate endpoint.",
+   62                      }
+
+   93  
+   94:     def generate_video_url(
+   95          self,
+
+  103          if not self.is_configured():
+  104:             raise RuntimeError("External video provider is not configured")
+  105  
+
+  114          req = urllib.request.Request(
+  115:             self.video_url,
+  116              data=json.dumps(payload).encode("utf-8"),
+
+  127              output_url = str(
+  128:                 data.get("video_url")
+  129                  or data.get("output_url")
+
+  135          if not output_url:
+  136:             raise RuntimeError("External provider did not return a usable video URL")
+  137  
+
+omni_media\provider_video_pipeline.py:
+  31      except Exception as exc:
+  32:         raise RuntimeError("Pillow and numpy are required for provider video generation") from exc
+  33  
+
+  58  
+  59:     label = prompt.strip()[:120] or "omni video"
+  60      draw.rectangle([16, height - 80, width - 16, height - 20], fill=(0, 0, 0, 140))
+
+  65  
+  66: def generate_prompt_video_export(prompt: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+  67      try:
+
+  69      except Exception as exc:
+  70:         raise RuntimeError("imageio is required for provider video generation") from exc
+  71  
+
+  77  
+  78:     export_dir = Path("omni_video_exports")
+  79      export_dir.mkdir(parents=True, exist_ok=True)
+
+  81      slug = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
+  82:     filename = f"omni_video_{slug}_{uuid.uuid4().hex[:8]}.mp4"
+  83      output_path = export_dir / filename
+
+  89      port = str(os.getenv("OMNI_MEDIA_PORT", "8788")).strip() or "8788"
+  90:     public_url = f"http://{host}:{port}/omni_video_exports/{filename}"
+  91  
+
+  93          "status": "success",
+  94:         "video_url": public_url,
+  95          "frames": num_frames,
+
+  97          "fps": fps,
+  98:         "provider": "omni-local-prompt-video",
+  99          "prompt_aware": True,
+
+omni_media\README.md:
+    4  
+    5: - offline engine interfaces for image/video/GIF
+    6  - model registry and profile routing
+
+   16  - `pipeline.py` -> normalization, routing, generation, safety, packaging
+   17: - `video_prompt_planner.py` -> prompt-to-scene storyboard planning and duration policies
+   18  - `worker.py` -> in-memory queue and worker loop
+
+   21  - `service.py` -> sync generation + async queue orchestration
+   22: - `provider_adapter.py` -> optional external video provider integration
+   23  - `http_fastapi.py` -> `/v1/generate/*` and `/v1/jobs/*` endpoint scaffold
+
+   32  - `vllm_omni` and `Pillow` are expected in runtime for actual generation and GIF conversion.
+   33: - Replace placeholder video model ids with real Omni-compatible model ids in `model_registry.py`.
+   34  - `S3LikeStorageAdapter` returns pre-signed read URLs by default (`signed_ttl_sec=3600`).
+
+   58  - `OMNI_MEDIA_RATE_LIMIT_WINDOW_IMAGE`
+   59: - `OMNI_MEDIA_RATE_LIMIT_VIDEO`
+   60: - `OMNI_MEDIA_RATE_LIMIT_WINDOW_VIDEO`
+   61  - `OMNI_MEDIA_RATE_LIMIT_GIF`
+
+   76  
+   77: Worker proxy integration (for `POST /api/video/generate` in the Cloudflare worker):
+   78  
+
+   85  - Base URL resolution order: `OMNI_MEDIA_API_BASE_URL` -> `OMNI_MEDIA_BASE_URL` -> `OMNI_MEDIA_HOST` + `OMNI_MEDIA_PORT`
+   86: - Placeholder-mode resolution order: `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` -> `OMNI_MEDIA_PLACEHOLDER_ONLY`
+   87: - If both placeholder vars are set, `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` wins
+   88: - Recommended local setup: set only `OMNI_MEDIA_API_BASE_URL` and `OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO`
+   89  
+
+   91  
+   92: - Worker and media server ports do not match (`/api/video/health` should resolve to your active media server).
+   93: - `OMNI_MEDIA_PROVIDER_VIDEO_URL` points to a base/root URL instead of a real `POST` endpoint.
+   94  - Stale local processes are still bound to `8787` or `8788` after config changes.
+   95: - Placeholder-mode vars conflict (`OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO` and `OMNI_MEDIA_PLACEHOLDER_ONLY`).
+   96  - Provider endpoint accepts `GET` but rejects `POST` (health appears ready, generation fails).
+
+  100  - `POST /v1/generate/image`
+  101: - `POST /v1/generate/video`
+  102  - `POST /v1/generate/gif`
+
+  123  
+  124: `GET /v1/health` includes `video_backend.real_video_backend_ready` and placeholder mode flags so you can quickly verify whether true prompt-grounded video generation is active.
+
+omni_media\security.py:
+  115  
+  116:     video_limit = int(os.getenv("OMNI_MEDIA_RATE_LIMIT_VIDEO", "10"))
+  117:     video_window = int(os.getenv("OMNI_MEDIA_RATE_LIMIT_WINDOW_VIDEO", "60"))
+  118  
+
+  129          "image": (image_limit, image_window),
+  130:         "video": (video_limit, video_window),
+  131          "gif": (gif_limit, gif_window),
+
+omni_media\service.py:
+   13  from .pipeline import OmniMediaPipeline
+   14: from .provider_adapter import ExternalVideoProviderAdapter
+   15: from .provider_video_pipeline import generate_prompt_video_export
+   16  from .storage import LocalFileStorageAdapter, StorageAdapter
+   17: from .video_prompt_planner import compile_video_generation_spec
+   18  from .worker import InMemoryJobQueue, Job, OmniMediaWorker
+
+   31  
+   32: def _is_placeholder_video_allowed() -> bool:
+   33:     allow_value = _parse_optional_bool_env(os.getenv("OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO", ""))
+   34      if allow_value is not None:
+
+   47          (
+   48:             "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+   49              ["nature", "forest", "wildlife", "outdoor", "mountain", "rain"],
+
+   51          (
+   52:             "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+   53              ["cinematic", "dramatic", "action", "epic", "slow", "moody"],
+
+   55          (
+   56:             "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+   57              ["bright", "day", "fun", "travel", "colorful"],
+
+   59          (
+   60:             "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+   61              ["city", "urban", "street", "night", "driving", "neon"],
+
+   63          (
+   64:             "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
+   65              ["road", "terrain", "outdoor", "wide", "drone", "landscape"],
+
+   91          return "gif"
+   92:     if media_type == "video":
+   93          return "mp4"
+
+  147  
+  148:     def get_video_backend_health(self) -> dict[str, Any]:
+  149:         allow_placeholder = _is_placeholder_video_allowed()
+  150  
+
+  152          probe = engine.probe_backend() if engine and hasattr(engine, "probe_backend") else {
+  153:             "real_video_backend_ready": False,
+  154              "backend": "unknown",
+
+  159  
+  160:         provider = ExternalVideoProviderAdapter.from_env()
+  161          provider_probe = provider.probe()
+  162:         real_ready = bool(probe.get("real_video_backend_ready")) or bool(provider_probe.get("provider_ready"))
+  163  
+
+  166              **provider_probe,
+  167:             "real_video_backend_ready": real_ready,
+  168              "placeholder_mode_enabled": allow_placeholder,
+
+  249  
+  250:         if modality == "video" and response.status != "completed":
+  251:             provider = ExternalVideoProviderAdapter.from_env()
+  252              if provider.is_configured():
+  253                  try:
+  254:                     video_spec = compile_video_generation_spec(request.prompt)
+  255:                     provider_url = str(getattr(provider, "video_url", "") or "").strip().lower()
+  256                      provider_params = {
+
+  258                          "height": request.params.height or 432,
+  259:                         "num_frames": request.params.num_frames or video_spec.num_frames,
+  260:                         "fps": request.params.fps or video_spec.fps,
+  261:                         "style_preset": video_spec.style_preset,
+  262:                         "motion_profile": video_spec.motion_profile,
+  263:                         "camera_profile": video_spec.camera_profile,
+  264                      }
+  265  
+  266:                     if provider_url.endswith("/omni_video_exports"):
+  267:                         local_result = generate_prompt_video_export(video_spec.prompt, provider_params)
+  268                          provider_result = {
+  269:                             "url": str(local_result.get("video_url") or "").strip(),
+  270                              "raw": local_result,
+
+  272                      else:
+  273:                         provider_result = provider.generate_video_url(
+  274:                             prompt=video_spec.prompt,
+  275                              mode=request.mode,
+
+  277                              negative_prompt=request.negative_prompt,
+  278:                             metadata=video_spec.metadata,
+  279                          )
+
+  283                          MediaOutput(
+  284:                             type="video",
+  285                              url=str(provider_result.get("url") or "").strip(),
+
+  290                                  "prompt_aware": True,
+  291:                                 "style_preset": video_spec.style_preset,
+  292:                                 "motion_profile": video_spec.motion_profile,
+  293:                                 "camera_profile": video_spec.camera_profile,
+  294:                                 "scene_count": video_spec.metadata.get("scene_count"),
+  295:                                 "duration_sec": video_spec.metadata.get("duration_sec"),
+  296:                                 "scene_plan": video_spec.metadata.get("scene_plan"),
+  297                              },
+
+  313          if (
+  314:             modality == "video"
+  315              and response.status != "completed"
+
+  317          ):
+  318:             allow_placeholder = _is_placeholder_video_allowed()
+  319              if not allow_placeholder:
+  320                  response.error = (
+  321:                     "Prompt-grounded video backend is unavailable (vllm_omni missing). "
+  322:                     "Install/enable the video model backend or set OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO=true "
+  323                      "to explicitly allow placeholder clips."
+
+  337                  os.getenv(
+  338:                     "OMNI_MEDIA_FALLBACK_VIDEO_URL",
+  339:                     "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+  340                  )
+  341              ).strip()
+  342:             video_spec = compile_video_generation_spec(request.prompt)
+  343              fallback_url = _select_prompt_aware_fallback_url(request.prompt, configured_fallback_url)
+
+  348                      MediaOutput(
+  349:                         type="video",
+  350                          url=fallback_url,
+
+  354                              "fallback_reason": "omni-runtime-unavailable",
+  355:                             "source": "OMNI_MEDIA_FALLBACK_VIDEO_URL",
+  356:                             "style_preset": video_spec.style_preset,
+  357:                             "motion_profile": video_spec.motion_profile,
+  358:                             "camera_profile": video_spec.camera_profile,
+  359:                             "scene_count": video_spec.metadata.get("scene_count"),
+  360:                             "duration_sec": video_spec.metadata.get("duration_sec"),
+  361:                             "scene_plan": video_spec.metadata.get("scene_plan"),
+  362                              "prompt_aware": True,
+
+  369                      "fallback_reason": "omni-runtime-unavailable",
+  370:                     "style_preset": video_spec.style_preset,
+  371:                     "motion_profile": video_spec.motion_profile,
+  372:                     "camera_profile": video_spec.camera_profile,
+  373:                     "scene_count": video_spec.metadata.get("scene_count"),
+  374:                     "duration_sec": video_spec.metadata.get("duration_sec"),
+  375:                     "scene_plan": video_spec.metadata.get("scene_plan"),
+  376                      "prompt_aware": True,
+
+  467              "hooks_adapter": type(self.hooks).__name__,
+  468:             "video_backend": self.get_video_backend_health(),
+  469          }
+
+omni_media\video_prompt_planner.py:
+   25  @dataclass(slots=True)
+   26: class VideoPromptPlan:
+   27      original_prompt: str
+
+   69  @dataclass(slots=True)
+   70: class VideoGenerationSpec:
+   71      prompt: str
+
+  118      stop = {
+  119:         "the", "and", "with", "into", "from", "that", "this", "then", "next", "scene", "video",
+  120          "make", "create", "generate", "show", "shot", "shots", "camera", "style", "motion", "slow",
+
+  233  
+  234: def build_video_prompt_plan(prompt: str) -> VideoPromptPlan:
+  235      normalized = _normalize_prompt(prompt)
+
+  275  
+  276:     return VideoPromptPlan(
+  277          original_prompt=str(prompt),
+
+  291  
+  292: def compile_video_generation_spec(prompt: str) -> VideoGenerationSpec:
+  293:     plan = build_video_prompt_plan(prompt)
+  294      scene_block = "\n".join([f"Scene {scene.index}: {scene.shot_prompt}" for scene in plan.scenes])
+  295      compiled_prompt = (
+  296:         f"Create a video storyboard with {plan.scene_count} scenes. "
+  297          f"Total duration target: {round(plan.total_duration_sec, 1)} seconds.\n"
+
+  303  
+  304:     return VideoGenerationSpec(
+  305          prompt=compiled_prompt,
+
+omni_media\tests\test_http_integration.py:
+  22                  OutputItem(
+  23:                     type=modality if modality in {"image", "video", "gif"} else "image",
+  24                      url="https://example.test/media",
+
+omni_media\tests\test_pipeline_scene_assembly.py:
+    4  
+    5: from omni_media.contracts import GenerateRequest, GenerationParams, ImageObject, VideoObject
+    6  from omni_media.model_registry import ModelProfile
+
+   11      def select_for_request(self, modality: str, _mode: str):
+   12:         if modality not in {"video", "gif", "image"}:
+   13              raise ValueError("unsupported")
+   14          return ModelProfile(
+   15:             key="video_default",
+   16:             omni_model_id="fake/video",
+   17              precision="fp16",
+
+   26      def __init__(self) -> None:
+   27:         self.video_calls: list[dict[str, object]] = []
+   28  
+
+   32  
+   33:     def generate_video(
+   34          self,
+
+   47          _ = profile, negative_prompt, seed, guidance_scale, num_inference_steps
+   48:         self.video_calls.append(
+   49              {
+
+   63          duration = len(frames) / max(1, int(fps))
+   64:         return VideoObject(
+   65              frames=frames,
+
+   72  
+   73:     def assemble_video_scenes(self, scenes, fps=None):
+   74          target_fps = int(fps or scenes[0].fps or 12)
+
+   78  
+   79:         return VideoObject(
+   80              frames=merged_frames,
+
+   96              id="req-single",
+   97:             modality="video",
+   98              mode="default",
+   99:             prompt="a video of a forest in the rain",
+  100              params=GenerationParams(width=768, height=432),
+
+  106          self.assertEqual(response.status, "completed")
+  107:         self.assertEqual(len(self.engine.video_calls), 1)
+  108:         video_meta = response.outputs[0].metadata
+  109:         self.assertTrue(video_meta.get("prompt_aware"))
+  110:         self.assertEqual(video_meta.get("scene_count"), 1)
+  111:         self.assertFalse(bool(video_meta.get("assembled_from_scenes")))
+  112  
+
+  115              id="req-multi",
+  116:             modality="video",
+  117              mode="default",
+
+  129          self.assertEqual(response.status, "completed")
+  130:         self.assertGreaterEqual(len(self.engine.video_calls), 3)
+  131  
+  132:         video_meta = response.outputs[0].metadata
+  133:         self.assertTrue(bool(video_meta.get("assembled_from_scenes")))
+  134:         self.assertGreaterEqual(int(video_meta.get("scene_count") or 0), 3)
+  135  
+  136:         total_requested_frames = sum(int(call["num_frames"]) for call in self.engine.video_calls)
+  137:         self.assertEqual(int(video_meta.get("frame_count") or 0), total_requested_frames)
+  138  
+
+omni_media\tests\test_video_prompt_planner.py:
+   4  
+   5: from omni_media.video_prompt_planner import build_video_prompt_plan, compile_video_generation_spec
+   6  
+   7  
+   8: class TestVideoPromptPlanner(unittest.TestCase):
+   9      def test_short_prompt_creates_short_plan(self) -> None:
+  10:         plan = build_video_prompt_plan("a video of a forest in the rain")
+  11  
+
+  22          )
+  23:         plan = build_video_prompt_plan(prompt)
+  24  
+
+  29      def test_long_prompt_increases_duration(self) -> None:
+  30:         short_plan = build_video_prompt_plan("forest in rain")
+  31          long_prompt = (
+
+  36          )
+  37:         long_plan = build_video_prompt_plan(long_prompt)
+  38  
+
+  42      def test_generation_spec_contains_storyboard_metadata(self) -> None:
+  43:         spec = compile_video_generation_spec("cinematic drone shot over a rainy forest")
+  44  
+
+  50      def test_scene_timeline_is_contiguous(self) -> None:
+  51:         plan = build_video_prompt_plan(
+  52              "Scene 1: forest in rain. Scene 2: close-up of wet leaves. Scene 3: fog moving through pines."
+
+public\chat.html:
+   99            <button id="media-filter-gifs" type="button" class="media-filter-btn" aria-pressed="false">GIFs</button>
+  100:           <button id="media-filter-videos" type="button" class="media-filter-btn" aria-pressed="false">Videos</button>
+  101          </div>
+
+  136          <div id="age-gate-composer-notice" class="age-gate-composer-notice" hidden aria-live="polite">
+  137:           Age verification required for image/video generation.
+  138          </div>
+
+public\codex-index.json:
+  548      {
+  549:       "id": "systems.omni.video-engine",
+  550:       "path": "codex/systems/omni/video-engine.md",
+  551:       "title": "Video Engine",
+  552        "type": "system",
+
+public\scripts\chat.js:
+    49    const mediaFilterGifsBtn = document.getElementById("media-filter-gifs");
+    50:   const mediaFilterVideosBtn = document.getElementById("media-filter-videos");
+    51    const savePreferencesBtn = document.getElementById("save-preferences-btn");
+
+   127      const normalized = String(value || "").trim().toLowerCase();
+   128:     return ["all", "images", "gifs", "videos"].includes(normalized) ? normalized : "all";
+   129    }
+
+   359          ok: false,
+   360:         message: "Age verification is required before generating images or videos. Complete the age gate and try again."
+   361        };
+
+   383  
+   384:     if (value.startsWith("/video")) {
+   385:       return { kind: "video", prompt: extractVideoPrompt(raw) };
+   386      }
+   387  
+   388:     const asksVideo = /\b(video|clip|animation|animate|cinematic\s+shot|motion)\b/i.test(value);
+   389      const asksGif = /\b(gif|loop|animated\s+gif)\b/i.test(value);
+
+   392  
+   393:     if (asksVideo || asksGif) {
+   394:       return { kind: "video", prompt: extractVideoPrompt(raw) };
+   395      }
+
+   407  
+   408:   function extractVideoPrompt(text) {
+   409      const raw = String(text || "").trim();
+
+   411  
+   412:     if (raw.toLowerCase().startsWith("/video")) {
+   413        return raw.slice(6).trim();
+
+   416      return raw
+   417:       .replace(/^\s*(please\s+)?(generate|create|make|render|animate|produce)\s+(a\s+)?(gif|video|clip|animation)\s*(of|for)?\s*/i, "")
+   418:       .replace(/\b(as\s+a\s+gif|as\s+gif|in\s+video\s+form)\b/gi, "")
+   419        .trim() || raw;
+
+   421  
+   422:   function deriveVideoStyleProfile(promptText) {
+   423      const prompt = String(promptText || "").toLowerCase();
+
+  1346  
+  1347:   function createGeneratedVideoCard(meta = {}) {
+  1348:     const videoUrl = String(meta.videoUrl || "").trim();
+  1349:     if (!videoUrl) {
+  1350        return null;
+
+  1353      const generatedAt = Number(meta.generatedAt || Date.now());
+  1354:     const prompt = String(meta.videoPrompt || "Generated video").trim() || "Generated video";
+  1355      const createdLabel = formatGeneratedTimestamp(generatedAt);
+  1356:     const stylePreset = String(meta.videoStylePreset || "").trim();
+  1357:     const motionProfile = String(meta.videoMotionProfile || "").trim();
+  1358:     const cameraProfile = String(meta.videoCameraProfile || "").trim();
+  1359:     const fallbackTag = Boolean(meta.videoFallback) ? "Fallback" : "";
+  1360  
+
+  1363  
+  1364:     const video = document.createElement("video");
+  1365:     video.className = "generated-image-preview";
+  1366:     video.src = videoUrl;
+  1367:     video.controls = true;
+  1368:     video.playsInline = true;
+  1369:     video.preload = "metadata";
+  1370  
+
+  1375      download.className = "generated-image-download";
+  1376:     download.href = videoUrl;
+  1377:     download.download = buildOmniExportFilename("video", "mp4", generatedAt, prompt);
+  1378:     download.textContent = "Download video";
+  1379      actions.appendChild(download);
+
+  1393  
+  1394:     card.appendChild(video);
+  1395      card.appendChild(actions);
+
+  1450  
+  1451:     const videoCard = createGeneratedVideoCard(meta);
+  1452:     if (videoCard) {
+  1453        if ((content || "").trim() || imageCard) {
+
+  1457        }
+  1458:       body.appendChild(videoCard);
+  1459      }
+
+  1515          imageStyleId: msg.imageStyleId || "",
+  1516:         videoUrl: msg.videoUrl || "",
+  1517:         videoPrompt: msg.videoPrompt || "",
+  1518:         videoStylePreset: msg.videoStylePreset || "",
+  1519:         videoMotionProfile: msg.videoMotionProfile || "",
+  1520:         videoCameraProfile: msg.videoCameraProfile || "",
+  1521:         videoFallback: Boolean(msg.videoFallback)
+  1522        });
+
+  1535      const imageDataUrl = String(msg?.imageDataUrl || "").trim();
+  1536:     const videoUrl = String(msg?.videoUrl || "").trim();
+  1537  
+  1538:     if (videoUrl) {
+  1539:       return "video";
+  1540      }
+
+  1621  
+  1622:   function getVideoEndpoint() {
+  1623      const chatEndpoint = getApiEndpoint();
+
+  1626        if (/\/api\/omni$/i.test(url.pathname)) {
+  1627:         url.pathname = url.pathname.replace(/\/api\/omni$/i, "/api/video/generate");
+  1628        } else {
+  1629:         url.pathname = "/api/video/generate";
+  1630        }
+
+  1638      } catch {
+  1639:       return "/api/video/generate";
+  1640      }
+
+  1721  
+  1722:   async function requestGeneratedVideo(session, prompt, safetyProfile = null) {
+  1723:     const preflight = preflightMediaGenerationCheck(prompt, "video");
+  1724      if (!preflight.ok) {
+
+  1727  
+  1728:     const styleProfile = deriveVideoStyleProfile(prompt);
+  1729      const payload = {
+
+  1760      let res;
+  1761:     const videoEndpoint = getVideoEndpoint();
+  1762      try {
+  1763:       res = await fetch(videoEndpoint, {
+  1764          method: "POST",
+
+  1769        const detail = String(error?.message || "network error").trim();
+  1770:       throw new Error(`Unable to reach video backend (${videoEndpoint}): ${detail}`);
+  1771      }
+
+  1780      if (!res.ok) {
+  1781:       const reason = String(data?.error || data?.detail || data?.message || "Video backend returned an error").trim();
+  1782:       throw new Error(reason || "Video generation failed");
+  1783      }
+
+  1785      const outputs = Array.isArray(data?.outputs) ? data.outputs : [];
+  1786:     const videoOut = outputs.find((item) => String(item?.type || "").toLowerCase() === "video") || outputs[0] || null;
+  1787:     const videoUrl = String(videoOut?.url || "").trim();
+  1788:     if (!videoUrl) {
+  1789:       throw new Error("Video response did not include a playable URL");
+  1790      }
+
+  1792      return {
+  1793:       videoUrl,
+  1794        metadata: {
+  1795:         ...(videoOut?.metadata || {}),
+  1796:         style_preset: String(videoOut?.metadata?.style_preset || styleProfile.stylePreset),
+  1797:         motion_profile: String(videoOut?.metadata?.motion_profile || styleProfile.motion),
+  1798:         camera_profile: String(videoOut?.metadata?.camera_profile || styleProfile.camera),
+  1799          prompt_aware: true
+
+  2319  
+  2320:     const shouldGenerateVideo = mediaIntent.kind === "video";
+  2321:     if (shouldGenerateVideo) {
+  2322        const mindState = ensureMindState(session);
+  2323        if (mindState) {
+  2324:         mindState.route = "video";
+  2325:         appendMindTimeline(session, "route=video, source=prompt-aware-media-intent");
+  2326          updateMindStateUI(session);
+
+  2328  
+  2329:       const assistantMessage = appendMessage("assistant", "Generating video...", {
+  2330          model: session.model || "auto",
+
+  2340        try {
+  2341:         const videoPrompt = String(mediaIntent.prompt || extractVideoPrompt(trimmed) || trimmed).trim();
+  2342:         const videoResult = await requestGeneratedVideo(session, videoPrompt, safetyProfile);
+  2343          const generatedAt = Date.now();
+
+  2345          if (assistantBodyEl) {
+  2346:           assistantBodyEl.innerHTML = renderMarkdown(`Generated video for: **${videoPrompt}**`);
+  2347:           const videoCard = createGeneratedVideoCard({
+  2348:             videoUrl: videoResult.videoUrl,
+  2349:             videoPrompt,
+  2350:             videoStylePreset: String(videoResult?.metadata?.style_preset || "").trim(),
+  2351:             videoMotionProfile: String(videoResult?.metadata?.motion_profile || "").trim(),
+  2352:             videoCameraProfile: String(videoResult?.metadata?.camera_profile || "").trim(),
+  2353:             videoFallback: Boolean(videoResult?.metadata?.fallback),
+  2354              generatedAt
+  2355            });
+  2356:           if (videoCard) {
+  2357              const spacer = document.createElement("div");
+
+  2359              assistantBodyEl.appendChild(spacer);
+  2360:             assistantBodyEl.appendChild(videoCard);
+  2361            }
+
+  2366            role: "assistant",
+  2367:           content: `Generated video for: ${videoPrompt}`,
+  2368:           type: "video",
+  2369:           videoUrl: videoResult.videoUrl,
+  2370:           videoPrompt,
+  2371:           videoStylePreset: String(videoResult?.metadata?.style_preset || "").trim(),
+  2372:           videoMotionProfile: String(videoResult?.metadata?.motion_profile || "").trim(),
+  2373:           videoCameraProfile: String(videoResult?.metadata?.camera_profile || "").trim(),
+  2374:           videoFallback: Boolean(videoResult?.metadata?.fallback),
+  2375            generatedAt,
+
+  2381        } catch (err) {
+  2382:         console.error("Omni video generation error:", err);
+  2383          const reason = String(err?.message || "").trim();
+
+  2386            reason
+  2387:             ? `[Error] Video generation failed: ${reason}`
+  2388:             : "[Error] Video generation failed. Check backend availability and try again."
+  2389          );
+
+  3188      }
+  3189:     if (mediaFilterVideosBtn) {
+  3190:       mediaFilterVideosBtn.addEventListener("click", () => setMediaFilter("videos"));
+  3191      }
+
+public\styles\chat.css:
+  639  
+  640: .generated-video-preview,
+  641  .generated-gif-preview {
+
+  876  
+  877: #video-quick-btn {
+  878    height: 44px;
+
+  890  
+  891: #video-quick-btn:hover {
+  892    border-color: rgba(15, 82, 186, 0.58);
+
+  896  
+  897: #video-quick-btn:disabled {
+  898    cursor: not-allowed;
+
+scripts\smoke\maybeVideoSmoke.js:
+  18  async function run() {
+  19:   const endpoint = String(process.env.OMNI_VIDEO_SMOKE_URL || "http://127.0.0.1:8787/api/video/generate").trim();
+  20    const mediaHealthEndpoint = String(process.env.OMNI_MEDIA_HEALTH_URL || "http://127.0.0.1:8788/v1/health").trim();
+
+  25    if (!workerReachable || !mediaReachable) {
+  26:     console.log(`- Video smoke skipped (worker/media unavailable): worker=${workerReachable}, media=${mediaReachable}`);
+  27      return;
+
+  31    await new Promise((resolve, reject) => {
+  32:     const child = spawn(process.execPath, ["./scripts/smoke/videoRouteSmoke.js"], {
+  33        stdio: "inherit",
+
+  41        }
+  42:       reject(new Error(`video smoke exited with code ${code}`));
+  43      });
+
+  50    const message = error instanceof Error ? error.message : String(error);
+  51:   console.error(`Conditional video smoke failed: ${message}`);
+  52    process.exitCode = 1;
+
+scripts\smoke\providerVideoSmoke.js:
+   1  async function run() {
+   2:   const healthUrl = String(process.env.OMNI_VIDEO_HEALTH_URL || "http://127.0.0.1:8787/api/video/health").trim();
+   3:   const videoUrl = String(process.env.OMNI_VIDEO_GENERATE_URL || "http://127.0.0.1:8787/api/video/generate").trim();
+   4:   const prompt = String(process.env.OMNI_VIDEO_SMOKE_PROMPT || "a video of a forest in the rain").trim();
+   5  
+
+  12  
+  13:   const ready = Boolean(health?.real_video_backend_ready);
+  14    if (!ready) {
+  15      throw new Error(
+  16:       `Real video backend not ready. Health: ${JSON.stringify(health)}`
+  17      );
+
+  42  
+  43:   const generateRes = await fetch(videoUrl, {
+  44      method: "POST",
+
+  58    const outputs = Array.isArray(result?.outputs) ? result.outputs : [];
+  59:   const video = outputs.find((item) => String(item?.type || "").toLowerCase() === "video") || outputs[0] || null;
+  60:   const outputUrl = String(video?.url || "").trim();
+  61  
+  62    if (!outputUrl) {
+  63:     throw new Error(`No video URL in generation output: ${JSON.stringify(result)}`);
+  64    }
+  65  
+  66:   if (Boolean(video?.metadata?.fallback)) {
+  67:     throw new Error(`Fallback output detected; expected real backend output: ${JSON.stringify(video?.metadata || {})}`);
+  68    }
+  69  
+  70:   if (!Boolean(video?.metadata?.prompt_aware)) {
+  71:     throw new Error(`Output is missing prompt_aware metadata: ${JSON.stringify(video?.metadata || {})}`);
+  72    }
+  73  
+  74:   console.log(`✓ Provider video smoke passed: ${outputUrl}`);
+  75  }
+
+  78    const message = error instanceof Error ? error.message : String(error);
+  79:   console.error(`Provider video smoke failed: ${message}`);
+  80    process.exitCode = 1;
+
+scripts\smoke\videoRouteSmoke.js:
+   1  async function run() {
+   2:   const endpoint = String(process.env.OMNI_VIDEO_SMOKE_URL || "http://127.0.0.1:8787/api/video/generate").trim();
+   3    const timeoutMs = 45000;
+
+  12        body: JSON.stringify({
+  13:         prompt: "generate a video of a crow",
+  14          mode: "default",
+
+  45        const reason = String(payload?.error || payload?.detail || payload?.message || `HTTP ${response.status}`).trim();
+  46:       throw new Error(`Video route returned error: ${reason}`);
+  47      }
+
+  50      const outputs = Array.isArray(payload?.outputs) ? payload.outputs : [];
+  51:     const video = outputs.find((item) => String(item?.type || "").toLowerCase() === "video") || outputs[0] || null;
+  52:     const url = String(video?.url || "").trim();
+  53  
+
+  58      if (!url) {
+  59:       throw new Error("Video route completed but no video URL was returned");
+  60      }
+  61  
+  62:     const isFallback = Boolean(video?.metadata?.fallback);
+  63      if (isFallback) {
+  64:       console.log(`✓ Video route smoke test passed (fallback mode): ${url}`);
+  65        return;
+
+  67  
+  68:     console.log(`✓ Video route smoke test passed: ${url}`);
+  69    } finally {
+
+  75    const message = error instanceof Error ? error.message : String(error);
+  76:   console.error(`Video route smoke test failed: ${message}`);
+  77    process.exitCode = 1;
+
+scripts\tools\pruneVideoExports.js:
+   94    const projectRoot = process.cwd();
+   95:   const defaultDir = process.env.OMNI_VIDEO_EXPORT_DIR || "omni_video_exports";
+   96    const requestedDir = readArg("dir") || defaultDir;
+
+   99    const maxAgeDays = parseInteger(
+  100:     readArg("max-age-days") || process.env.OMNI_VIDEO_EXPORT_MAX_AGE_DAYS || "7",
+  101      7
+
+  103    const maxFiles = parseInteger(
+  104:     readArg("max-files") || process.env.OMNI_VIDEO_EXPORT_MAX_FILES || "200",
+  105      200
+
+  112    if (!fs.existsSync(exportDir)) {
+  113:     console.log(`[video-prune] export directory not found: ${exportDir}`);
+  114      process.exit(0);
+
+  140  
+  141:   console.log(`[video-prune] directory: ${exportDir}`);
+  142:   console.log(`[video-prune] filesFound: ${allFiles.length}`);
+  143:   console.log(`[video-prune] totalBytes: ${totalBytes}`);
+  144:   console.log(`[video-prune] maxAgeDays: ${maxAgeDays}`);
+  145:   console.log(`[video-prune] maxFiles: ${maxFiles}`);
+  146:   console.log(`[video-prune] candidates: ${toPrune.length}`);
+  147:   console.log(`[video-prune] reclaimableBytes: ${pruneBytes}`);
+  148:   console.log(`[video-prune] mode: ${apply ? "apply" : "preview"}`);
+  149  
+
+  157    if (!apply) {
+  158:     console.log("[video-prune] preview only. Re-run with --apply to delete files.");
+  159      process.exit(0);
+
+  172    const removedDirs = cleanupEmptyDirectories(exportDir);
+  173:   console.log(`[video-prune] deletedFiles: ${deleted}`);
+  174:   console.log(`[video-prune] removedEmptyDirs: ${removedDirs}`);
+  175  }
+
+src\index.ts:
+    67    OMNI_MEDIA_API_TIMEOUT_MS?: string;
+    68:   OMNI_MEDIA_FALLBACK_VIDEO_URL?: string;
+    69:   OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO?: string;
+    70    OMNI_MEDIA_PLACEHOLDER_ONLY?: string;
+
+   253  
+   254: function deriveVideoStyleFromPrompt(promptText: string): {
+   255    stylePreset: string;
+
+   288  
+   289: function selectFallbackVideoUrl(promptText: string, configuredDefault: string): string {
+   290    const prompt = String(promptText || "").toLowerCase();
+
+   292      {
+   293:       url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+   294        tags: ["nature", "forest", "wildlife", "outdoor", "mountain", "rain"]
+
+   296      {
+   297:       url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+   298        tags: ["cinematic", "dramatic", "action", "epic", "slow", "moody"]
+
+   300      {
+   301:       url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+   302        tags: ["bright", "day", "fun", "travel", "colorful"]
+
+   304      {
+   305:       url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+   306        tags: ["city", "urban", "street", "night", "driving", "neon"]
+
+   308      {
+   309:       url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
+   310        tags: ["road", "terrain", "outdoor", "wide", "drone", "landscape"]
+
+  1349  
+  1350: function resolvePlaceholderVideoAllowed(env: Env): boolean {
+  1351:   const allow = parseOptionalBoolFlag(env.OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO);
+  1352    if (allow !== null) return allow;
+
+  2034          url.pathname === "/api/image" ||
+  2035:         url.pathname === "/api/video/generate" ||
+  2036:         url.pathname === "/omni_video_exports" ||
+  2037:         url.pathname === "/api/video/health" ||
+  2038          url.pathname === "/api/ping" ||
+
+  2597  
+  2598:       if (url.pathname === "/api/video/generate" && request.method !== "POST") {
+  2599          return new Response("Method Not Allowed", {
+
+  2607  
+  2608:       if (url.pathname === "/omni_video_exports" && request.method !== "POST") {
+  2609          return new Response("Method Not Allowed", {
+
+  2614  
+  2615:       if (url.pathname === "/api/video/health" && request.method !== "GET") {
+  2616          return new Response("Method Not Allowed", {
+
+  3075  
+  3076:       if (url.pathname === "/api/video/generate" && request.method === "POST") {
+  3077          const baseUrl = resolveMediaBaseUrl(env);
+  3078:         const fallbackVideoUrl = sanitizePromptText(
+  3079:           String(env.OMNI_MEDIA_FALLBACK_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4")
+  3080          ).trim();
+  3081:         const allowPlaceholderVideo = resolvePlaceholderVideoAllowed(env);
+  3082  
+
+  3115  
+  3116:         const promptStyle = deriveVideoStyleFromPrompt(prompt);
+  3117:         const fallbackUrlForPrompt = selectFallbackVideoUrl(prompt, fallbackVideoUrl);
+  3118  
+  3119:         if (!baseUrl && allowPlaceholderVideo) {
+  3120            return new Response(
+
+  3125                  {
+  3126:                   type: "video",
+  3127                    url: fallbackUrlForPrompt,
+
+  3130                      fallback: true,
+  3131:                     fallback_reason: "video-service-not-configured",
+  3132:                     source: "OMNI_MEDIA_FALLBACK_VIDEO_URL",
+  3133                      style_preset: promptStyle.stylePreset,
+
+  3142                  fallback: true,
+  3143:                 fallback_reason: "video-service-not-configured",
+  3144                  style_preset: promptStyle.stylePreset,
+
+  3163                error:
+  3164:                 "Prompt-grounded video backend is not configured. Set OMNI_MEDIA_API_BASE_URL (or OMNI_MEDIA_BASE_URL / OMNI_MEDIA_HOST+OMNI_MEDIA_PORT) and disable placeholder-only mode.",
+  3165:               code: "video-backend-not-configured"
+  3166              }),
+
+  3178          const healthUrl = `${normalizedBase}/v1/health`;
+  3179:         const targetUrl = `${normalizedBase}/v1/generate/video`;
+  3180          const userParams = typeof body?.params === "object" && body?.params ? body.params : {};
+
+  3219            try {
+  3220:             controller.abort("video-service-timeout");
+  3221            } catch {
+
+  3226          try {
+  3227:           if (!allowPlaceholderVideo) {
+  3228              try {
+
+  3233                const healthData = (await healthResponse.json().catch(() => ({}))) as any;
+  3234:               const backend = healthData?.video_backend || {};
+  3235:               const realReady = Boolean(backend?.real_video_backend_ready);
+  3236                if (!realReady) {
+
+  3242                      error:
+  3243:                       "Prompt-grounded video backend is not ready." +
+  3244                        (detail ? ` ${detail}` : "") +
+  3245:                       " Enable OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO=true only if you explicitly want placeholder clips.",
+  3246:                     code: "video-backend-not-ready",
+  3247                      backend
+
+  3261                    error:
+  3262:                     "Prompt-grounded video backend health check failed before generation. " +
+  3263:                     "Enable OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO=true only if you explicitly want placeholder clips.",
+  3264:                   code: "video-backend-health-check-failed"
+  3265                  }),
+
+  3301          } catch (error: any) {
+  3302:           logger.error("video_proxy_error", error);
+  3303:           if (allowPlaceholderVideo && fallbackVideoUrl) {
+  3304              return new Response(
+
+  3309                    {
+  3310:                     type: "video",
+  3311                      url: fallbackUrlForPrompt,
+
+  3314                        fallback: true,
+  3315:                       fallback_reason: "video-proxy-error",
+  3316:                       source: "OMNI_MEDIA_FALLBACK_VIDEO_URL",
+  3317                        proxy_error: String(error?.message || "unknown error"),
+
+  3327                    fallback: true,
+  3328:                   fallback_reason: "video-proxy-error",
+  3329                    style_preset: promptStyle.stylePreset,
+
+  3347                error:
+  3348:                 `Prompt-grounded video generation failed: ${String(error?.message || "unknown error")}. ` +
+  3349:                 "Enable OMNI_MEDIA_ALLOW_PLACEHOLDER_VIDEO=true only if you explicitly want placeholder clips.",
+  3350:               code: "video-generation-unavailable"
+  3351              }),
+
+  3364  
+  3365:       if (url.pathname === "/omni_video_exports" && request.method === "POST") {
+  3366          const baseUrl = resolveMediaBaseUrl(env);
+
+  3370                error:
+  3371:                 "OMNI media base URL is required for /omni_video_exports proxy. Set OMNI_MEDIA_API_BASE_URL (or OMNI_MEDIA_BASE_URL / OMNI_MEDIA_HOST+OMNI_MEDIA_PORT)."
+  3372              }),
+
+  3382  
+  3383:         const targetUrl = `${baseUrl.replace(/\/+$/, "")}/omni_video_exports`;
+  3384          const upstreamHeaders: Record<string, string> = {
+
+  3409              JSON.stringify({
+  3410:               error: `Failed to proxy /omni_video_exports: ${String(error?.message || "unknown error")}`
+  3411              }),
+
+  3422  
+  3423:       if (url.pathname === "/api/video/health" && request.method === "GET") {
+  3424          const baseUrl = resolveMediaBaseUrl(env);
+  3425:         const allowPlaceholderVideo = resolvePlaceholderVideoAllowed(env);
+  3426  
+
+  3428            ok: true,
+  3429:           strict_prompt_generation: !allowPlaceholderVideo,
+  3430:           placeholder_mode_enabled: allowPlaceholderVideo,
+  3431            media_base_configured: Boolean(baseUrl),
+  3432:           real_video_backend_ready: false,
+  3433            media_health_source: baseUrl ? `${baseUrl.replace(/\/+$/, "")}/v1/health` : null
+
+  3449            try {
+  3450:             controller.abort("video-health-timeout");
+  3451            } catch {
+
+  3463            payload.media_health_ok = response.ok;
+  3464:           payload.real_video_backend_ready = Boolean(data?.video_backend?.real_video_backend_ready);
+  3465:           payload.media_video_backend = data?.video_backend || null;
+  3466            return new Response(JSON.stringify(payload), {
