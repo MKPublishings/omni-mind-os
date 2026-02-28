@@ -1,0 +1,41 @@
+name: Omni Media Python CI
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "omni_media/**"
+      - ".github/workflows/omni-media-python-ci.yml"
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "codex/**"
+  pull_request:
+    paths:
+      - "omni_media/**"
+      - ".github/workflows/omni-media-python-ci.yml"
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "codex/**"
+
+jobs:
+  validate-omni-media-python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ./omni_media/requirements-test.txt
+
+      - name: Run Omni media integration tests
+        run: python -m unittest discover -s omni_media/tests -p "test_*.py"

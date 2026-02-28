@@ -1,0 +1,6 @@
+vllm-omni
+Pillow
+fastapi
+uvicorn
+boto3
+redis

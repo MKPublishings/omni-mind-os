@@ -4,7 +4,37 @@ on:
   push:
     branches:
       - "**"
+    paths:
+      - "**/*.js"
+      - "**/*.cjs"
+      - "**/*.mjs"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig*.json"
+      - "eslint.config.cjs"
+      - ".github/workflows/image-engine-ci.yml"
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "codex/**"
   pull_request:
+    paths:
+      - "**/*.js"
+      - "**/*.cjs"
+      - "**/*.mjs"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig*.json"
+      - "eslint.config.cjs"
+      - ".github/workflows/image-engine-ci.yml"
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "codex/**"
 
 jobs:
   validate-image-engine:

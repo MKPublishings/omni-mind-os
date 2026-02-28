@@ -1,6 +1,7 @@
 ![42339559-e98e-4eb7-ba72-9f3662a0679a](https://github.com/user-attachments/assets/233f9b2d-9cbd-49c4-8d1d-99a900e238e8)
 
 [![Image Engine CI](https://github.com/Slizz/omni-mind-os/actions/workflows/image-engine-ci.yml/badge.svg)](https://github.com/Slizz/omni-mind-os/actions/workflows/image-engine-ci.yml)
+[![Omni Media Python CI](https://github.com/Slizz/omni-mind-os/actions/workflows/omni-media-python-ci.yml/badge.svg)](https://github.com/Slizz/omni-mind-os/actions/workflows/omni-media-python-ci.yml)
 
 
                 O M N I   A I
@@ -102,6 +103,33 @@ Core modules:
 src/omni/multimodal/router.ts
 src/omni/multimodal/visualReasoner.ts
 ```
+
+---
+
+### **🧪 Omni-Native Media Rebuild Scaffold**
+The repository now includes a greenfield Omni-native media scaffold for rebuilding image/video/GIF generation around `vllm_omni`.
+
+Artifacts:
+
+```txt
+OMNI_MEDIA_REBUILD_SPEC.md
+omni_media/
+  contracts.py
+  model_registry.py
+  engine.py
+  pipeline.py
+  worker.py
+  api_contracts.py
+  example_usage.py
+```
+
+Design intent:
+
+- Omni as the single generation engine per worker process.
+- Explicit stage pipeline (normalize -> route -> generate -> post-process -> safety -> package).
+- Unified contracts for image/video/GIF requests and outputs.
+- Queue/worker split to scale API and GPU execution independently.
+- HTTP scaffold for `POST /v1/generate/image|video|gif` and async jobs via `/v1/jobs/*`.
 
 ---
 
