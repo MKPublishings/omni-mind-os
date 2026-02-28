@@ -36,23 +36,17 @@ class ModelRegistry:
                 max_frames=1,
                 scheduler={"name": "quality"},
             ),
+            # Default short-form video profile (root: omni-ai)
             "video_default": ModelProfile(
                 key="video_default",
-                omni_model_id="omni/video-default",
+                omni_model_id="omni/video-default",  # must match your deployed video model id
                 precision="fp16",
-                max_width=1024,
-                max_height=576,
-                max_frames=64,
-                scheduler={"name": "balanced"},
             ),
+            # Longer clips / extended duration profile (root: omni-ai)
             "video_long": ModelProfile(
                 key="video_long",
-                omni_model_id="omni/video-long",
+                omni_model_id="omni/video-long",  # must match your deployed long-form video model id
                 precision="fp16",
-                max_width=768,
-                max_height=432,
-                max_frames=120,
-                scheduler={"name": "long"},
             ),
         }
 
