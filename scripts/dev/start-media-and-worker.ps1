@@ -1,10 +1,15 @@
-$ErrorActionPreference = "Stop"
-
 param(
   [switch]$Local
 )
 
+$ErrorActionPreference = "Stop"
+
 function Resolve-PythonExecutable {
+  $venvPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
+  if (Test-Path $venvPython) {
+    return $venvPython
+  }
+
   $py = Get-Command py -ErrorAction SilentlyContinue
   if ($py) { return "py" }
 
@@ -14,7 +19,41 @@ function Resolve-PythonExecutable {
   throw "Python executable not found. Install Python or add it to PATH."
 }
 
+function Import-DevVars {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$FilePath
+  )
+
+  if (-not (Test-Path $FilePath)) {
+    return
+  }
+
+  Get-Content -Path $FilePath | ForEach-Object {
+    $line = ([string]$_).Trim()
+    if (-not $line) { return }
+    if ($line.StartsWith("#")) { return }
+    $eqIdx = $line.IndexOf("=")
+    if ($eqIdx -lt 1) { return }
+
+    $key = $line.Substring(0, $eqIdx).Trim()
+    $value = $line.Substring($eqIdx + 1).Trim()
+    if ($value.StartsWith('"') -and $value.EndsWith('"') -and $value.Length -ge 2) {
+      $value = $value.Substring(1, $value.Length - 2)
+    }
+
+    if ($key) {
+      [System.Environment]::SetEnvironmentVariable($key, $value, "Process")
+    }
+  }
+}
+
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$devVarsPath = Join-Path $repoRoot ".dev.vars"
+if (Test-Path $devVarsPath) {
+  Write-Output "[omni-dev] Loading environment from .dev.vars"
+  Import-DevVars -FilePath $devVarsPath
+}
 $pythonExe = Resolve-PythonExecutable
 $mediaProcess = $null
 $workerExitCode = 0

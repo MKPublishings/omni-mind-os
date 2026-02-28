@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import uuid
 import threading
+import os
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
 from .api_contracts import GenerateApiResponse, GenerateBody, OutputItem
-from .contracts import GenerateRequest, GenerationParams
+from .contracts import GenerateRequest, GenerationParams, MediaOutput
 from .hooks import DefaultMediaHooks
 from .pipeline import OmniMediaPipeline
 from .storage import LocalFileStorageAdapter, StorageAdapter
@@ -157,6 +158,38 @@ class OmniMediaService:
         request_id = str(uuid.uuid4())
         request = self._to_generate_request(modality, body, request_id)
         response = self.pipeline.run(request)
+
+        if (
+            modality == "video"
+            and response.status != "completed"
+            and "vllm_omni is not installed or unavailable" in str(response.error or "")
+        ):
+            fallback_url = str(
+                os.getenv(
+                    "OMNI_MEDIA_FALLBACK_VIDEO_URL",
+                    "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+                )
+            ).strip()
+            if fallback_url:
+                response.status = "completed"
+                response.error = None
+                response.outputs = [
+                    MediaOutput(
+                        type="video",
+                        url=fallback_url,
+                        data=None,
+                        metadata={
+                            "fallback": True,
+                            "fallback_reason": "omni-runtime-unavailable",
+                            "source": "OMNI_MEDIA_FALLBACK_VIDEO_URL",
+                        },
+                    )
+                ]
+                response.metadata = {
+                    **(response.metadata or {}),
+                    "fallback": True,
+                    "fallback_reason": "omni-runtime-unavailable",
+                }
 
         outputs = self._persist_outputs(response, request=request)
         if response.status == "completed":

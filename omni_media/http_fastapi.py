@@ -6,6 +6,8 @@ import uuid
 from dataclasses import asdict
 from typing import Any
 
+from starlette.requests import Request
+
 from .api_contracts import GenerateBody
 from .audit import AuditLogger
 from .security import (
@@ -92,7 +94,7 @@ def create_fastapi_app(service: OmniMediaService | None = None) -> Any:
             raise HTTPException(status_code=400, detail=f"Invalid request payload: {exc}")
 
     @app.post("/v1/generate/image")
-    async def generate_image(payload: dict[str, Any], request: Any):
+    async def generate_image(payload: dict[str, Any], request: Request):
         request_id = str(uuid.uuid4())
         started = time.perf_counter()
         requester = None
@@ -126,7 +128,7 @@ def create_fastapi_app(service: OmniMediaService | None = None) -> Any:
             raise
 
     @app.post("/v1/generate/video")
-    async def generate_video(payload: dict[str, Any], request: Any):
+    async def generate_video(payload: dict[str, Any], request: Request):
         request_id = str(uuid.uuid4())
         started = time.perf_counter()
         requester = None
@@ -160,7 +162,7 @@ def create_fastapi_app(service: OmniMediaService | None = None) -> Any:
             raise
 
     @app.post("/v1/generate/gif")
-    async def generate_gif(payload: dict[str, Any], request: Any):
+    async def generate_gif(payload: dict[str, Any], request: Request):
         request_id = str(uuid.uuid4())
         started = time.perf_counter()
         requester = None
@@ -194,7 +196,7 @@ def create_fastapi_app(service: OmniMediaService | None = None) -> Any:
             raise
 
     @app.post("/v1/jobs/{modality}")
-    async def enqueue_job(modality: str, payload: dict[str, Any], request: Any):
+    async def enqueue_job(modality: str, payload: dict[str, Any], request: Request):
         request_id = str(uuid.uuid4())
         started = time.perf_counter()
         requester = None
@@ -230,7 +232,7 @@ def create_fastapi_app(service: OmniMediaService | None = None) -> Any:
             raise
 
     @app.get("/v1/jobs/{job_id}")
-    async def get_job(job_id: str, request: Any):
+    async def get_job(job_id: str, request: Request):
         request_id = str(uuid.uuid4())
         started = time.perf_counter()
         requester = None
@@ -267,7 +269,7 @@ def create_fastapi_app(service: OmniMediaService | None = None) -> Any:
         return {"ok": True, "service": "omni-media", "version": "1.0.0"}
 
     @app.get("/v1/admin/security")
-    async def admin_security(request: Any):
+    async def admin_security(request: Request):
         request_id = str(uuid.uuid4())
         started = time.perf_counter()
         requester = None
@@ -313,7 +315,7 @@ def create_fastapi_app(service: OmniMediaService | None = None) -> Any:
             raise
 
     @app.get("/v1/admin/runtime")
-    async def admin_runtime(request: Any):
+    async def admin_runtime(request: Request):
         request_id = str(uuid.uuid4())
         started = time.perf_counter()
         requester = None

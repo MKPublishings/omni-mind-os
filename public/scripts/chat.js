@@ -1703,11 +1703,18 @@
       // ignore localStorage access errors
     }
 
-    const res = await fetch(getVideoEndpoint(), {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload)
-    });
+    let res;
+    const videoEndpoint = getVideoEndpoint();
+    try {
+      res = await fetch(videoEndpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload)
+      });
+    } catch (error) {
+      const detail = String(error?.message || "network error").trim();
+      throw new Error(`Unable to reach video backend (${videoEndpoint}): ${detail}`);
+    }
 
     let data = null;
     try {
@@ -1717,7 +1724,7 @@
     }
 
     if (!res.ok) {
-      const reason = String(data?.error || data?.detail || "Video backend returned an error").trim();
+      const reason = String(data?.error || data?.detail || data?.message || "Video backend returned an error").trim();
       throw new Error(reason || "Video generation failed");
     }
 
@@ -2305,9 +2312,12 @@
         playNotificationSound("assistant");
       } catch (err) {
         console.error("Omni video generation error:", err);
+        const reason = String(err?.message || "").trim();
         updateAssistantMessageBody(
           assistantBodyEl,
-          "[Error] Video generation failed. Check backend availability and try again."
+          reason
+            ? `[Error] Video generation failed: ${reason}`
+            : "[Error] Video generation failed. Check backend availability and try again."
         );
         playNotificationSound("error");
       } finally {

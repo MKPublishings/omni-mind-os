@@ -4,7 +4,7 @@ import os
 import time
 import importlib
 from collections import defaultdict, deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 
@@ -54,6 +54,7 @@ class ApiKeyAuth:
 class InMemoryRateLimiter:
     default_limit: int = 60
     default_window_sec: int = 60
+    _events: dict[str, deque[float]] = field(init=False)
 
     def __post_init__(self) -> None:
         self._events: dict[str, deque[float]] = defaultdict(deque)
@@ -82,6 +83,7 @@ class RedisRateLimiter:
     default_limit: int = 60
     default_window_sec: int = 60
     key_prefix: str = "omni-media:ratelimit"
+    _client: object = field(init=False)
 
     def __post_init__(self) -> None:
         try:

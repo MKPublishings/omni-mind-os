@@ -596,6 +596,14 @@ To run the same setup with local worker mode:
 npm run dev:media:local
 ```
 
+After local services are up, verify the video route quickly:
+
+```
+npm run smoke:video
+```
+
+`npm run test` now auto-runs video smoke only when both the worker video route (`http://127.0.0.1:8787/api/video/generate`) and media health endpoint (`http://127.0.0.1:8788/v1/health`) are reachable; otherwise it skips video smoke automatically.
+
 Run branding consistency checks:
 
 ```
