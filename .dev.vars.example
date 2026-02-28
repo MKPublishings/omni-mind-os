@@ -6,6 +6,7 @@ OMNI_ENV="development"
 OMNI_MEDIA_API_BASE_URL="http://127.0.0.1:8788"
 OMNI_MEDIA_API_KEY="replace-with-omni-media-key"
 OMNI_MEDIA_API_TIMEOUT_MS="45000"
+OMNI_MEDIA_FALLBACK_VIDEO_URL="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
 
 # Optional admin protection for maintenance endpoints.
 OMNI_ADMIN_KEY="replace-with-strong-secret"

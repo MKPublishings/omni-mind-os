@@ -502,6 +502,7 @@ Video proxy vars:
 - `OMNI_MEDIA_API_BASE_URL` (required for `POST /api/video/generate`)
 - `OMNI_MEDIA_API_KEY` (optional; sent as `x-api-key` to Omni media backend)
 - `OMNI_MEDIA_API_TIMEOUT_MS` (optional request timeout in milliseconds)
+- `OMNI_MEDIA_FALLBACK_VIDEO_URL` (optional; returns a playable fallback video when media backend is not configured)
 
 ### **Optional MP4 Encoding (ffmpeg)**
 

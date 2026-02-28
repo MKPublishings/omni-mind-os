@@ -62,6 +62,7 @@ export interface Env {
   OMNI_MEDIA_API_BASE_URL?: string;
   OMNI_MEDIA_API_KEY?: string;
   OMNI_MEDIA_API_TIMEOUT_MS?: string;
+  OMNI_MEDIA_FALLBACK_VIDEO_URL?: string;
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
 }
@@ -2938,18 +2939,9 @@ export default {
 
       if (url.pathname === "/api/video/generate" && request.method === "POST") {
         const baseUrl = sanitizePromptText(String(env.OMNI_MEDIA_API_BASE_URL || "")).trim();
-        if (!baseUrl) {
-          return new Response(
-            JSON.stringify({ error: "Video service is not configured. Set OMNI_MEDIA_API_BASE_URL." }),
-            {
-              status: 503,
-              headers: {
-                ...CORS_HEADERS,
-                "Content-Type": "application/json"
-              }
-            }
-          );
-        }
+        const fallbackVideoUrl = sanitizePromptText(
+          String(env.OMNI_MEDIA_FALLBACK_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4")
+        ).trim();
 
         const body = (await request.json().catch(() => ({}))) as any;
         const prompt = sanitizePromptText(String(body?.prompt || "")).trim();
@@ -2976,6 +2968,39 @@ export default {
             }),
             {
               status: 403,
+              headers: {
+                ...CORS_HEADERS,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
+        if (!baseUrl) {
+          return new Response(
+            JSON.stringify({
+              id: crypto.randomUUID(),
+              status: "completed",
+              outputs: [
+                {
+                  type: "video",
+                  url: fallbackVideoUrl,
+                  data: null,
+                  metadata: {
+                    fallback: true,
+                    fallback_reason: "video-service-not-configured",
+                    source: "OMNI_MEDIA_FALLBACK_VIDEO_URL"
+                  }
+                }
+              ],
+              error: null,
+              metadata: {
+                fallback: true,
+                fallback_reason: "video-service-not-configured"
+              }
+            }),
+            {
+              status: 200,
               headers: {
                 ...CORS_HEADERS,
                 "Content-Type": "application/json"
@@ -3033,6 +3058,40 @@ export default {
           });
         } catch (error: any) {
           logger.error("video_proxy_error", error);
+          if (fallbackVideoUrl) {
+            return new Response(
+              JSON.stringify({
+                id: crypto.randomUUID(),
+                status: "completed",
+                outputs: [
+                  {
+                    type: "video",
+                    url: fallbackVideoUrl,
+                    data: null,
+                    metadata: {
+                      fallback: true,
+                      fallback_reason: "video-proxy-error",
+                      source: "OMNI_MEDIA_FALLBACK_VIDEO_URL",
+                      proxy_error: String(error?.message || "unknown error")
+                    }
+                  }
+                ],
+                error: null,
+                metadata: {
+                  fallback: true,
+                  fallback_reason: "video-proxy-error"
+                }
+              }),
+              {
+                status: 200,
+                headers: {
+                  ...CORS_HEADERS,
+                  "Content-Type": "application/json"
+                }
+              }
+            );
+          }
+
           return new Response(
             JSON.stringify({
               error: `Video generation proxy failed: ${String(error?.message || "unknown error")}`
