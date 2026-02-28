@@ -52,7 +52,7 @@ if (require.main === module) {
         const report = validateOmniEngine();
         console.log("[OMNI-IMAGE-ENGINE] Validator passed.");
         if (!report.ffmpegAvailable) {
-            console.log("[OMNI-IMAGE-ENGINE] ffmpeg not found (video encoding remains optional).");
+            console.log("[OMNI-IMAGE-ENGINE] ffmpeg not found (strict video output requires ffmpeg unless allowManifestFallback=true).");
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

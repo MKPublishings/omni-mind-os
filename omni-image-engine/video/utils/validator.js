@@ -79,7 +79,7 @@ if (require.main === module) {
         const report = validateVideoEngine();
         console.log("[OMNI-VIDEO-ENGINE] Phase 6 validator passed.");
         if (!report.ffmpegAvailable) {
-            console.log("[OMNI-VIDEO-ENGINE] ffmpeg not found (encoding remains optional with manifest fallback).");
+            console.log("[OMNI-VIDEO-ENGINE] ffmpeg not found (strict video output will fail unless allowManifestFallback=true).");
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

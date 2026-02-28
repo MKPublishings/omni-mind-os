@@ -21,6 +21,9 @@ async function generateVideoClip(prompt, mode = "balanced", options = {}, imageG
     const dialogueTimeline = alignDialogueToShots(request.dialogue, shots);
     const keyframePlan = planKeyframes(request, shots);
     const keyframes = await generateKeyframes(request, budget, keyframePlan, imageGenerateFn);
+    if (keyframes.length < request.minFrames) {
+        throw new Error(`Video generation requires at least ${request.minFrames} frames, got ${keyframes.length}`);
+    }
     const storyboard = buildStoryboard(shots, keyframes);
     const optimization = buildOptimizationPlan(request, budget);
 
@@ -64,6 +67,10 @@ async function generateVideoClip(prompt, mode = "balanced", options = {}, imageG
                 budgetMB: request.maxSizeMB
             }
         };
+    }
+
+    if (!request.allowManifestFallback) {
+        throw new Error(`Video encoding failed: ${encoded.reason}. Set allowManifestFallback=true only for debug runs.`);
     }
 
     return {

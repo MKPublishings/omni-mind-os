@@ -34,6 +34,7 @@ async function runSuccessCase() {
             format: "mp4",
             maxSizeMB: 2,
             enableEncoding: false,
+            allowManifestFallback: true,
             styleHints: ["cinematic", "high contrast"],
             dialogue: [
                 { speaker: "explorer", text: "We keep moving.", durationSec: 1.1, emotion: "focused" }

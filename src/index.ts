@@ -2053,6 +2053,38 @@ function coerceVideoFormat(value: unknown): VideoFormat {
     : "both";
 }
 
+function runtimeLikelySupportsMp4Encoding(): boolean {
+  if (typeof process === "undefined") return false;
+  const hasNode = Boolean((process as any)?.versions?.node);
+  if (!hasNode) return false;
+
+  const raw = String(process.env.OMNI_VIDEO_ENABLE_MP4_ENCODING || process.env.OMNI_VIDEO_ENABLE_ENCODING || "")
+    .trim()
+    .toLowerCase();
+  if (raw === "0" || raw === "false" || raw === "off" || raw === "no") {
+    return false;
+  }
+
+  return true;
+}
+
+function resolveEffectiveVideoFormat(requested: VideoFormat): { format: VideoFormat; downgraded: boolean; reason?: string } {
+  const mp4Supported = runtimeLikelySupportsMp4Encoding();
+  if (mp4Supported) {
+    return { format: requested, downgraded: false };
+  }
+
+  if (requested === "mp4" || requested === "both") {
+    return {
+      format: "gif",
+      downgraded: true,
+      reason: "mp4-runtime-unavailable"
+    };
+  }
+
+  return { format: requested, downgraded: false };
+}
+
 function isBrowserPlayableVideoUrl(value: unknown): boolean {
   const url = String(value || "").trim();
   if (!url) return false;
@@ -2069,7 +2101,9 @@ async function runPhase1VideoGeneration(
   body: VideoPhase1RequestBody
 ): Promise<Phase1VideoGenerationPayload> {
   const qualityMode = coerceVideoQualityMode(body?.qualityMode);
-  const format = coerceVideoFormat(body?.format);
+  const requestedFormat = coerceVideoFormat(body?.format);
+  const formatDecision = resolveEffectiveVideoFormat(requestedFormat);
+  const format = formatDecision.format;
   const maxSizeMB = clamp(Number(body?.maxSizeMB || 2), 0.1, 512);
   const requestedDurationSec = clamp(Number((body as VideoGenerateRequestBody)?.durationSeconds ?? body?.durationSec ?? 4), 1, 180);
   const requestedWidth = clamp(Number((body as VideoGenerateRequestBody)?.width || 512), 128, 4096);
@@ -2155,6 +2189,13 @@ async function runPhase1VideoGeneration(
     maxSizeMB,
     format
   });
+
+  if (formatDecision.downgraded) {
+    (result.meta as any).encodingNotice = `Requested ${requestedFormat.toUpperCase()} but generated GIF because MP4 encoding runtime is unavailable.`;
+    (result.meta as any).effectiveFormat = format;
+    (result.meta as any).requestedFormat = requestedFormat;
+    (result.meta as any).encodingReason = formatDecision.reason || "runtime-capability";
+  }
 
   const keyframeUrls = Array.isArray(result?.meta?.keyframes)
     ? result.meta.keyframes

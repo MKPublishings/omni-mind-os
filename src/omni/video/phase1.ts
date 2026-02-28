@@ -885,10 +885,12 @@ function parseDataUrl(dataUrl: string): { mime: string; bytes: Uint8Array } | nu
 }
 
 function isMp4EncodingEnabled(): boolean {
-  if (typeof process === "undefined" || !process?.env) return false;
+  if (typeof process === "undefined" || !process?.env) return true;
   const raw = String(process.env.OMNI_VIDEO_ENABLE_MP4_ENCODING || process.env.OMNI_VIDEO_ENABLE_ENCODING || "")
     .trim()
     .toLowerCase();
+  if (!raw) return true;
+  if (raw === "0" || raw === "false" || raw === "no" || raw === "off") return false;
   return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
 
@@ -899,6 +901,26 @@ function isNodeRuntime(): boolean {
 async function importNodeModule(specifier: string): Promise<any> {
   const dynamicImport = Function("s", "return import(s)") as (s: string) => Promise<any>;
   return dynamicImport(specifier);
+}
+
+async function resolveFfmpegBinary(): Promise<string> {
+  if (typeof process !== "undefined" && process?.env) {
+    const envOverride = String(process.env.OMNI_VIDEO_FFMPEG_PATH || "").trim();
+    if (envOverride) {
+      return envOverride;
+    }
+  }
+
+  try {
+    const ffmpegInstaller = await importNodeModule("@ffmpeg-installer/ffmpeg");
+    const installerPath = String(ffmpegInstaller?.default?.path || ffmpegInstaller?.path || "").trim();
+    if (installerPath) {
+      return installerPath;
+    }
+  } catch {
+  }
+
+  return "ffmpeg";
 }
 
 async function encodeMp4WithFfmpeg(frames: Frame[], fps: number): Promise<{ dataUrl: string; sizeMB: number } | null> {
@@ -913,6 +935,7 @@ async function encodeMp4WithFfmpeg(frames: Frame[], fps: number): Promise<{ data
       importNodeModule("node:path"),
       importNodeModule("node:child_process")
     ]);
+    const ffmpegBinary = await resolveFfmpegBinary();
 
     const workingDir = await mkdtemp(join(tmpdir(), "omni-video-"));
 
@@ -934,28 +957,60 @@ async function encodeMp4WithFfmpeg(frames: Frame[], fps: number): Promise<{ data
       }
 
       const outputPath = join(workingDir, "output.mp4");
-      const args = [
-        "-y",
-        "-framerate",
-        String(Math.max(1, Math.floor(fps))),
-        "-i",
-        join(workingDir, "frame_%05d.png"),
-        "-c:v",
-        "libx264",
-        "-pix_fmt",
-        "yuv420p",
-        "-movflags",
-        "+faststart",
-        outputPath
+      const attempts: string[][] = [
+        [
+          "-y",
+          "-framerate",
+          String(Math.max(1, Math.floor(fps))),
+          "-i",
+          join(workingDir, "frame_%05d.png"),
+          "-c:v",
+          "libx265",
+          "-preset",
+          "medium",
+          "-crf",
+          "30",
+          "-pix_fmt",
+          "yuv420p",
+          "-movflags",
+          "+faststart",
+          outputPath
+        ],
+        [
+          "-y",
+          "-framerate",
+          String(Math.max(1, Math.floor(fps))),
+          "-i",
+          join(workingDir, "frame_%05d.png"),
+          "-c:v",
+          "libx264",
+          "-preset",
+          "veryfast",
+          "-crf",
+          "31",
+          "-pix_fmt",
+          "yuv420p",
+          "-movflags",
+          "+faststart",
+          outputPath
+        ]
       ];
 
-      const exitCode = await new Promise<number>((resolve) => {
-        const child = spawn("ffmpeg", args, { stdio: "ignore" });
-        child.on("error", () => resolve(-1));
-        child.on("close", (code: number | null) => resolve(typeof code === "number" ? code : -1));
-      });
+      let encoded = false;
+      for (const args of attempts) {
+        const exitCode = await new Promise<number>((resolve) => {
+          const child = spawn(ffmpegBinary, args, { stdio: "ignore" });
+          child.on("error", () => resolve(-1));
+          child.on("close", (code: number | null) => resolve(typeof code === "number" ? code : -1));
+        });
 
-      if (exitCode !== 0) {
+        if (exitCode === 0) {
+          encoded = true;
+          break;
+        }
+      }
+
+      if (!encoded) {
         return null;
       }
 
@@ -1096,11 +1151,17 @@ export class BudgetAwareEstimatorEncoder implements VideoEncoder {
     const gifHeight = encodedGif?.height || height;
     const gifSize = wantsGif ? estimateGifSizeMB(gifWidth, gifHeight, gifFps, durationSec) : undefined;
 
-    const mediaId = makeId("video");
+    if (wantsMp4 && !encodedMp4 && !wantsGif) {
+      throw new Error("MP4 encoding unavailable in current runtime. Request GIF or BOTH, or enable ffmpeg runtime support.");
+    }
+
+    if (wantsGif && !encodedGif) {
+      throw new Error("GIF encoding failed from generated keyframes.");
+    }
 
     return {
-      mp4Url: wantsMp4 ? encodedMp4?.dataUrl || `omni://video/${mediaId}.mp4` : undefined,
-      gifUrl: wantsGif ? encodedGif?.dataUrl || `omni://video/${mediaId}.gif` : undefined,
+      mp4Url: wantsMp4 ? encodedMp4?.dataUrl : undefined,
+      gifUrl: wantsGif ? encodedGif?.dataUrl : undefined,
       sizeMB: {
         mp4: wantsMp4 ? encodedMp4?.sizeMB ?? Number((mp4Size ?? 0).toFixed(3)) : undefined,
         gif: wantsGif ? Number((gifSize ?? 0).toFixed(3)) : undefined

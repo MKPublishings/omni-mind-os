@@ -27,6 +27,23 @@ function normalizeDialogue(dialogue) {
         .filter(Boolean);
 }
 
+function inferTargetFrames(options = {}, fps = 12, durationSec = 2.5) {
+    const requested = ensureNumber(options.targetFrames, fps * durationSec);
+    return clamp(Math.round(requested), 12, 48);
+}
+
+function hasMotionLanguage(prompt) {
+    const lower = String(prompt || "").toLowerCase();
+    return /\b(video|gif|animation|animated|motion|moving|pan|tilt|zoom|tracking|camera movement|transition|loop|sequence|frames)\b/.test(lower);
+}
+
+function injectMotionClause(prompt) {
+    const base = ensureString(prompt).trim();
+    const subtleMotion = "subtle motion: gentle camera breathing, light flicker, slight background parallax";
+    if (!base) return subtleMotion;
+    return `${base}. ${subtleMotion}`;
+}
+
 function normalizeVideoRequest(prompt, mode, options = {}) {
     const normalizedPrompt = ensureString(prompt).trim();
     if (!normalizedPrompt) {
@@ -39,6 +56,10 @@ function normalizeVideoRequest(prompt, mode, options = {}) {
 
     const format = ensureString(options.format || config.defaults.format).toLowerCase() === "gif" ? "gif" : "mp4";
     const maxSizeMB = clamp(ensureNumber(options.maxSizeMB, config.defaults.maxSizeMB), 0.25, 10);
+    const promptHasMotion = hasMotionLanguage(normalizedPrompt);
+    const motionInjected = !promptHasMotion;
+    const motionReadyPrompt = motionInjected ? injectMotionClause(normalizedPrompt) : normalizedPrompt;
+    const targetFrames = inferTargetFrames(options, config.profiles[selectedMode]?.fps || 12, config.profiles[selectedMode]?.durationSec || 2.5);
     const referenceImages = Array.isArray(options.referenceImages)
         ? options.referenceImages.map((item) => ensureString(item).trim()).filter(Boolean)
         : [];
@@ -47,16 +68,26 @@ function normalizeVideoRequest(prompt, mode, options = {}) {
         : [];
 
     return {
-        prompt: normalizedPrompt,
+        prompt: motionReadyPrompt,
         mode: selectedMode,
         format,
         maxSizeMB,
-        enableEncoding: options.enableEncoding === true,
+        generation_mode: "video",
+        enableEncoding: options.enableEncoding !== false,
+        allowManifestFallback: options.allowManifestFallback === true,
         strictSize: options.strictSize !== false,
+        requireMotion: options.requireMotion !== false,
+        motionInjected,
+        minFrames: 12,
+        maxFrames: 48,
+        targetFrames,
         dialogue: normalizeDialogue(options.dialogue),
         referenceImages,
         styleHints,
-        imageOptions: typeof options.imageOptions === "object" && options.imageOptions ? options.imageOptions : {}
+        imageOptions: {
+            ...(typeof options.imageOptions === "object" && options.imageOptions ? options.imageOptions : {}),
+            generation_mode: "video-keyframe"
+        }
     };
 }
 
